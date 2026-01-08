@@ -1,0 +1,29 @@
+{
+  "homepage-media": {
+    "name": "Homepage Media",
+    "description": "Videos and images displayed on the homepage carousel",
+    "fields": [
+      { "key": "id", "label": "ID", "type": "number", "required": true },
+      { "key": "type", "label": "Type", "type": "text", "required": true },
+      { "key": "src", "label": "Source", "type": "media", "required": true },
+      { "key": "location", "label": "Location", "type": "text", "required": true },
+      { "key": "coordinates", "label": "Coordinates", "type": "text", "required": true },
+      { "key": "coordinatesUrl", "label": "Map Link", "type": "link", "required": true },
+      { "key": "camera", "label": "Camera", "type": "text", "required": true },
+      { "key": "aperture", "label": "Aperture", "type": "text", "required": true },
+      { "key": "shutter", "label": "Shutter", "type": "text", "required": true },
+      { "key": "iso", "label": "ISO", "type": "text", "required": true },
+      { "key": "alt", "label": "Alt Text", "type": "text", "required": false }
+    ]
+  },
+  "website-copy": {
+    "name": "Website Copy",
+    "description": "All text content on the website. Use {text|url} for links, {text} for styled spans.",
+    "fields": [
+      { "key": "id", "label": "ID", "type": "number", "required": true },
+      { "key": "key", "label": "Key", "type": "text", "required": true },
+      { "key": "label", "label": "Label", "type": "text", "required": true },
+      { "key": "content", "label": "Content", "type": "text", "required": true }
+    ]
+  }
+}

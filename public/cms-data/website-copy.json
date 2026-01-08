@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "key": "hero_headline",
+      "label": "Hero Headline",
+      "content": "Your design engineering hobbit, collecting new coordinates."
+    },
+    {
+      "id": 2,
+      "key": "bio_intro",
+      "label": "Bio - Intro",
+      "content": "I was supposed to be a polite little lawyer, alas, through some demented turn of events, I've arrived here."
+    },
+    {
+      "id": 3,
+      "key": "bio_current",
+      "label": "Bio - Current Work",
+      "content": "I'm currently building {Student Machine Lab|https://studentmachines.com}, where we craft delightful AI interfaces for local LLMs."
+    },
+    {
+      "id": 4,
+      "key": "bio_mobbin",
+      "label": "Bio - Mobbin",
+      "content": "Doing fun experiments at {Mobbin|https://mobbin.com} as a growth engineer, previously led a national campaign for {Perplexity}."
+    },
+    {
+      "id": 5,
+      "key": "bio_hanriver",
+      "label": "Bio - Han River",
+      "content": "I was the sole analyst at {Han River Partners|https://www.businesswire.com/news/home/20241022128248/en/HRZ-Han-River-Launches-%24100-Million-Venture-Fund-to-Fuel-Korea-Graph-Tech-Startups}, working under Chris Koh, co-founder of {Coupang (NYSE: CPNG)}."
+    },
+    {
+      "id": 6,
+      "key": "bio_grants",
+      "label": "Bio - Grants",
+      "content": "Through sheer dumb luck, I was the first Korean to receive grants from the teams at {Neo|https://www.forbes.com/sites/richardnieva/2025/04/16/this-tech-incubator-is-harder-to-get-into-than-harvard/} and {1517 Fund|https://www.bloomberg.com/news/articles/2016-12-01/thiel-s-1517-fund-is-stalking-the-next-zuckerberg}."
+    },
+    {
+      "id": 7,
+      "key": "clock_location",
+      "label": "Clock Location",
+      "content": "Seoul"
+    }
+  ]
+}

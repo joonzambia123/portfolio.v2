@@ -1,0 +1,95 @@
+{
+  "data": [
+    {
+      "id": 4,
+      "type": "video",
+      "src": "/quick.mp4",
+      "location": "Bandung, Indonesia",
+      "coordinates": "6.79770°S, 107.57870°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=-6.79770,107.57870",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ9.0",
+      "shutter": "1/60s",
+      "iso": "320",
+      "alt": "Indonesian kids"
+    },
+    {
+      "id": 1,
+      "type": "video",
+      "src": "/sf clip.mp4",
+      "location": "San Francisco, CA",
+      "coordinates": "37.82975°N, 122.40606°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=37.82975,-122.40606",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ4.0",
+      "shutter": "1/60s",
+      "iso": "800",
+      "alt": "San Francisco cityscape"
+    },
+    {
+      "id": 2,
+      "type": "video",
+      "src": "/compressed slippy 2.mp4",
+      "location": "Corrour, Scotland",
+      "coordinates": "56.76040°N, 4.69090°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=56.76040,-4.69090",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ9.0",
+      "shutter": "1/60s",
+      "iso": "500",
+      "alt": "Corrour mountain landscape"
+    },
+    {
+      "id": 3,
+      "type": "video",
+      "src": "/Framer.mp4",
+      "location": "Saigon, Vietnam",
+      "coordinates": "10.77700°N, 106.69860°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=10.77700,106.69860",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "270",
+      "alt": "Framer office in San Francisco"
+    },
+    {
+      "id": 5,
+      "type": "video",
+      "src": "/university town.mp4",
+      "location": "UTown, Singapore",
+      "coordinates": "37.82975°N, 122.40606°W",
+      "coordinatesUrl": "",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "400",
+      "alt": "Students hanging out at University Town, Singapore"
+    },
+    {
+      "id": 6,
+      "type": "video",
+      "src": "/Fukuoka chef.mp4",
+      "location": "Fukuoka, Japan",
+      "coordinates": "56.76040°N, 4.69090°W",
+      "coordinatesUrl": "",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "650",
+      "alt": "Japanese chef serving dish in Fukuoka"
+    },
+    {
+      "id": 7,
+      "type": "video",
+      "src": "/scotland quick.mp4",
+      "location": "Caol, Scotland",
+      "coordinates": "37.82975°N, 122.40606°W",
+      "coordinatesUrl": "",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ8.0",
+      "shutter": "1/60s",
+      "iso": "150",
+      "alt": "Man walking dogs in Caol, Scotland."
+    }
+  ]
+}

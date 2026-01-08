@@ -1,0 +1,1143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font Face Declarations */
+@font-face {
+  font-family: 'Calluna';
+  src: url('./fonts/Calluna-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Graphik';
+  src: url('./fonts/GraphikRegular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Graphik';
+  src: url('./fonts/GraphikMedium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Native dotted underlines */
+  .dotted-underline-blue,
+  .dotted-underline-grey,
+  a.dotted-underline-blue,
+  a.dotted-underline-grey {
+    text-decoration: underline dotted;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    display: inline;
+  }
+}
+
+/* Safari fallback - use simple underline instead of dotted */
+/* Safari doesn't properly support text-decoration: underline dotted */
+.safari .dotted-underline-blue,
+.safari .dotted-underline-grey,
+.safari a.dotted-underline-blue,
+.safari a.dotted-underline-grey {
+  text-decoration: none !important;
+  position: relative;
+  display: inline;
+}
+
+.safari .dotted-underline-blue::after,
+.safari .dotted-underline-grey::after,
+.safari a.dotted-underline-blue::after,
+.safari a.dotted-underline-grey::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -0.12em;
+  width: 100%;
+  height: 0.12em;
+  background-color: #E6E6E6;
+  border-radius: 9999px;
+  transition: background-color 0.15s cubic-bezier(0.44, 0, 0.56, 1);
+}
+
+/* Safari hover states for grey dotted underlines */
+.safari .dotted-underline-grey:hover::after,
+.safari a.dotted-underline-grey:hover::after {
+  background-color: #9AC8FC;
+}
+
+.safari .dotted-underline-grey:hover,
+.safari a.dotted-underline-grey:hover {
+  color: #2480ED !important;
+  cursor: pointer;
+}
+
+/* Safari hover states for blue dotted underlines */
+.safari .dotted-underline-blue:hover::after,
+.safari a.dotted-underline-blue:hover::after {
+  background-color: #2480ED;
+}
+
+.safari .dotted-underline-blue:hover,
+.safari a.dotted-underline-blue:hover {
+  color: #2480ED !important;
+  cursor: pointer;
+}
+
+/* Safari-specific padding and centering fix for clock component */
+.safari div[class*="h-[35px]"][class*="rounded-[20px]"] {
+  padding-top: 10px !important;
+  padding-right: 10px !important;
+  padding-bottom: 10px !important;
+  padding-left: 8px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Safari-specific fix: move time component text down by 1px */
+.safari div[class*="h-[35px]"][class*="rounded-[20px]"] > div[class*="flex"][class*="font-graphik"][class*="gap-[8px]"] {
+  transform: translateY(1px);
+}
+
+/* Coordinates arrow alignment - all browsers */
+.coord-arrow-svg {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Safari-specific fix for arrow vertical alignment */
+.safari .coord-arrow-svg {
+  top: calc(50% - 1px) !important;
+  transform: translateY(-50%) !important;
+  vertical-align: baseline;
+}
+
+/* Text selection/highlight colors */
+::selection {
+background-color: #E8F6FF;
+  color: #2991DF;
+}
+
+::-moz-selection {
+  background-color: #E8F6FF;
+  color: #2991DF;
+}
+
+/* Lock everything in place above 813px - prevent any responsive changes */
+@media (min-width: 814px) {
+  /* Force all fixed widths to stay exactly as specified */
+  [class*="px-[250px]"] {
+    padding-left: max(250px, calc((100% - 721px) / 2)) !important;
+    padding-right: max(250px, calc((100% - 721px) / 2)) !important;
+  }
+
+  [class*="w-[375px]"] {
+    width: 375px !important;
+    max-width: 375px !important;
+    min-width: 375px !important;
+  }
+
+  [class*="w-[308px]"] {
+    width: 308px !important;
+    max-width: 308px !important;
+    min-width: 308px !important;
+  }
+
+  [class*="w-[346px]"] {
+    width: 346px !important;
+    max-width: 346px !important;
+    min-width: 346px !important;
+  }
+
+  [class*="h-[470px]"] {
+    height: 470px !important;
+    min-height: 470px !important;
+    max-height: 470px !important;
+  }
+
+  [class*="w-[362px]"] {
+    width: 362px !important;
+    max-width: 362px !important;
+    min-width: 362px !important;
+  }
+
+  [class*="gap-[50px]"] {
+    gap: 50px !important;
+    flex-direction: row !important;
+  }
+
+  /* Ensure main container centers content */
+  .max-w-7xl {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+/* Responsive styles - only apply below 813px */
+@media (max-width: 813px) {
+  /* Main content container - reduce padding */
+  [class*="px-[250px]"] {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+
+  /* Content layout - stack vertically */
+  [class*="gap-[50px]"] {
+    flex-direction: column !important;
+    gap: 2rem !important;
+  }
+
+  /* Text column - full width */
+  [class*="w-[375px]"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Heading - full width */
+  [class*="w-[308px]"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Image card - responsive */
+  [class*="w-[346px]"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  [class*="h-[470px]"] {
+    height: auto !important;
+    min-height: 300px !important;
+  }
+
+  /* Bottom section - responsive */
+  [class*="w-[362px]"] {
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+}
+
+/* Video frame hover shadow - subtle skeuomorphic effect */
+.video-frame-hover {
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 2px 6px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.01) 0%, rgba(0, 0, 0, 0.01) 100%);
+  transition: box-shadow 320ms ease-in-out, border-color 320ms ease-in-out;
+  position: relative;
+}
+
+.video-frame-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0%, transparent 100%);
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.video-frame-hover:hover {
+  box-shadow: 
+    0 3px 8px rgba(0, 0, 0, 0.08),
+    0 6px 16px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Black box slide-up animation with spring-like motion */
+.black-box-slide {
+  /* Moderate bounce when sliding down */
+  transition: height 450ms cubic-bezier(0.34, 1.35, 0.64, 1),
+              opacity 450ms cubic-bezier(0.34, 1.35, 0.64, 1),
+              filter 450ms cubic-bezier(0.34, 1.35, 0.64, 1);
+  opacity: 1;
+  filter: blur(0px);
+}
+
+.group:hover .black-box-slide {
+  /* More bounce when sliding up */
+  transition: height 450ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 450ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 1;
+  filter: blur(0px);
+}
+
+.group:not(:hover) .black-box-slide {
+  transition: height 450ms cubic-bezier(0.34, 1.35, 0.64, 1),
+              opacity 450ms cubic-bezier(0.34, 1.35, 0.64, 1),
+              filter 450ms cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+/* Metadata text animation matching black box slide */
+.metadata-fade {
+  transition: opacity 450ms cubic-bezier(0.34, 1.35, 0.64, 1),
+              transform 450ms cubic-bezier(0.34, 1.35, 0.64, 1);
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.group:hover .metadata-fade {
+  transition: opacity 450ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              transform 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.group:not(:hover) .metadata-fade {
+  transition: opacity 450ms cubic-bezier(0.34, 1.35, 0.64, 1),
+              transform 450ms cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+/* Black box subtle jiggle hint animation */
+.black-box-jiggle {
+  animation: subtleJiggle 600ms ease-in-out;
+}
+
+/* Stop jiggle animation immediately when hovering on video frame or black box */
+.video-frame-hover:hover .black-box-jiggle,
+.video-frame-hover:hover .black-box-container,
+.black-box-container:hover .black-box-jiggle {
+  animation: none !important;
+  transform: translateY(0) !important;
+}
+
+@keyframes subtleJiggle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+  75% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Black box text fade animation on video change */
+.black-box-text {
+  opacity: 1;
+  transform: translateY(0);
+  animation: textFadeIn 300ms ease-in-out;
+}
+
+@keyframes textFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Component loader animations - minimal and elegant */
+.component-hidden {
+  opacity: 0;
+  transform: translateX(-16px);
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.component-loaded {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Bottom component specific animation - slides up from below */
+.fixed.bottom-\[50px\].component-hidden {
+  opacity: 0;
+  transform: translate(-50%, 24px);
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fixed.bottom-\[50px\].component-loaded {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Skeuomorphic bottom pill container */
+.bottom-pill-container {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(235, 238, 245, 0.9);
+  position: relative;
+  overflow: visible;
+}
+
+/* Divider line in bottom pill */
+.pill-divider {
+  background: rgba(235, 238, 245, 0.85) !important;
+  width: 1px !important;
+  height: 100% !important;
+  flex-shrink: 0 !important;
+  z-index: 1;
+}
+
+.bottom-pill-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+}
+
+/* Vinyl record animation */
+.vinyl-container {
+  perspective: 1000px;
+}
+
+.vinyl-record {
+  transform-style: preserve-3d;
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    inset 0 0.5px 1px rgba(255, 255, 255, 0.06),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Vinyl sheen effect */
+.vinyl-sheen {
+  background: linear-gradient(
+    135deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.06) 55%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* Always spinning vinyl - consistent speed */
+.vinyl-spin {
+  animation: spin-vinyl 4s linear infinite;
+}
+
+@keyframes spin-vinyl {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Floating music notes */
+.music-notes-container {
+  z-index: 30;
+  overflow: visible !important;
+}
+
+.music-note {
+  position: absolute;
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  font-weight: 500;
+  transition: opacity 500ms ease-out;
+}
+
+/* Note positions - clustered near top-left of vinyl */
+.note-1 {
+  top: -6px;
+  left: -4px;
+}
+
+.note-2 {
+  top: 2px;
+  left: -10px;
+}
+
+.note-3 {
+  top: -2px;
+  left: 6px;
+}
+
+.note-4 {
+  top: 8px;
+  left: -6px;
+}
+
+/* Animate notes on hover - simple unified animation */
+.group\/vinyl:hover .note-1 {
+  animation: float-note 2.5s ease-out infinite;
+  animation-delay: 1s;
+}
+
+.group\/vinyl:hover .note-2 {
+  animation: float-note 2.5s ease-out infinite;
+  animation-delay: 1.4s;
+}
+
+.group\/vinyl:hover .note-3 {
+  animation: float-note 2.5s ease-out infinite;
+  animation-delay: 1.8s;
+}
+
+.group\/vinyl:hover .note-4 {
+  animation: float-note 2.5s ease-out infinite;
+  animation-delay: 2.2s;
+}
+
+@keyframes float-note {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) scale(0.8);
+  }
+  10% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(-10px) translateX(-2px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) translateX(-4px) scale(0.9);
+  }
+}
+
+/* Smooth exit - notes fade out gracefully when hover ends */
+.group\/vinyl:not(:hover) .music-note {
+  opacity: 0;
+  animation: none;
+  transition: opacity 800ms ease-out;
+}
+
+/* Shortcuts modal - ⌘K indicator with skeuomorphic style */
+.shortcuts-modal {
+  bottom: calc(100% + 10px);
+  left: 142px;
+  transform: translateX(-50%);
+  animation: shortcuts-slide-up 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+}
+
+.shortcuts-modal.exiting {
+  will-change: transform, opacity;
+  animation: shortcuts-slide-down 180ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+.shortcuts-modal-inner {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 2px 6px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(235, 238, 245, 0.9);
+  position: relative;
+  min-width: fit-content;
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Top highlight for skeuomorphic depth */
+.shortcuts-modal-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
+}
+
+@keyframes shortcuts-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes shortcuts-slide-down {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px) scale(0.98);
+  }
+}
+
+/* Music status tab - dark skeuomorphic style matching video component */
+.music-status-tab {
+  bottom: calc(100% + 10px);
+  left: 119px;
+  transform: translateX(-50%);
+  animation: tab-slide-up 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+}
+
+.music-status-tab.exiting {
+  will-change: transform, opacity;
+  animation: tab-slide-down 180ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+.status-tab-inner {
+  background: linear-gradient(180deg, #2a2a2b 0%, #1f1f20 100%);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  min-width: fit-content;
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Top highlight for skeuomorphic depth */
+.status-tab-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
+}
+
+@keyframes tab-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes tab-slide-down {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px) scale(0.98);
+  }
+}
+
+/* Audio waveform - dynamic organic animation */
+.audio-waveform {
+  height: 14px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.waveform-bar {
+  display: block;
+  width: 2.5px;
+  background-color: #22c55e;
+  border-radius: 1px;
+  will-change: height;
+}
+
+.waveform-bar.bar-1 {
+  animation: wave-1 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.waveform-bar.bar-2 {
+  animation: wave-2 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation-delay: 0.1s;
+}
+
+.waveform-bar.bar-3 {
+  animation: wave-3 1.7s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation-delay: 0.2s;
+}
+
+.waveform-bar.bar-4 {
+  animation: wave-4 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation-delay: 0.15s;
+}
+
+@keyframes wave-1 {
+  0%, 100% { height: 5px; }
+  20% { height: 11px; }
+  40% { height: 7px; }
+  60% { height: 13px; }
+  80% { height: 6px; }
+}
+
+@keyframes wave-2 {
+  0%, 100% { height: 7px; }
+  25% { height: 12px; }
+  50% { height: 4px; }
+  75% { height: 10px; }
+}
+
+@keyframes wave-3 {
+  0%, 100% { height: 6px; }
+  30% { height: 4px; }
+  50% { height: 12px; }
+  70% { height: 8px; }
+}
+
+@keyframes wave-4 {
+  0%, 100% { height: 4px; }
+  20% { height: 10px; }
+  40% { height: 5px; }
+  60% { height: 11px; }
+  80% { height: 6px; }
+}
+
+/* Skeuomorphic music player button - matches bottom buttons style */
+.music-player-button {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(252, 252, 252, 0) 100%);
+  border: 1px solid rgba(235, 238, 245, 0);
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  border-radius: 8px;
+  overflow: visible;
+  outline: none;
+  transition: all 250ms cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.music-player-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, transparent 100%);
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 250ms cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.music-player-button:hover {
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f6 100%);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.02),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.01);
+  border: 1px solid rgba(235, 238, 245, 0.85);
+  transform: translateY(-1.5px);
+}
+
+.music-player-button:hover::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+  opacity: 1;
+}
+
+.music-player-button:active {
+  background: linear-gradient(180deg, #f0f0f2 0%, #f5f5f6 100%);
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.05),
+    inset 0 0.5px 1px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(220, 224, 235, 0.8);
+  transform: translateY(0px) scale(0.995);
+  transition: all 80ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.music-player-button:active::before {
+  opacity: 0.5;
+}
+
+.music-player-button:active::before {
+  opacity: 0.5;
+}
+
+/* Skeuomorphic bottom buttons - subtle and light */
+.bottom-button {
+  background: linear-gradient(180deg, #ffffff 0%, #fefefe 100%);
+  box-shadow: 
+    0 0.5px 1px rgba(0, 0, 0, 0.03),
+    0 1px 1px rgba(0, 0, 0, 0.02),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.015);
+  border: 1px solid rgba(235, 238, 245, 0.85);
+  position: relative;
+  transition: all 180ms cubic-bezier(0.34, 1.2, 0.64, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Shared border between adjacent buttons */
+.bottom-button + .bottom-button {
+  margin-left: -1px;
+  z-index: 0;
+}
+
+/* First button stays on top so borders align properly */
+.bottom-button:first-child {
+  z-index: 1;
+}
+
+.bottom-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
+  transition: all 180ms cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.bottom-button:hover {
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f6 100%);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.025);
+  border: 1px solid rgba(225, 228, 238, 0.8);
+  transform: translateY(-0.5px);
+}
+
+.bottom-button:hover::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+}
+
+.bottom-button:active,
+.bottom-button.active {
+  background: linear-gradient(180deg, #f0f0f2 0%, #f5f5f6 100%);
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.07),
+    inset 0 0.5px 1px rgba(0, 0, 0, 0.04),
+    0 0.5px 1px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(220, 224, 235, 0.85);
+  transform: translateY(0px) scale(0.995);
+  transition: all 70ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-button:active::before,
+.bottom-button.active::before {
+  opacity: 0.5;
+}
+
+/* Skeuomorphic time badge - soft depth and tactile feel */
+[class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"] {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.02),
+    0 1px 2px rgba(0, 0, 0, 0.01),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.01);
+  border: 1px solid rgba(235, 238, 245, 0.9);
+  position: relative;
+  transition: all 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Prevent text selection in all child elements */
+[class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"] * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Hover state - lifted, highlighted, ready to press */
+[class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"]:hover {
+  background: linear-gradient(180deg, #fefefe 0%, #fafafa 100%) !important;
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02) !important;
+  border: 1px solid rgba(230, 233, 240, 0.9) !important;
+  transform: translateY(-0.5px) !important;
+}
+
+/* Active/pressed state - pushed down, darker, inset - more subtle like bottom buttons */
+[class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"]:active {
+  background: linear-gradient(180deg, #f3f3f5 0%, #f7f7f8 100%) !important;
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 0.5px 1px rgba(0, 0, 0, 0.05),
+    0 0.5px 1px rgba(0, 0, 0, 0.02) !important;
+  border: 1px solid rgba(220, 224, 235, 0.85) !important;
+  transform: translateY(0px) scale(0.99) !important;
+  transition: all 80ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+  border-radius: 20px 20px 0 0;
+  pointer-events: none;
+}
+
+/* Skeuomorphic black video info box - depth and dimension */
+.black-box-slide {
+  background: linear-gradient(180deg, #2a2a2b 0%, #1f1f20 100%);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.black-box-slide::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.black-box-slide::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, transparent 100%);
+  border-radius: 0 0 14px 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Arrow button hover and active states - only affects stroke and arrow path, not fill */
+.arrow-svg {
+  transition: all 150ms ease-in-out;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.arrow-fill {
+  fill: #222122;
+  /* Fill stays #222122 always */
+}
+
+.arrow-stroke {
+  stroke: #4A474A;
+  transition: stroke 150ms ease-in-out;
+  filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.4));
+}
+
+.arrow-path {
+  fill: #4A474A;
+  transition: fill 150ms ease-in-out;
+}
+
+/* Skeuomorphic arrow button - depth and dimension */
+.arrow-button {
+  position: relative;
+  transition: transform 150ms ease-in-out, filter 150ms ease-in-out;
+}
+
+.arrow-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 4.3px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%, rgba(0, 0, 0, 0.2) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.arrow-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.arrow-button:hover .arrow-stroke {
+  stroke: #939393;
+  transition: stroke 150ms ease-in-out;
+}
+
+.arrow-button:hover .arrow-path {
+  fill: #939393;
+  transition: fill 150ms ease-in-out;
+}
+
+.arrow-button:active,
+.arrow-button.active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+.arrow-button:active .arrow-stroke,
+.arrow-button.active .arrow-stroke {
+  stroke: #E6EAEE;
+  transition: stroke 150ms ease-in-out;
+}
+
+.arrow-button:active .arrow-path,
+.arrow-button.active .arrow-path {
+  fill: #E6EAEE;
+  transition: fill 150ms ease-in-out;
+}
+
+.video-frame-hover:not(:hover) {
+  will-change: auto;
+}
+
+/* Video brightness transition - smooth and subtle */
+.video-brightness-transition {
+  filter: brightness(1);
+  transition: filter 500ms ease-in-out, opacity 300ms ease-in-out;
+}
+
+.video-frame-hover:hover .video-brightness-transition {
+  filter: brightness(1.05);
+}
+
+/* Ensure all body text is #87878A except blue fonts */
+[class*="text-[#87878A]"] {
+  color: #87878A !important;
+}
+
+[class*="text-[#87878A]"] p,
+[class*="text-[#87878A]"] span:not(.dotted-underline-blue) {
+  color: #87878A !important;
+}
+
+/* Dotted underline colors - placed at end to override all Tailwind utilities */
+/* Blue dotted underline - keep blue color */
+span.dotted-underline-blue,
+.dotted-underline-blue,
+a.dotted-underline-blue {
+  text-decoration-color: #9BC8FD !important;
+  color: #2480ED !important;
+  transition: text-decoration-color 0.15s cubic-bezier(0.44, 0, 0.56, 1);
+}
+
+/* Hover state for all blue dotted underlines - change to #2480ED */
+span.dotted-underline-blue:hover,
+.dotted-underline-blue:hover,
+a.dotted-underline-blue:hover {
+  text-decoration-color: #2480ED !important;
+  cursor: pointer;
+}
+
+/* Grey dotted underline - use body text color */
+span.dotted-underline-grey,
+.dotted-underline-grey,
+a.dotted-underline-grey {
+  text-decoration-color: #C4C4CD;
+  color: #5B5B5E;
+  transition: text-decoration-color 0.15s cubic-bezier(0.44, 0, 0.56, 1), color 0.15s cubic-bezier(0.44, 0, 0.56, 1);
+}
+
+/* Hover state for all grey dotted underlines - change text to #2480ED and underline to #9AC8FC */
+span.dotted-underline-grey:hover,
+.dotted-underline-grey:hover,
+a.dotted-underline-grey:hover {
+  text-decoration-color: #9AC8FC;
+  color: #2480ED;
+  cursor: pointer;
+}
+
+
+/* Specific color override for complex systems and Coupang - higher specificity override */
+[class*="text-[#87878A]"] span.dotted-underline-grey.text-grey-dark,
+[class*="text-[#5b5b5e]"] span.dotted-underline-grey.text-grey-dark,
+[class*="text-[#87878A]"] a.dotted-underline-grey.text-grey-dark,
+[class*="text-[#5b5b5e]"] a.dotted-underline-grey.text-grey-dark {
+  color: #5B5B5E !important;
+}
+
+/* Hover state for complex systems and Coupang - change text to #2480ED and underline to #9AC8FC */
+[class*="text-[#87878A]"] span.dotted-underline-grey.text-grey-dark:hover,
+[class*="text-[#5b5b5e]"] span.dotted-underline-grey.text-grey-dark:hover,
+[class*="text-[#87878A]"] a.dotted-underline-grey.text-grey-dark:hover,
+[class*="text-[#5b5b5e]"] a.dotted-underline-grey.text-grey-dark:hover {
+  color: #2480ED !important;
+  text-decoration-color: #9AC8FC !important;
+  cursor: pointer;
+}

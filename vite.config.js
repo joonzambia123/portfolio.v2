@@ -1,0 +1,54 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { copyFileSync, mkdirSync, readdirSync } from 'fs'
+import { join } from 'path'
+
+// Copy cms-data to public folder for production builds
+function copyCmsData() {
+  return {
+    name: 'copy-cms-data',
+    buildStart() {
+      try {
+        const srcDir = join(process.cwd(), 'cms-data')
+        const destDir = join(process.cwd(), 'public', 'cms-data')
+        
+        // Create destination directory
+        mkdirSync(destDir, { recursive: true })
+        
+        // Copy all JSON files
+        const files = readdirSync(srcDir).filter(f => f.endsWith('.json'))
+        files.forEach(file => {
+          copyFileSync(join(srcDir, file), join(destDir, file))
+        })
+        
+        console.log('✓ Copied cms-data to public folder')
+      } catch (error) {
+        console.warn('Could not copy cms-data:', error.message)
+      }
+    }
+  }
+}
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react(), copyCmsData()],
+  // Enable JSON imports
+  json: {
+    stringify: false,
+  },
+  // Allow importing from cms-data folder
+  resolve: {
+    alias: {
+      '@cms-data': '/cms-data',
+    },
+  },
+  // Proxy CMS API requests through Vite (avoids CORS issues in Cursor browser)
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
+})
