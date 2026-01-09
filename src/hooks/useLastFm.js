@@ -133,10 +133,10 @@ export function useLastFm() {
     // Play and fade in
     audioRef.current.play().then(() => {
       setIsPlaying(true);
-      // Fade in over 4s - very slow ramp to let user opt out
+      // Fade in over 8s - extremely slow ramp to let user opt out
       const targetVolume = 0.08;
-      const steps = 80;
-      const stepTime = 4000 / steps;
+      const steps = 100;
+      const stepTime = 8000 / steps;
       let currentStep = 0;
 
       fadeIntervalRef.current = setInterval(() => {
@@ -145,9 +145,9 @@ export function useLastFm() {
           audioRef.current.volume = targetVolume;
           clearInterval(fadeIntervalRef.current);
         } else {
-          // Ease-in curve: starts very quiet, ramps up slowly at first
+          // Cubic ease-in: stays very quiet for longer, then ramps up
           const progress = currentStep / steps;
-          const easedProgress = progress * progress; // quadratic ease-in
+          const easedProgress = progress * progress * progress;
           audioRef.current.volume = easedProgress * targetVolume;
         }
       }, stepTime);
