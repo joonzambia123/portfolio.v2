@@ -112,19 +112,18 @@ export function useLastFm() {
 
   // Play preview with fade in
   const playPreview = useCallback(() => {
-    if (!currentTrack?.previewUrl) return;
+    const previewUrl = currentTrack?.previewUrl;
+    if (!previewUrl) return;
 
     // Create audio element if it doesn't exist
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.volume = 0;
     }
 
-    // Ensure HTTPS and update source if changed
-    const secureUrl = currentTrack.previewUrl.replace('http://', 'https://');
-    if (audioRef.current.src !== secureUrl) {
+    // Update source if needed
+    const secureUrl = previewUrl.replace('http://', 'https://');
+    if (!audioRef.current.src.includes(secureUrl.split('/').pop())) {
       audioRef.current.src = secureUrl;
-      audioRef.current.load();
     }
 
     // Clear any existing fade
@@ -132,33 +131,35 @@ export function useLastFm() {
       clearInterval(fadeIntervalRef.current);
     }
 
-    // Play and fade in
+    // Start at zero volume
+    audioRef.current.volume = 0;
+
+    // Play and fade in very slowly
     audioRef.current.play().then(() => {
       setIsPlaying(true);
-      // Start very quiet, then slowly ramp over 10s
-      const startVolume = 0.01;
-      const targetVolume = 0.08;
-      const steps = 100;
-      const stepTime = 10000 / steps;
+      // Very slow 15s ramp from 0 to 0.06
+      const targetVolume = 0.06;
+      const duration = 15000;
+      const steps = 150;
+      const stepTime = duration / steps;
       let currentStep = 0;
-
-      // Set initial volume
-      audioRef.current.volume = startVolume;
 
       fadeIntervalRef.current = setInterval(() => {
         currentStep++;
-        if (currentStep >= steps) {
-          audioRef.current.volume = targetVolume;
+        if (currentStep >= steps || !audioRef.current) {
+          if (audioRef.current) audioRef.current.volume = targetVolume;
           clearInterval(fadeIntervalRef.current);
         } else {
+          // Slow ease-in curve
           const progress = currentStep / steps;
-          audioRef.current.volume = startVolume + (targetVolume - startVolume) * progress;
+          const eased = progress * progress;
+          audioRef.current.volume = eased * targetVolume;
         }
       }, stepTime);
     }).catch(err => {
       console.warn('Could not play preview:', err);
     });
-  }, [currentTrack?.previewUrl]);
+  }, [currentTrack]);
 
   // Stop preview with fade out
   const stopPreview = useCallback(() => {
