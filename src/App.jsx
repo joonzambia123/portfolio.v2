@@ -15,7 +15,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentCoordIndex, setCurrentCoordIndex] = useState(0);
   const [coordFading, setCoordFading] = useState(false);
+  const [loaderMessage, setLoaderMessage] = useState(''); // Encouraging messages after 5 seconds
   const videoCacheRef = useRef(new Set()); // Track which videos are fully cached
+  const fontsLoadedRef = useRef(false); // Track if fonts are loaded
   const loaderMinTimeRef = useRef(false); // Minimum loader display time
   
   // Last.fm integration
@@ -763,22 +765,68 @@ function App() {
   }, [websiteCopy]); // Re-run when CMS data changes
 
 
+  // Font loading check
+  useEffect(() => {
+    // Wait for fonts to be ready
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        fontsLoadedRef.current = true;
+      });
+    } else {
+      // Fallback for browsers without font loading API
+      fontsLoadedRef.current = true;
+    }
+  }, []);
+
   // Aggressive video preloading: Fully download and cache all videos
+  // Safari-optimized: Use video elements for preloading instead of just fetch
   useEffect(() => {
     if (videoData.length === 0) return;
     
-    // Preload all videos fully using fetch API with blob storage
-    // This ensures videos are completely cached and never need to reload
+    // Detect Safari
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    // Preload all videos fully
     const preloadVideo = async (video, index) => {
       try {
-        const response = await fetch(video.src);
-        if (response.ok) {
-          // Read the entire response to cache it
-          await response.blob();
-          videoCacheRef.current.add(video.src);
+        if (isSafari) {
+          // Safari: Use a hidden video element for more reliable caching
+          const tempVideo = document.createElement('video');
+          tempVideo.preload = 'auto';
+          tempVideo.muted = true;
+          tempVideo.playsInline = true;
+          tempVideo.src = video.src;
+          
+          // Wait for video to be loaded enough
+          await new Promise((resolve) => {
+            tempVideo.oncanplaythrough = () => {
+              videoCacheRef.current.add(video.src);
+              resolve();
+            };
+            tempVideo.onerror = () => {
+              // Still mark as cached to avoid blocking
+              videoCacheRef.current.add(video.src);
+              resolve();
+            };
+            // Fallback timeout
+            setTimeout(() => {
+              videoCacheRef.current.add(video.src);
+              resolve();
+            }, 3000);
+            
+            tempVideo.load();
+          });
+        } else {
+          // Other browsers: Use fetch with blob storage
+          const response = await fetch(video.src);
+          if (response.ok) {
+            await response.blob();
+            videoCacheRef.current.add(video.src);
+          }
         }
       } catch (e) {
-        // Silently fail - video will load when needed
+        // Mark as cached anyway to avoid blocking the loader
+        videoCacheRef.current.add(video.src);
       }
     };
     
@@ -787,7 +835,7 @@ function App() {
       // Slight stagger to avoid overwhelming the browser
       setTimeout(() => {
         preloadVideo(video, index);
-      }, index * 50);
+      }, index * 100); // Slightly longer stagger for Safari
     });
   }, [videoData]);
 
@@ -815,19 +863,58 @@ function App() {
     };
   }, [isLoading, videoData]);
 
-  // Check if loading is complete - wait for ALL videos to be cached
+  // Encouraging messages after 5 seconds
+  useEffect(() => {
+    if (!isLoading) return;
+    
+    const encouragingMessages = [
+      "Good things take time...",
+      "Worth the wait, promise.",
+      "Almost there...",
+      "Patience is a virtue.",
+      "Loading some cool stuff...",
+      "Making it perfect for you...",
+      "Just a moment more...",
+    ];
+    
+    let messageIndex = 0;
+    
+    // Show first message at 5 seconds
+    const firstMessageTimer = setTimeout(() => {
+      setLoaderMessage(encouragingMessages[0]);
+      messageIndex = 1;
+    }, 5000);
+    
+    // Rotate messages every 2 seconds after that
+    const messageInterval = setInterval(() => {
+      if (messageIndex > 0 && messageIndex < encouragingMessages.length) {
+        setLoaderMessage(encouragingMessages[messageIndex]);
+        messageIndex++;
+      }
+    }, 2000);
+    
+    return () => {
+      clearTimeout(firstMessageTimer);
+      clearInterval(messageInterval);
+      setLoaderMessage('');
+    };
+  }, [isLoading]);
+
+  // Check if loading is complete - wait for ALL videos, fonts, and Last.fm
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
     
     // Check periodically if everything is ready:
     // 1. Minimum time has passed (3 seconds for coordinates loop)
     // 2. ALL videos are cached
-    // 3. Last.fm is done loading
+    // 3. Fonts are loaded
+    // 4. Last.fm is done loading
     const checkLoading = setInterval(() => {
       const allVideosCached = videoCacheRef.current.size >= videoData.length;
+      const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading;
       
-      if (loaderMinTimeRef.current && allVideosCached && lastFmReady) {
+      if (loaderMinTimeRef.current && allVideosCached && fontsReady && lastFmReady) {
         setIsLoading(false);
       }
     }, 100);
@@ -847,14 +934,34 @@ function App() {
 
   // Ensure Safari-specific attributes are set on video elements
   useEffect(() => {
-    if (videoRef1.current) {
-      videoRef1.current.setAttribute('playsinline', 'true');
-      videoRef1.current.setAttribute('webkit-playsinline', 'true');
-    }
-    if (videoRef2.current) {
-      videoRef2.current.setAttribute('playsinline', 'true');
-      videoRef2.current.setAttribute('webkit-playsinline', 'true');
-    }
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    const setupVideoElement = (videoEl) => {
+      if (!videoEl) return;
+      
+      // Standard attributes
+      videoEl.setAttribute('playsinline', 'true');
+      videoEl.setAttribute('webkit-playsinline', 'true');
+      videoEl.setAttribute('x-webkit-airplay', 'allow');
+      
+      // Safari-specific optimizations
+      if (isSafari) {
+        // Force hardware acceleration
+        videoEl.style.transform = 'translateZ(0)';
+        videoEl.style.webkitTransform = 'translateZ(0)';
+        
+        // Ensure preload is set properly for Safari
+        videoEl.preload = 'auto';
+        
+        // Safari sometimes needs a manual load trigger
+        if (videoEl.readyState === 0) {
+          videoEl.load();
+        }
+      }
+    };
+    
+    setupVideoElement(videoRef1.current);
+    setupVideoElement(videoRef2.current);
   }, []);
 
   // Update loop attribute based on hover state (backup to JSX prop)
@@ -950,10 +1057,15 @@ function App() {
       : ['6.79770°S, 107.57870°E', '37.82975°N, 122.40606°W', '56.76040°N, 4.69090°W', '10.77700°N, 106.69860°E'];
     
     return (
-      <div className="bg-[#FCFCFC] min-h-screen w-full flex items-center justify-center">
+      <div className="bg-[#FCFCFC] min-h-screen w-full flex flex-col items-center justify-center gap-4">
         <div className={`coord-loader font-graphik text-[16px] text-[#91918e] ${coordFading ? 'coord-fade-out' : 'coord-fade-in'}`}>
           {coordinates[currentCoordIndex % coordinates.length]}
         </div>
+        {loaderMessage && (
+          <div className="font-graphik text-[13px] text-[#b5b5b5] animate-pulse">
+            {loaderMessage}
+          </div>
+        )}
       </div>
     );
   }
