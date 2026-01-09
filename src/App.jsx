@@ -29,8 +29,8 @@ function App() {
   const video1IndexRef = useRef(0); // Which video data index is in video1
   const video2IndexRef = useRef(1); // Which video data index is in video2
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [video1Ready, setVideo1Ready] = useState(false); // Track if first video is ready
   const [safariLoading, setSafariLoading] = useState(false); // Safari-specific loading state
+  const firstVideoReadyRef = useRef(false); // Track if first video is ready for loader
   const [loadedComponents, setLoadedComponents] = useState({
     timeComponent: false,
     h1: false,
@@ -772,6 +772,41 @@ function App() {
     }
   }, []);
 
+  // Preload the FIRST video using a hidden video element to ensure it's playable
+  // This runs during the loader to guarantee the first video is ready
+  useEffect(() => {
+    if (videoData.length === 0) return;
+    
+    const firstVideoSrc = encodeVideoSrc(videoData[0].src);
+    
+    // Create a hidden video element to preload the first video
+    const preloadVideo = document.createElement('video');
+    preloadVideo.preload = 'auto';
+    preloadVideo.muted = true;
+    preloadVideo.playsInline = true;
+    preloadVideo.src = firstVideoSrc;
+    
+    const onCanPlayThrough = () => {
+      firstVideoReadyRef.current = true;
+      preloadVideo.removeEventListener('canplaythrough', onCanPlayThrough);
+    };
+    
+    preloadVideo.addEventListener('canplaythrough', onCanPlayThrough);
+    preloadVideo.load();
+    
+    // Fallback: mark as ready after 5 seconds even if canplaythrough doesn't fire
+    const fallbackTimer = setTimeout(() => {
+      if (!firstVideoReadyRef.current) {
+        firstVideoReadyRef.current = true;
+      }
+    }, 5000);
+    
+    return () => {
+      preloadVideo.removeEventListener('canplaythrough', onCanPlayThrough);
+      clearTimeout(fallbackTimer);
+    };
+  }, [videoData]);
+  
   // Aggressive video preloading: Fully download and cache all videos
   useEffect(() => {
     if (videoData.length === 0) return;
@@ -870,12 +905,14 @@ function App() {
     // 2. ALL videos are cached
     // 3. Fonts are loaded
     // 4. Last.fm is done loading
+    // 5. First video is ready to play (not just cached)
     const checkLoading = setInterval(() => {
       const allVideosCached = videoCacheRef.current.size >= videoData.length;
       const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading;
+      const firstVideoReady = firstVideoReadyRef.current;
       
-      if (loaderMinTimeRef.current && allVideosCached && fontsReady && lastFmReady) {
+      if (loaderMinTimeRef.current && allVideosCached && fontsReady && lastFmReady && firstVideoReady) {
         setIsLoading(false);
       }
     }, 100);
@@ -986,57 +1023,27 @@ function App() {
     
     // Wait a frame for the DOM to update after conditional render change
     requestAnimationFrame(() => {
-      // Reset indices and ready state
+      // Reset indices
       video1IndexRef.current = 0;
       video2IndexRef.current = 1;
-      setVideo1Ready(false);
       
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       
-      // Play video 1 when ready
+      // Play video 1 - it should already be preloaded and ready
       if (videoRef1.current) {
-        const playVideo1 = () => {
-          if (!videoRef1.current) return;
-          videoRef1.current.muted = true;
-          const playPromise = videoRef1.current.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              // Mark video 1 as ready once it's playing
-              setVideo1Ready(true);
-            }).catch(() => {
-              setTimeout(() => {
-                if (videoRef1.current) {
-                  videoRef1.current.play().then(() => {
-                    setVideo1Ready(true);
-                  }).catch(() => {
-                    // Even if play fails, mark as ready after timeout
-                    setVideo1Ready(true);
-                  });
-                }
-              }, 100);
-            });
-          } else {
-            setVideo1Ready(true);
-          }
-        };
+        videoRef1.current.muted = true;
+        videoRef1.current.currentTime = 0;
         
-        if (isSafari) {
-          // Safari: wait for canplaythrough before playing
-          const onCanPlayThrough = () => {
-            videoRef1.current.removeEventListener('canplaythrough', onCanPlayThrough);
-            playVideo1();
-          };
-          videoRef1.current.addEventListener('canplaythrough', onCanPlayThrough);
-          
-          // Fallback timeout
-          setTimeout(() => {
-            if (!video1Ready) {
-              playVideo1();
-            }
-          }, 500);
-        } else {
-          // Chrome/Firefox: try to play immediately
-          playVideo1();
+        const playPromise = videoRef1.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Retry once
+            setTimeout(() => {
+              if (videoRef1.current) {
+                videoRef1.current.play().catch(() => {});
+              }
+            }, 100);
+          });
         }
       }
       
@@ -1200,21 +1207,20 @@ function App() {
                 isHoveredRef.current = false;
               }}
             >
-              {/* Loading indicator during video transitions on Safari, or when video not cached */}
-              {(safariLoading || (isTransitioning && safeVideoData[targetVideoIndexRef.current] && !videoCacheRef.current.has(safeVideoData[targetVideoIndexRef.current].src))) && (
+              {/* Loading indicator during video transitions on Safari */}
+              {safariLoading && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
                   <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
                 </div>
               )}
-            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-[#f5f5f5]">
-              {/* Video 1 - primary video */}
+            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0">
+              {/* Video 1 */}
               <video 
                 ref={videoRef1}
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
                 style={{ 
                   zIndex: activeVideo === 1 ? 20 : 10,
-                  opacity: activeVideo === 1 ? 1 : 0,
-                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
+                  transition: 'filter 250ms ease-in-out',
                   transform: 'translateZ(0)'
                 }}
                 autoPlay
@@ -1227,14 +1233,13 @@ function App() {
               >
                 {safeVideoData[0] && <source src={encodeVideoSrc(safeVideoData[0].src)} type="video/mp4" />}
               </video>
-              {/* Video 2 - secondary video, hidden until needed */}
+              {/* Video 2 */}
               <video 
                 ref={videoRef2}
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
                 style={{ 
                   zIndex: activeVideo === 2 ? 20 : 10,
-                  opacity: activeVideo === 2 ? 1 : 0,
-                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
+                  transition: 'filter 250ms ease-in-out',
                   transform: 'translateZ(0)'
                 }}
                 muted
