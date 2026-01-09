@@ -133,8 +133,8 @@ export function useLastFm() {
     // Play and fade in
     audioRef.current.play().then(() => {
       setIsPlaying(true);
-      // Start at audible level, then slowly ramp over 10s
-      const startVolume = 0.025; // Immediately audible but quiet
+      // Start very quiet, then slowly ramp over 10s
+      const startVolume = 0.01; // Barely audible whisper
       const targetVolume = 0.08;
       const steps = 100;
       const stepTime = 10000 / steps;
