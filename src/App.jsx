@@ -29,6 +29,8 @@ function App() {
   const video1IndexRef = useRef(0); // Which video data index is in video1
   const video2IndexRef = useRef(1); // Which video data index is in video2
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [video1Ready, setVideo1Ready] = useState(false); // Track if first video is ready
+  const [safariLoading, setSafariLoading] = useState(false); // Safari-specific loading state
   const [loadedComponents, setLoadedComponents] = useState({
     timeComponent: false,
     h1: false,
@@ -482,13 +484,16 @@ function App() {
       }, isSafari ? 50 : 30);
     };
     
-    // Safari: Use simpler, more robust approach
+    // Safari: Use simpler, more robust approach with loading indicator
     if (isSafari) {
       if (!nextRef.current) {
         setIsTransitioning(false);
         isTransitioningRef.current = false;
         return;
       }
+      
+      // Show loading indicator on Safari
+      setSafariLoading(true);
       
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
@@ -509,9 +514,11 @@ function App() {
         nextRef.current.removeEventListener('canplay', onCanPlay);
         
         nextRef.current.play().then(() => {
+          setSafariLoading(false);
           completeSwitch();
         }).catch(() => {
           // Even if play fails, switch anyway
+          setSafariLoading(false);
           completeSwitch();
         });
       };
@@ -522,6 +529,7 @@ function App() {
       setTimeout(() => {
         if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
           nextRef.current.removeEventListener('canplay', onCanPlay);
+          setSafariLoading(false);
           nextRef.current.play().catch(() => {});
           completeSwitch();
         }
@@ -978,9 +986,10 @@ function App() {
     
     // Wait a frame for the DOM to update after conditional render change
     requestAnimationFrame(() => {
-      // Reset indices
+      // Reset indices and ready state
       video1IndexRef.current = 0;
       video2IndexRef.current = 1;
+      setVideo1Ready(false);
       
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       
@@ -991,23 +1000,49 @@ function App() {
           videoRef1.current.muted = true;
           const playPromise = videoRef1.current.play();
           if (playPromise !== undefined) {
-            playPromise.catch(() => {
+            playPromise.then(() => {
+              // Mark video 1 as ready once it's playing
+              setVideo1Ready(true);
+            }).catch(() => {
               setTimeout(() => {
                 if (videoRef1.current) {
-                  videoRef1.current.play().catch(() => {});
+                  videoRef1.current.play().then(() => {
+                    setVideo1Ready(true);
+                  }).catch(() => {
+                    // Even if play fails, mark as ready after timeout
+                    setVideo1Ready(true);
+                  });
                 }
               }, 100);
             });
+          } else {
+            setVideo1Ready(true);
           }
         };
         
         if (isSafari) {
-          videoRef1.current.oncanplaythrough = playVideo1;
-          setTimeout(playVideo1, 300);
+          // Safari: wait for canplaythrough before playing
+          const onCanPlayThrough = () => {
+            videoRef1.current.removeEventListener('canplaythrough', onCanPlayThrough);
+            playVideo1();
+          };
+          videoRef1.current.addEventListener('canplaythrough', onCanPlayThrough);
+          
+          // Fallback timeout
+          setTimeout(() => {
+            if (!video1Ready) {
+              playVideo1();
+            }
+          }, 500);
         } else {
           // Chrome/Firefox: try to play immediately
           playVideo1();
         }
+      }
+      
+      // Pause video 2 initially - it shouldn't autoplay
+      if (videoRef2.current) {
+        videoRef2.current.pause();
       }
     });
   }, [isLoading, videoData]);
@@ -1165,20 +1200,21 @@ function App() {
                 isHoveredRef.current = false;
               }}
             >
-              {/* Loading indicator during video transitions - only show if video is NOT cached */}
-              {isTransitioning && safeVideoData[targetVideoIndexRef.current] && !videoCacheRef.current.has(safeVideoData[targetVideoIndexRef.current].src) && (
+              {/* Loading indicator during video transitions on Safari, or when video not cached */}
+              {(safariLoading || (isTransitioning && safeVideoData[targetVideoIndexRef.current] && !videoCacheRef.current.has(safeVideoData[targetVideoIndexRef.current].src))) && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
                   <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
                 </div>
               )}
-            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-gray-100">
-              {/* Video 1 - source managed via ref, not React state */}
+            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-[#f5f5f5]">
+              {/* Video 1 - primary video */}
               <video 
                 ref={videoRef1}
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
                 style={{ 
                   zIndex: activeVideo === 1 ? 20 : 10,
-                  transition: 'filter 250ms ease-in-out',
+                  opacity: activeVideo === 1 ? 1 : 0,
+                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
                   transform: 'translateZ(0)'
                 }}
                 autoPlay
@@ -1191,16 +1227,16 @@ function App() {
               >
                 {safeVideoData[0] && <source src={encodeVideoSrc(safeVideoData[0].src)} type="video/mp4" />}
               </video>
-              {/* Video 2 - source managed via ref, not React state */}
+              {/* Video 2 - secondary video, hidden until needed */}
               <video 
                 ref={videoRef2}
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
                 style={{ 
                   zIndex: activeVideo === 2 ? 20 : 10,
-                  transition: 'filter 250ms ease-in-out',
+                  opacity: activeVideo === 2 ? 1 : 0,
+                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
                   transform: 'translateZ(0)'
                 }}
-                autoPlay
                 muted
                 playsInline
                 preload="auto"
