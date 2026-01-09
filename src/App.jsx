@@ -1405,7 +1405,7 @@ function App() {
                 setIsModalExiting(false);
                 setIsMusicHovered(true);
                 playMusicHover();
-                playPreview();
+                // playPreview(); // Disabled for now
               }}
               onMouseLeave={() => {
                 stopPreview();
