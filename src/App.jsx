@@ -358,6 +358,36 @@ function App() {
   const pendingDirectionRef = useRef(null);
   const targetVideoIndexRef = useRef(0); // Track ultimate target when clicking fast
   
+  // Preload video on hover for faster transitions
+  const preloadVideoOnHover = (direction) => {
+    if (videoData.length === 0 || isTransitioningRef.current) return;
+    
+    const baseIndex = isTransitioningRef.current ? targetVideoIndexRef.current : videoIndex;
+    const targetIndex = direction === 'next' 
+      ? (baseIndex + 1) % videoData.length 
+      : (baseIndex - 1 + videoData.length) % videoData.length;
+    
+    // Determine which video element to use for preloading
+    const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
+    
+    if (inactiveRef.current) {
+      const sourceElement = inactiveRef.current.querySelector('source');
+      if (sourceElement && videoData[targetIndex]) {
+        const targetVideoSrc = videoData[targetIndex].src;
+        const currentSrcFile = (sourceElement.src || '').split('/').pop();
+        const targetSrcFile = targetVideoSrc.split('/').pop();
+        
+        // Only preload if it's a different video
+        if (currentSrcFile !== targetSrcFile) {
+          sourceElement.src = targetVideoSrc;
+          inactiveRef.current.load();
+          // Set preload to auto for aggressive preloading on hover
+          inactiveRef.current.preload = 'auto';
+        }
+      }
+    }
+  };
+
   const changeVideo = (direction) => {
     // Don't change if no video data
     if (videoData.length === 0) return;
@@ -467,11 +497,47 @@ function App() {
         }, 30);
       };
       
-      // Start playing and wait for rendering
+      // Start playing and wait for rendering - optimized for speed
       const startPlaying = () => {
         if (transitionIdRef.current !== thisTransitionId) return;
         if (!nextRef.current) return;
         
+        // Check readyState immediately - if we have enough data, switch right away
+        if (nextRef.current.readyState >= 3) {
+          // HAVE_FUTURE_DATA - enough data to play smoothly
+          nextRef.current.currentTime = 0;
+          const playPromise = nextRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => completeSwitch()).catch(() => completeSwitch());
+          } else {
+            completeSwitch();
+          }
+          return;
+        }
+        
+        // If readyState >= 2, we have current data - start playing immediately
+        if (nextRef.current.readyState >= 2) {
+          nextRef.current.currentTime = 0;
+          const playPromise = nextRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              if (transitionIdRef.current !== thisTransitionId) return;
+              // Reduced to 1 frame wait for faster transitions
+              requestAnimationFrame(() => {
+                if (transitionIdRef.current === thisTransitionId && nextRef.current && nextRef.current.currentTime > 0.01) {
+                  completeSwitch();
+                } else {
+                  completeSwitch();
+                }
+              });
+            }).catch(() => completeSwitch());
+          } else {
+            completeSwitch();
+          }
+          return;
+        }
+        
+        // Fallback: wait for video to load
         nextRef.current.currentTime = 0;
         const playPromise = nextRef.current.play();
         
@@ -479,16 +545,16 @@ function App() {
           playPromise.then(() => {
             if (transitionIdRef.current !== thisTransitionId) return;
             
-            // Wait for frames to ensure video is rendering
+            // Wait for frames to ensure video is rendering - reduced to 1 frame
             let frameCount = 0;
             const waitForFrames = () => {
               if (transitionIdRef.current !== thisTransitionId) return;
               frameCount++;
               
-              // Wait for 2 frames AND currentTime > 0 (faster for rapid clicks)
-              if (nextRef.current && nextRef.current.currentTime > 0.01 && frameCount >= 2) {
+              // Wait for 1 frame AND currentTime > 0 (optimized for speed)
+              if (nextRef.current && nextRef.current.currentTime > 0.01 && frameCount >= 1) {
                 completeSwitch();
-              } else if (frameCount < 8) {
+              } else if (frameCount < 4) {
                 requestAnimationFrame(waitForFrames);
               } else {
                 completeSwitch();
@@ -511,6 +577,13 @@ function App() {
         startPlaying();
       };
       
+      // Check readyState immediately before setting up listeners
+      if (!needsLoad && nextRef.current.readyState >= 2) {
+        // Video already has data - start immediately
+        tryStart();
+        return;
+      }
+      
       // Set up listeners BEFORE calling load
       nextRef.current.addEventListener('canplaythrough', tryStart, { once: true });
       nextRef.current.addEventListener('canplay', tryStart, { once: true });
@@ -521,17 +594,17 @@ function App() {
           sourceElement.src = nextVideoSrc;
         }
         nextRef.current.load();
-      } else if (nextRef.current.readyState >= 3) {
-        // Video is already loaded and ready
+      } else if (nextRef.current.readyState >= 2) {
+        // Video is already loaded and ready - check readyState >= 2 (HAVE_CURRENT_DATA)
         tryStart();
       }
       
-      // Faster fallback for rapid clicking
+      // Faster fallback for rapid clicking - reduced from 500ms to 200ms
       setTimeout(() => {
         if (!hasStarted && transitionIdRef.current === thisTransitionId) {
           tryStart();
         }
-      }, 500);
+      }, 200);
     });
   };
 
@@ -677,7 +750,24 @@ function App() {
   }, [websiteCopy]); // Re-run when CMS data changes
 
 
-  // Removed aggressive preloading - videos now use lazy loading with metadata preload only
+  // Background preloading: Preload all videos in browser cache with low priority
+  useEffect(() => {
+    if (videoData.length === 0) return;
+    
+    // Preload all videos in background using fetch API
+    // This keeps them in browser cache for instant access
+    videoData.forEach((video, index) => {
+      // Stagger preloading to avoid blocking initial page load
+      setTimeout(() => {
+        fetch(video.src, { 
+          method: 'HEAD',
+          priority: 'low'
+        }).catch(() => {
+          // Silently fail - video will load when needed
+        });
+      }, index * 100); // Stagger by 100ms each
+    });
+  }, [videoData]);
 
   // Ensure Safari-specific attributes are set on video elements
   useEffect(() => {
@@ -702,24 +792,25 @@ function App() {
     }
   }, [isHovered]);
 
-  // Preload next video in the inactive element
+  // Preload next AND previous videos in the inactive element for seamless transitions
   useEffect(() => {
-    if (isTransitioningRef.current) return;
+    if (isTransitioningRef.current || videoData.length === 0) return;
     
     const nextIndex = (videoIndex + 1) % videoData.length;
+    const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
     
-    // Update ref for inactive video
+    // Update ref for inactive video to next video
     if (activeVideo === 1 && video2IndexRef.current !== nextIndex) {
       video2IndexRef.current = nextIndex;
     } else if (activeVideo === 2 && video1IndexRef.current !== nextIndex) {
       video1IndexRef.current = nextIndex;
     }
     
-    // Ensure inactive video has the next video loaded
+    // Preload next video with auto preload (full video) for instant transitions
     if (inactiveRef.current) {
       const sourceElement = inactiveRef.current.querySelector('source');
-      if (sourceElement) {
+      if (sourceElement && videoData[nextIndex]) {
         const nextVideoSrc = videoData[nextIndex].src;
         // Check if source needs updating (compare just the filename)
         const currentSrcFile = (sourceElement.src || '').split('/').pop();
@@ -730,9 +821,19 @@ function App() {
           inactiveRef.current.load();
         }
         
-        // Ensure preload is set to metadata only (not full video)
-        inactiveRef.current.preload = 'metadata';
+        // Use auto preload for next video (full preload) for seamless transitions
+        inactiveRef.current.preload = 'auto';
       }
+    }
+    
+    // Also preload previous video in background using fetch API
+    // This ensures both directions are ready
+    if (videoData[prevIndex]) {
+      const prevVideoSrc = videoData[prevIndex].src;
+      // Use fetch to preload previous video in browser cache
+      fetch(prevVideoSrc, { method: 'HEAD', priority: 'low' }).catch(() => {
+        // Silently fail - video will load when needed
+      });
     }
   }, [videoIndex, activeVideo, videoData]);
 
@@ -1006,6 +1107,9 @@ function App() {
                         e.stopPropagation();
                         changeVideo('prev');
                       }}
+                      onMouseEnter={() => {
+                        preloadVideoOnHover('prev');
+                      }}
                     >
                       <svg width="30" height="29" viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" fill="#222122" className="arrow-fill"/>
@@ -1018,6 +1122,9 @@ function App() {
                       onClick={(e) => {
                         e.stopPropagation();
                         changeVideo('next');
+                      }}
+                      onMouseEnter={() => {
+                        preloadVideoOnHover('next');
                       }}
                     >
                       <svg width="30" height="29" viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
