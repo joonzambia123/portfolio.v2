@@ -25,7 +25,7 @@ function App() {
   const { currentTrack, isLoading: musicLoading, error: musicError } = useLastFm();
 
   // Sound effects
-  const { playHover, playClick, playArrow, playLinkHover, playCardHover, playMusicHover } = useSounds();
+  const { playHover, playClick, playArrow, playCardHover, playMusicHover } = useSounds();
   const videoRef1 = useRef(null);
   const videoRef2 = useRef(null);
   const [videoIndex, setVideoIndex] = useState(0);
@@ -152,12 +152,12 @@ function App() {
 
       if (linkMatch) {
         return (
-          <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="dotted-underline-grey text-grey-dark" onMouseEnter={playLinkHover}>
+          <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="dotted-underline-grey text-grey-dark" onClick={playClick}>
             {linkMatch[1]}
           </a>
         );
       } else if (spanMatch) {
-        return <span key={i} className="dotted-underline-grey text-grey-dark" onMouseEnter={playLinkHover}>{spanMatch[1]}</span>;
+        return <span key={i} className="dotted-underline-grey text-grey-dark">{spanMatch[1]}</span>;
       }
       return part;
     });
@@ -1278,7 +1278,7 @@ function App() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="black-box-text font-graphik leading-[normal] text-[#969494] text-[14px] whitespace-nowrap group-hover/coord-wrapper:text-[#e6eaee] transition-colors duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] cursor-pointer group-hover/coord-wrapper:-translate-x-[14px] transition-transform duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] relative inline-block"
-                          onMouseEnter={playLinkHover}
+                          onClick={playClick}
                         >
                           {safeVideoData[videoIndex].coordinates}
                           <svg 
