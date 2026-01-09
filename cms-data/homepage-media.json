@@ -3,7 +3,7 @@
     {
       "id": 4,
       "type": "video",
-      "src": "/quick.mp4",
+      "src": "/Bandung fix.mp4",
       "location": "Bandung, Indonesia",
       "coordinates": "6.79770°S, 107.57870°E",
       "coordinatesUrl": "https://www.google.com/maps?q=-6.79770,107.57870",
@@ -16,7 +16,7 @@
     {
       "id": 1,
       "type": "video",
-      "src": "/sf clip.mp4",
+      "src": "/San francisco fix.mp4",
       "location": "San Francisco, CA",
       "coordinates": "37.82975°N, 122.40606°W",
       "coordinatesUrl": "https://www.google.com/maps?q=37.82975,-122.40606",
@@ -29,7 +29,7 @@
     {
       "id": 2,
       "type": "video",
-      "src": "/compressed slippy 2.mp4",
+      "src": "/Corrour fix.mp4",
       "location": "Corrour, Scotland",
       "coordinates": "56.76040°N, 4.69090°W",
       "coordinatesUrl": "https://www.google.com/maps?q=56.76040,-4.69090",
@@ -42,7 +42,7 @@
     {
       "id": 3,
       "type": "video",
-      "src": "/Framer.mp4",
+      "src": "/Saigon fix.mp4",
       "location": "Saigon, Vietnam",
       "coordinates": "10.77700°N, 106.69860°E",
       "coordinatesUrl": "https://www.google.com/maps?q=10.77700,106.69860",
@@ -55,7 +55,7 @@
     {
       "id": 5,
       "type": "video",
-      "src": "/university town.mp4",
+      "src": "/University town fix.mp4",
       "location": "UTown, Singapore",
       "coordinates": "37.82975°N, 122.40606°W",
       "coordinatesUrl": "",
@@ -68,7 +68,7 @@
     {
       "id": 6,
       "type": "video",
-      "src": "/Fukuoka chef.mp4",
+      "src": "/Fukuoka fix.mp4",
       "location": "Fukuoka, Japan",
       "coordinates": "56.76040°N, 4.69090°W",
       "coordinatesUrl": "",
@@ -81,7 +81,7 @@
     {
       "id": 7,
       "type": "video",
-      "src": "/scotland quick.mp4",
+      "src": "/Caol fix.mp4",
       "location": "Caol, Scotland",
       "coordinates": "37.82975°N, 122.40606°W",
       "coordinatesUrl": "",

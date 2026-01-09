@@ -87,9 +87,30 @@ Netlify will automatically provision an SSL certificate via Let's Encrypt once D
 - **SSL not working:** Wait for Netlify to provision certificate (can take up to 24 hours)
 - **Site not updating:** Push new commits to GitHub, Netlify auto-deploys
 
-## Environment Variables (if needed)
+## Environment Variables
 
-If you need to add environment variables (like API keys):
+### Last.fm Integration
+
+To enable Last.fm integration on your live site, you need to configure environment variables in Netlify:
+
+1. Go to **Netlify Dashboard** → Your site → **Site settings** → **Environment variables**
+2. Click **Add a variable**
+3. Add the following two variables:
+
+   - **Key:** `VITE_LASTFM_API_KEY`
+     **Value:** (Your Last.fm API key from your `.env` file)
+   
+   - **Key:** `VITE_LASTFM_USERNAME`
+     **Value:** (Your Last.fm username from your `.env` file)
+
+4. Click **Save**
+5. **Redeploy your site** (go to **Deploys** tab → Click **Trigger deploy** → **Deploy site**)
+
+**Note:** These are the same values from your local `.env` file. The Last.fm integration will only work on localhost until these are configured in Netlify.
+
+### Other Environment Variables
+
+If you need to add other environment variables:
 1. Netlify Dashboard → Site settings → Environment variables
 2. Add variables as needed
 3. Redeploy site

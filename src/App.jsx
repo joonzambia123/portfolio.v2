@@ -677,58 +677,7 @@ function App() {
   }, [websiteCopy]); // Re-run when CMS data changes
 
 
-  // Preload videos - optimized to be non-blocking
-  useEffect(() => {
-    if (videoData.length === 0) return;
-    
-    // Polyfill for requestIdleCallback
-    const idleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
-    
-    // Defer preloading to avoid blocking initial render
-    const preloadTimeout = setTimeout(() => {
-      // Use link preload for first video only (most important)
-      if (videoData[0]) {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'video';
-        link.href = videoData[0].src;
-        link.type = 'video/mp4';
-        document.head.appendChild(link);
-      }
-      
-      // Preload next video in background (non-blocking)
-      if (videoData.length > 1 && videoData[1]) {
-        idleCallback(() => {
-          const link2 = document.createElement('link');
-          link2.rel = 'preload';
-          link2.as = 'video';
-          link2.href = videoData[1].src;
-          link2.type = 'video/mp4';
-          document.head.appendChild(link2);
-        }, { timeout: 2000 });
-      }
-      
-      // Preload remaining videos with lower priority
-      if (videoData.length > 2) {
-        idleCallback(() => {
-          videoData.slice(2).forEach((video, index) => {
-            setTimeout(() => {
-              const link = document.createElement('link');
-              link.rel = 'preload';
-              link.as = 'video';
-              link.href = video.src;
-              link.type = 'video/mp4';
-              document.head.appendChild(link);
-            }, index * 500); // Stagger remaining videos
-          });
-        }, { timeout: 3000 });
-      }
-    }, 100); // Small delay to let initial render complete
-    
-    return () => {
-      clearTimeout(preloadTimeout);
-    };
-  }, [videoData]);
+  // Removed aggressive preloading - videos now use lazy loading with metadata preload only
 
   // Ensure Safari-specific attributes are set on video elements
   useEffect(() => {
@@ -781,8 +730,8 @@ function App() {
           inactiveRef.current.load();
         }
         
-        // Ensure preload is set
-        inactiveRef.current.preload = 'auto';
+        // Ensure preload is set to metadata only (not full video)
+        inactiveRef.current.preload = 'metadata';
       }
     }
   }, [videoIndex, activeVideo, videoData]);
@@ -944,17 +893,23 @@ function App() {
           </div>
 
           {/* Right Column - Video Card */}
-          <div 
-            className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'}`}
-            onMouseEnter={() => {
-              setIsHovered(true);
-              isHoveredRef.current = true;
-            }}
-            onMouseLeave={() => {
-              setIsHovered(false);
-              isHoveredRef.current = false;
-            }}
-          >
+            <div 
+              className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'}`}
+              onMouseEnter={() => {
+                setIsHovered(true);
+                isHoveredRef.current = true;
+              }}
+              onMouseLeave={() => {
+                setIsHovered(false);
+                isHoveredRef.current = false;
+              }}
+            >
+              {/* Loading indicator during video transitions */}
+              {isTransitioning && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
+                  <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
+                </div>
+              )}
             <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0">
               {/* Video 1 - source managed via ref, not React state */}
               <video 
@@ -968,7 +923,7 @@ function App() {
                 autoPlay
                 muted
                 playsInline
-                preload="auto"
+                preload="metadata"
                 controls={false}
                 loop={isHovered}
                 onEnded={handleVideoEnded}
@@ -987,7 +942,7 @@ function App() {
                 autoPlay
                 muted
                 playsInline
-                preload="auto"
+                preload="metadata"
                 controls={false}
                 loop={isHovered}
                 onEnded={handleVideoEnded}
