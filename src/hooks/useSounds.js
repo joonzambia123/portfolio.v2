@@ -1,15 +1,14 @@
 import { useRef, useCallback, useEffect } from 'react'
 
 /**
- * Custom hook for generating warm, retro synth sound effects
- * Uses Web Audio API to create cozy, lo-fi synthesized sounds
+ * Custom hook for generating warm, beautiful synth sound effects
+ * Uses Web Audio API with layered harmonics for richer tones
  */
 export function useSounds() {
   const audioContextRef = useRef(null)
   const isEnabledRef = useRef(true)
   const isInitializedRef = useRef(false)
 
-  // Initialize audio context on first user interaction
   const initAudio = useCallback(() => {
     if (isInitializedRef.current) return
 
@@ -21,38 +20,23 @@ export function useSounds() {
         audioContextRef.current.resume()
       }
       isInitializedRef.current = true
-    } catch (e) {
-      // Audio not supported
-    }
+    } catch (e) {}
   }, [])
 
-  // Set up global listeners to initialize audio on first interaction
   useEffect(() => {
     const events = ['click', 'touchstart', 'keydown']
-
     const handleInteraction = () => {
       initAudio()
-      // Remove listeners after first interaction
-      events.forEach(event => {
-        document.removeEventListener(event, handleInteraction)
-      })
+      events.forEach(event => document.removeEventListener(event, handleInteraction))
     }
-
-    events.forEach(event => {
-      document.addEventListener(event, handleInteraction, { once: true })
-    })
+    events.forEach(event => document.addEventListener(event, handleInteraction, { once: true }))
 
     return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleInteraction)
-      })
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
-      }
+      events.forEach(event => document.removeEventListener(event, handleInteraction))
+      if (audioContextRef.current) audioContextRef.current.close()
     }
   }, [initAudio])
 
-  // Get or create audio context
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
@@ -64,19 +48,19 @@ export function useSounds() {
   }, [])
 
   /**
-   * Create a warm, filtered oscillator with envelope
+   * Create a rich tone with optional harmonics
    */
-  const createSynthTone = useCallback((options = {}) => {
+  const createTone = useCallback((options = {}) => {
     const {
       frequency = 440,
       type = 'sine',
-      duration = 0.08,
-      volume = 0.06,
-      attack = 0.01,
-      decay = 0.05,
-      filterFreq = 1500,
-      filterQ = 0.7,
-      detune = 0,
+      duration = 0.15,
+      volume = 0.04,
+      attack = 0.02,
+      decay = 0.1,
+      filterFreq = 2000,
+      filterQ = 0.5,
+      harmonics = [], // Array of { ratio, volume } for overtones
     } = options
 
     if (!isEnabledRef.current) return
@@ -84,170 +68,172 @@ export function useSounds() {
     try {
       const ctx = getAudioContext()
       if (!ctx) return
-
-      // If suspended, try to resume and play anyway (works on click events)
-      if (ctx.state === 'suspended') {
-        ctx.resume()
-      }
+      if (ctx.state === 'suspended') ctx.resume()
 
       const now = ctx.currentTime
 
-      // Create oscillator
-      const osc = ctx.createOscillator()
-      osc.type = type
-      osc.frequency.setValueAtTime(frequency, now)
-      osc.detune.setValueAtTime(detune, now)
+      // Master gain for this sound
+      const masterGain = ctx.createGain()
+      masterGain.gain.setValueAtTime(0, now)
+      masterGain.gain.linearRampToValueAtTime(volume, now + attack)
+      masterGain.gain.exponentialRampToValueAtTime(0.001, now + attack + decay)
+      masterGain.connect(ctx.destination)
 
-      // Create filter for warmth (lower frequency = warmer/cozier)
+      // Lowpass filter for warmth
       const filter = ctx.createBiquadFilter()
       filter.type = 'lowpass'
       filter.frequency.setValueAtTime(filterFreq, now)
       filter.Q.setValueAtTime(filterQ, now)
+      filter.connect(masterGain)
 
-      // Create gain for envelope
-      const gain = ctx.createGain()
-      gain.gain.setValueAtTime(0, now)
-      gain.gain.linearRampToValueAtTime(volume, now + attack)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + attack + decay)
-
-      // Connect: osc -> filter -> gain -> destination
+      // Fundamental oscillator
+      const osc = ctx.createOscillator()
+      osc.type = type
+      osc.frequency.setValueAtTime(frequency, now)
       osc.connect(filter)
-      filter.connect(gain)
-      gain.connect(ctx.destination)
-
-      // Play
       osc.start(now)
-      osc.stop(now + duration + 0.1)
-    } catch (e) {
-      // Silently fail if audio isn't available
-    }
+      osc.stop(now + duration + 0.2)
+
+      // Add harmonics for richness
+      harmonics.forEach(h => {
+        const harmOsc = ctx.createOscillator()
+        const harmGain = ctx.createGain()
+        harmOsc.type = 'sine'
+        harmOsc.frequency.setValueAtTime(frequency * h.ratio, now)
+        harmGain.gain.setValueAtTime(h.volume, now)
+        harmOsc.connect(harmGain)
+        harmGain.connect(filter)
+        harmOsc.start(now)
+        harmOsc.stop(now + duration + 0.2)
+      })
+    } catch (e) {}
   }, [getAudioContext])
 
-  /**
-   * Create a chord (multiple tones)
-   */
-  const createChord = useCallback((frequencies, options = {}) => {
-    frequencies.forEach((freq, i) => {
-      createSynthTone({
-        ...options,
-        frequency: freq,
-        volume: (options.volume || 0.04) / frequencies.length,
-        detune: (i - frequencies.length / 2) * 3,
-      })
-    })
-  }, [createSynthTone])
-
   // ============================================
-  // Sound Presets - Quieter, Cozier vibes
+  // Beautiful Sound Presets
   // ============================================
 
   /**
-   * Soft hover sound - very gentle blip
+   * Hover - gentle bell-like chime
    */
   const playHover = useCallback(() => {
-    createSynthTone({
-      frequency: 740,
-      type: 'sine',
-      duration: 0.05,
-      volume: 0.03,
-      attack: 0.008,
-      decay: 0.04,
-      filterFreq: 1800,
-    })
-  }, [createSynthTone])
-
-  /**
-   * Click sound - soft, muted pop
-   */
-  const playClick = useCallback(() => {
-    createSynthTone({
-      frequency: 520,
-      type: 'triangle',
-      duration: 0.06,
-      volume: 0.045,
-      attack: 0.003,
-      decay: 0.05,
-      filterFreq: 1400,
-    })
-    createSynthTone({
-      frequency: 780,
-      type: 'sine',
-      duration: 0.04,
-      volume: 0.02,
-      attack: 0.002,
-      decay: 0.03,
-      filterFreq: 2000,
-    })
-  }, [createSynthTone])
-
-  /**
-   * Navigation arrow sound - subtle, warm
-   */
-  const playArrow = useCallback(() => {
-    createSynthTone({
-      frequency: 440,
-      type: 'triangle',
-      duration: 0.08,
-      volume: 0.04,
-      attack: 0.008,
-      decay: 0.06,
-      filterFreq: 1200,
-      filterQ: 0.5,
-    })
-  }, [createSynthTone])
-
-  /**
-   * Link hover - whisper quiet
-   */
-  const playLinkHover = useCallback(() => {
-    createSynthTone({
+    createTone({
       frequency: 880,
       type: 'sine',
-      duration: 0.035,
-      volume: 0.02,
+      duration: 0.12,
+      volume: 0.025,
       attack: 0.005,
-      decay: 0.025,
-      filterFreq: 2000,
+      decay: 0.1,
+      filterFreq: 3000,
+      harmonics: [
+        { ratio: 2, volume: 0.008 },    // Octave
+        { ratio: 3, volume: 0.004 },    // Fifth above octave
+      ],
     })
-  }, [createSynthTone])
+  }, [createTone])
 
   /**
-   * Video card hover - very soft ambient pad
+   * Click - soft, satisfying confirmation
+   */
+  const playClick = useCallback(() => {
+    // Fundamental with warm overtones
+    createTone({
+      frequency: 440,
+      type: 'triangle',
+      duration: 0.1,
+      volume: 0.04,
+      attack: 0.002,
+      decay: 0.08,
+      filterFreq: 1800,
+      harmonics: [
+        { ratio: 2, volume: 0.015 },
+        { ratio: 2.5, volume: 0.008 },  // Minor third color
+      ],
+    })
+  }, [createTone])
+
+  /**
+   * Arrow navigation - gentle whoosh with pitch
+   */
+  const playArrow = useCallback(() => {
+    createTone({
+      frequency: 523, // C5
+      type: 'sine',
+      duration: 0.1,
+      volume: 0.035,
+      attack: 0.008,
+      decay: 0.08,
+      filterFreq: 1600,
+      harmonics: [
+        { ratio: 1.5, volume: 0.012 },  // Perfect fifth
+        { ratio: 2, volume: 0.006 },
+      ],
+    })
+  }, [createTone])
+
+  /**
+   * Video card hover - dreamy pad entrance
    */
   const playCardHover = useCallback(() => {
-    createChord([330, 440, 550], { // Warm Am-ish voicing
-      type: 'sine',
-      duration: 0.18,
-      volume: 0.045,
-      attack: 0.03,
-      decay: 0.14,
-      filterFreq: 1000,
-    })
-  }, [createChord])
-
-  /**
-   * Music player hover - gentle ascending notes
-   */
-  const playMusicHover = useCallback(() => {
-    const notes = [440, 550, 660] // A4, C#5, E5 - softer voicing
-    notes.forEach((freq, i) => {
+    // Play a soft major 7th chord spread over time
+    const notes = [
+      { freq: 349, delay: 0 },      // F4
+      { freq: 440, delay: 15 },     // A4
+      { freq: 523, delay: 30 },     // C5
+      { freq: 659, delay: 45 },     // E5
+    ]
+    notes.forEach(({ freq, delay }) => {
       setTimeout(() => {
-        createSynthTone({
+        createTone({
           frequency: freq,
           type: 'sine',
-          duration: 0.07,
-          volume: 0.025,
-          attack: 0.008,
-          decay: 0.05,
-          filterFreq: 1600,
+          duration: 0.25,
+          volume: 0.018,
+          attack: 0.04,
+          decay: 0.2,
+          filterFreq: 1200,
+          harmonics: [{ ratio: 2, volume: 0.005 }],
         })
-      }, i * 35)
+      }, delay)
     })
-  }, [createSynthTone])
+  }, [createTone])
 
   /**
-   * Toggle/enable sounds
+   * Music player hover - playful ascending arpeggio
    */
+  const playMusicHover = useCallback(() => {
+    const notes = [523, 659, 784, 1047] // C5, E5, G5, C6
+    notes.forEach((freq, i) => {
+      setTimeout(() => {
+        createTone({
+          frequency: freq,
+          type: 'sine',
+          duration: 0.12,
+          volume: 0.02,
+          attack: 0.008,
+          decay: 0.1,
+          filterFreq: 2200,
+          harmonics: [{ ratio: 2, volume: 0.006 }],
+        })
+      }, i * 45)
+    })
+  }, [createTone])
+
+  /**
+   * Link hover - subtle sparkle
+   */
+  const playLinkHover = useCallback(() => {
+    createTone({
+      frequency: 1047, // C6
+      type: 'sine',
+      duration: 0.06,
+      volume: 0.015,
+      attack: 0.003,
+      decay: 0.05,
+      filterFreq: 4000,
+    })
+  }, [createTone])
+
   const setEnabled = useCallback((enabled) => {
     isEnabledRef.current = enabled
   }, [])
