@@ -1369,17 +1369,7 @@ function App() {
               }}
             >
               <div className="status-tab-inner rounded-[8px] px-[12px] py-[7px] flex items-center justify-center gap-[6px]">
-                {isPreviewPlaying ? (
-                  <>
-                    <div className="audio-waveform flex items-end gap-[2px]">
-                      <span className="waveform-bar bar-1"></span>
-                      <span className="waveform-bar bar-2"></span>
-                      <span className="waveform-bar bar-3"></span>
-                      <span className="waveform-bar bar-4"></span>
-                    </div>
-                    <span className="font-graphik text-[14px] leading-[20px] text-[#e6eaee] whitespace-nowrap">Preview</span>
-                  </>
-                ) : currentTrack.isNowPlaying ? (
+                {currentTrack.isNowPlaying ? (
                   <>
                     <div className="audio-waveform flex items-end gap-[2px]">
                       <span className="waveform-bar bar-1"></span>
@@ -1388,6 +1378,16 @@ function App() {
                       <span className="waveform-bar bar-4"></span>
                     </div>
                     <span className="font-graphik text-[14px] leading-[20px] text-[#e6eaee] whitespace-nowrap">Live now</span>
+                  </>
+                ) : isPreviewPlaying ? (
+                  <>
+                    <div className="audio-waveform flex items-end gap-[2px]">
+                      <span className="waveform-bar bar-1"></span>
+                      <span className="waveform-bar bar-2"></span>
+                      <span className="waveform-bar bar-3"></span>
+                      <span className="waveform-bar bar-4"></span>
+                    </div>
+                    <span className="font-graphik text-[14px] leading-[20px] text-[#e6eaee] whitespace-nowrap">Preview</span>
                   </>
                 ) : (
                   <>
