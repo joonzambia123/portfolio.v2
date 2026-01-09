@@ -120,9 +120,11 @@ export function useLastFm() {
       audioRef.current.volume = 0;
     }
 
-    // If source changed, update it
-    if (audioRef.current.src !== currentTrack.previewUrl) {
-      audioRef.current.src = currentTrack.previewUrl;
+    // Ensure HTTPS and update source if changed
+    const secureUrl = currentTrack.previewUrl.replace('http://', 'https://');
+    if (audioRef.current.src !== secureUrl) {
+      audioRef.current.src = secureUrl;
+      audioRef.current.load();
     }
 
     // Clear any existing fade
