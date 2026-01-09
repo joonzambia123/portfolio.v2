@@ -382,10 +382,10 @@ function App() {
     if (inactiveRef.current) {
       const sourceElement = inactiveRef.current.querySelector('source');
       if (sourceElement && videoData[targetIndex]) {
-        const targetVideoSrc = videoData[targetIndex].src;
-        const currentSrc = sourceElement.src || '';
+        const targetVideoSrc = encodeVideoSrc(videoData[targetIndex].src);
+        const currentSrc = decodeURIComponent(sourceElement.src || '');
         const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
-        const targetFileName = targetVideoSrc.split('/').pop()?.split('?')[0] || '';
+        const targetFileName = decodeURIComponent(targetVideoSrc).split('/').pop()?.split('?')[0] || '';
         
         // Only preload if it's a different video
         if (currentFileName !== targetFileName) {
@@ -468,11 +468,11 @@ function App() {
       
       // Ensure the correct video source is loaded
       const sourceElement = nextRef.current.querySelector('source');
-      const nextVideoSrc = videoData[nextIndex].src;
-      const currentSrc = sourceElement?.src || '';
+      const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
+      const currentSrc = decodeURIComponent(sourceElement?.src || '');
       // Compare just the filename to handle different path formats
       const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
-      const nextFileName = nextVideoSrc.split('/').pop()?.split('?')[0] || '';
+      const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
       const needsLoad = currentFileName !== nextFileName;
       
       // Complete the switch after video is confirmed rendering
@@ -792,11 +792,12 @@ function App() {
     // Preload all videos fully using fetch API
     const preloadVideo = async (video, index) => {
       try {
-        const response = await fetch(video.src);
+        const encodedSrc = encodeVideoSrc(video.src);
+        const response = await fetch(encodedSrc);
         if (response.ok) {
           // Read the entire response to cache it
           await response.blob();
-          videoCacheRef.current.add(video.src);
+          videoCacheRef.current.add(video.src); // Store original src for comparison
         }
       } catch (e) {
         // Don't mark as cached on error - let it try to load naturally
@@ -943,15 +944,20 @@ function App() {
     }
   }, [isHovered]);
 
+  // Track if videos have been initialized
+  const videosInitializedRef = useRef(false);
+  
+  // Helper to encode video src for Safari compatibility
+  const encodeVideoSrc = (src) => {
+    if (!src) return src;
+    // Encode the path but keep the leading slash
+    const parts = src.split('/');
+    return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
+  };
+  
   // Preload next video in the inactive element for seamless transitions
-  // Only runs after loader is done and after initial video setup
   useEffect(() => {
-    // Don't run during loading or initial setup
-    if (isLoading || isTransitioningRef.current || videoData.length === 0) return;
-    
-    // Skip initial render (videoIndex === 0 and activeVideo === 1 is handled by mount effect)
-    // Only preload when we've actually changed videos
-    if (videoIndex === 0 && activeVideo === 1) return;
+    if (isTransitioningRef.current || videoData.length === 0) return;
     
     const nextIndex = (videoIndex + 1) % videoData.length;
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
@@ -969,10 +975,10 @@ function App() {
     if (inactiveRef.current && videoData[nextIndex]) {
       const sourceElement = inactiveRef.current.querySelector('source');
       if (sourceElement) {
-        const nextVideoSrc = videoData[nextIndex].src;
-        const currentSrc = sourceElement.src || '';
+        const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
+        const currentSrc = decodeURIComponent(sourceElement.src || '');
         const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
-        const nextFileName = nextVideoSrc.split('/').pop()?.split('?')[0] || '';
+        const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
         
         // Only update if source is different
         if (currentFileName !== nextFileName) {
@@ -983,69 +989,65 @@ function App() {
         inactiveRef.current.preload = 'auto';
       }
     }
-  }, [isLoading, videoIndex, activeVideo, videoData]);
+  }, [videoIndex, activeVideo, videoData]);
 
-  // Ensure videos play after loader finishes and videoData is available
+  // Initialize videos when they first become available in the DOM
+  // This runs when videoData loads OR when refs become available
   useEffect(() => {
-    // Wait until loader is done and we have video data
-    if (isLoading || videoData.length === 0) return;
+    // Already initialized, skip
+    if (videosInitializedRef.current) return;
     
-    // Reset state to initial values
-    setVideoIndex(0);
-    setActiveVideo(1);
-    video1IndexRef.current = 0;
-    video2IndexRef.current = 1;
+    // Need video data and video elements
+    if (videoData.length === 0) return;
+    if (!videoRef1.current || !videoRef2.current) return;
+    
+    // Mark as initialized
+    videosInitializedRef.current = true;
     
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
-    // Small delay to ensure DOM is ready after loader transition
-    const setupDelay = isSafari ? 100 : 50;
+    // Reset indices
+    video1IndexRef.current = 0;
+    video2IndexRef.current = 1;
     
-    setTimeout(() => {
-      // Setup video 1 (first video, active)
-      if (videoRef1.current && videoData[0]) {
-        const source1 = videoRef1.current.querySelector('source');
-        if (source1) {
-          source1.src = videoData[0].src;
-          videoRef1.current.load();
-          
-          const playVideo1 = () => {
-            if (!videoRef1.current) return;
-            videoRef1.current.muted = true; // Ensure muted for autoplay
-            const playPromise = videoRef1.current.play();
-            if (playPromise !== undefined) {
-              playPromise.catch(() => {
-                // Retry once more after a delay
-                setTimeout(() => {
-                  if (videoRef1.current) {
-                    videoRef1.current.play().catch(() => {});
-                  }
-                }, 100);
-              });
-            }
-          };
-          
-          if (isSafari) {
-            // Safari: Wait for canplaythrough event
-            videoRef1.current.oncanplaythrough = playVideo1;
-            // Also try after a delay as fallback
-            setTimeout(playVideo1, 500);
-          } else {
-            playVideo1();
-          }
-        }
-      }
+    // Setup video 1 (first video, active)
+    const source1 = videoRef1.current.querySelector('source');
+    if (source1 && videoData[0]) {
+      const encodedSrc1 = encodeVideoSrc(videoData[0].src);
+      source1.src = encodedSrc1;
+      videoRef1.current.load();
       
-      // Setup video 2 (second video, preloaded but not playing)
-      if (videoRef2.current && videoData[1]) {
-        const source2 = videoRef2.current.querySelector('source');
-        if (source2) {
-          source2.src = videoData[1].src;
-          videoRef2.current.load();
+      const playVideo1 = () => {
+        if (!videoRef1.current) return;
+        videoRef1.current.muted = true;
+        const playPromise = videoRef1.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            setTimeout(() => {
+              if (videoRef1.current) {
+                videoRef1.current.play().catch(() => {});
+              }
+            }, 100);
+          });
         }
+      };
+      
+      if (isSafari) {
+        videoRef1.current.oncanplaythrough = playVideo1;
+        setTimeout(playVideo1, 300);
+      } else {
+        videoRef1.current.oncanplaythrough = playVideo1;
       }
-    }, setupDelay);
-  }, [isLoading, videoData]);
+    }
+    
+    // Setup video 2 (second video, preloaded but not playing)
+    const source2 = videoRef2.current.querySelector('source');
+    if (source2 && videoData[1]) {
+      const encodedSrc2 = encodeVideoSrc(videoData[1].src);
+      source2.src = encodedSrc2;
+      videoRef2.current.load();
+    }
+  }, [videoData, isLoading]); // isLoading change triggers re-check when main content mounts
 
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
@@ -1224,7 +1226,7 @@ function App() {
                 loop={isHovered}
                 onEnded={handleVideoEnded}
               >
-                {safeVideoData[0] && <source src={safeVideoData[0].src} type="video/mp4" />}
+                {safeVideoData[0] && <source src={encodeVideoSrc(safeVideoData[0].src)} type="video/mp4" />}
               </video>
               {/* Video 2 - source managed via ref, not React state */}
               <video 
@@ -1243,7 +1245,7 @@ function App() {
                 loop={isHovered}
                 onEnded={handleVideoEnded}
               >
-                {safeVideoData[1] && <source src={safeVideoData[1].src} type="video/mp4" />}
+                {safeVideoData[1] && <source src={encodeVideoSrc(safeVideoData[1].src)} type="video/mp4" />}
               </video>
             </div>
             <div 
