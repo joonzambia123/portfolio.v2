@@ -314,10 +314,14 @@ function App() {
   useEffect(() => {
     setSoundsEnabled(!isMuted);
     localStorage.setItem('soundsMuted', isMuted.toString());
-    if (isMuted && isPreviewPlaying) {
+  }, [isMuted, setSoundsEnabled]);
+
+  // Stop preview when muted
+  useEffect(() => {
+    if (isMuted) {
       stopPreview();
     }
-  }, [isMuted, setSoundsEnabled, isPreviewPlaying, stopPreview]);
+  }, [isMuted]);
 
   // 'M' key to toggle mute
   useEffect(() => {
