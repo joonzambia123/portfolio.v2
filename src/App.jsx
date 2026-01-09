@@ -402,6 +402,8 @@ function App() {
     // Don't change if no video data
     if (videoData.length === 0) return;
     
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
     // Cancel any pending transition immediately
     transitionIdRef.current++;
     const thisTransitionId = transitionIdRef.current;
@@ -427,7 +429,7 @@ function App() {
           pendingDirectionRef.current = null;
           changeVideo(dir);
         }
-      }, 50);
+      }, isSafari ? 100 : 50);
       return;
     }
     
@@ -446,11 +448,91 @@ function App() {
       video2IndexRef.current = nextIndex;
     }
     
-    // Process transition
-    requestAnimationFrame(() => {
-      // Check if this transition was cancelled
+    // Complete the switch
+    const completeSwitch = () => {
       if (transitionIdRef.current !== thisTransitionId) {
-        // Process pending if exists
+        if (pendingDirectionRef.current) {
+          const dir = pendingDirectionRef.current;
+          pendingDirectionRef.current = null;
+          isTransitioningRef.current = false;
+          changeVideo(dir);
+        }
+        return;
+      }
+      
+      // Swap z-index - new video is now on top
+      setVideoIndex(nextIndex);
+      setActiveVideo(nextActive);
+      
+      // Pause old video and check for pending
+      setTimeout(() => {
+        if (currentRef.current) {
+          currentRef.current.pause();
+        }
+        
+        setIsTransitioning(false);
+        isTransitioningRef.current = false;
+        
+        // Process any pending direction
+        if (pendingDirectionRef.current) {
+          const dir = pendingDirectionRef.current;
+          pendingDirectionRef.current = null;
+          changeVideo(dir);
+        }
+      }, isSafari ? 50 : 30);
+    };
+    
+    // Safari: Use simpler, more robust approach
+    if (isSafari) {
+      if (!nextRef.current) {
+        setIsTransitioning(false);
+        isTransitioningRef.current = false;
+        return;
+      }
+      
+      const sourceElement = nextRef.current.querySelector('source');
+      const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
+      
+      // Always set source and load on Safari for reliability
+      if (sourceElement) {
+        sourceElement.src = nextVideoSrc;
+      }
+      
+      // Ensure muted for autoplay
+      nextRef.current.muted = true;
+      nextRef.current.currentTime = 0;
+      nextRef.current.load();
+      
+      // Wait for canplay then play
+      const onCanPlay = () => {
+        if (transitionIdRef.current !== thisTransitionId) return;
+        nextRef.current.removeEventListener('canplay', onCanPlay);
+        
+        nextRef.current.play().then(() => {
+          completeSwitch();
+        }).catch(() => {
+          // Even if play fails, switch anyway
+          completeSwitch();
+        });
+      };
+      
+      nextRef.current.addEventListener('canplay', onCanPlay);
+      
+      // Fallback timeout for Safari
+      setTimeout(() => {
+        if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
+          nextRef.current.removeEventListener('canplay', onCanPlay);
+          nextRef.current.play().catch(() => {});
+          completeSwitch();
+        }
+      }, 500);
+      
+      return;
+    }
+    
+    // Chrome/Firefox: Optimized fast path
+    requestAnimationFrame(() => {
+      if (transitionIdRef.current !== thisTransitionId) {
         if (pendingDirectionRef.current) {
           const dir = pendingDirectionRef.current;
           pendingDirectionRef.current = null;
@@ -466,123 +548,33 @@ function App() {
         return;
       }
       
-      // Ensure the correct video source is loaded
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
       const currentSrc = decodeURIComponent(sourceElement?.src || '');
-      // Compare just the filename to handle different path formats
       const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
       const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
       const needsLoad = currentFileName !== nextFileName;
       
-      // Complete the switch after video is confirmed rendering
-      const completeSwitch = () => {
-        if (transitionIdRef.current !== thisTransitionId) {
-          // Process pending
-          if (pendingDirectionRef.current) {
-            const dir = pendingDirectionRef.current;
-            pendingDirectionRef.current = null;
-            isTransitioningRef.current = false;
-            changeVideo(dir);
-          }
-          return;
-        }
-        
-        // Swap z-index - new video is now on top
-        setVideoIndex(nextIndex);
-        setActiveVideo(nextActive);
-        
-        // Pause old video and check for pending
-        setTimeout(() => {
-          if (currentRef.current) {
-            currentRef.current.pause();
-          }
-          
-          setIsTransitioning(false);
-          isTransitioningRef.current = false;
-          
-          // Process any pending direction
-          if (pendingDirectionRef.current) {
-            const dir = pendingDirectionRef.current;
-            pendingDirectionRef.current = null;
-            changeVideo(dir);
-          }
-        }, 30);
-      };
-      
-      // Start playing and wait for rendering - optimized for speed
       const startPlaying = () => {
         if (transitionIdRef.current !== thisTransitionId) return;
         if (!nextRef.current) return;
         
-        // Check readyState immediately - if we have enough data, switch right away
-        if (nextRef.current.readyState >= 3) {
-          // HAVE_FUTURE_DATA - enough data to play smoothly
-          nextRef.current.currentTime = 0;
-          const playPromise = nextRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => completeSwitch()).catch(() => completeSwitch());
-          } else {
-            completeSwitch();
-          }
-          return;
-        }
-        
-        // If readyState >= 2, we have current data - start playing immediately
-        if (nextRef.current.readyState >= 2) {
-          nextRef.current.currentTime = 0;
-          const playPromise = nextRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              if (transitionIdRef.current !== thisTransitionId) return;
-              // Reduced to 1 frame wait for faster transitions
-              requestAnimationFrame(() => {
-                if (transitionIdRef.current === thisTransitionId && nextRef.current && nextRef.current.currentTime > 0.01) {
-                  completeSwitch();
-                } else {
-                  completeSwitch();
-                }
-              });
-            }).catch(() => completeSwitch());
-          } else {
-            completeSwitch();
-          }
-          return;
-        }
-        
-        // Fallback: wait for video to load
         nextRef.current.currentTime = 0;
         const playPromise = nextRef.current.play();
         
         if (playPromise !== undefined) {
-          playPromise.then(() => {
-            if (transitionIdRef.current !== thisTransitionId) return;
-            
-            // Wait for frames to ensure video is rendering - reduced to 1 frame
-            let frameCount = 0;
-            const waitForFrames = () => {
-              if (transitionIdRef.current !== thisTransitionId) return;
-              frameCount++;
-              
-              // Wait for 1 frame AND currentTime > 0 (optimized for speed)
-              if (nextRef.current && nextRef.current.currentTime > 0.01 && frameCount >= 1) {
-                completeSwitch();
-              } else if (frameCount < 4) {
-                requestAnimationFrame(waitForFrames);
-              } else {
-                completeSwitch();
-              }
-            };
-            requestAnimationFrame(waitForFrames);
-          }).catch(() => {
-            completeSwitch();
-          });
+          playPromise.then(() => completeSwitch()).catch(() => completeSwitch());
         } else {
           completeSwitch();
         }
       };
       
-      // Track if we've started
+      // If video already has data, play immediately
+      if (!needsLoad && nextRef.current.readyState >= 2) {
+        startPlaying();
+        return;
+      }
+      
       let hasStarted = false;
       const tryStart = () => {
         if (hasStarted || transitionIdRef.current !== thisTransitionId) return;
@@ -590,29 +582,16 @@ function App() {
         startPlaying();
       };
       
-      // Check readyState immediately before setting up listeners
-      if (!needsLoad && nextRef.current.readyState >= 2) {
-        // Video already has data - start immediately
-        tryStart();
-        return;
-      }
-      
-      // Set up listeners BEFORE calling load
-      nextRef.current.addEventListener('canplaythrough', tryStart, { once: true });
       nextRef.current.addEventListener('canplay', tryStart, { once: true });
       
-      // If video needs to be loaded, load it
       if (needsLoad) {
         if (sourceElement) {
           sourceElement.src = nextVideoSrc;
         }
         nextRef.current.load();
-      } else if (nextRef.current.readyState >= 2) {
-        // Video is already loaded and ready - check readyState >= 2 (HAVE_CURRENT_DATA)
-        tryStart();
       }
       
-      // Faster fallback for rapid clicking - reduced from 500ms to 200ms
+      // Fallback timeout
       setTimeout(() => {
         if (!hasStarted && transitionIdRef.current === thisTransitionId) {
           tryStart();
