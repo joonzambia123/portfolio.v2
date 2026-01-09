@@ -133,10 +133,10 @@ export function useLastFm() {
     // Play and fade in
     audioRef.current.play().then(() => {
       setIsPlaying(true);
-      // Fade in over 500ms
-      const targetVolume = 0.3;
-      const steps = 20;
-      const stepTime = 500 / steps;
+      // Fade in over 1.5s - slow ramp to let user opt out
+      const targetVolume = 0.15;
+      const steps = 30;
+      const stepTime = 1500 / steps;
       const volumeStep = targetVolume / steps;
       let currentStep = 0;
 
