@@ -383,11 +383,12 @@ function App() {
       const sourceElement = inactiveRef.current.querySelector('source');
       if (sourceElement && videoData[targetIndex]) {
         const targetVideoSrc = videoData[targetIndex].src;
-        const currentSrcFile = (sourceElement.src || '').split('/').pop();
-        const targetSrcFile = targetVideoSrc.split('/').pop();
+        const currentSrc = sourceElement.src || '';
+        const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
+        const targetFileName = targetVideoSrc.split('/').pop()?.split('?')[0] || '';
         
         // Only preload if it's a different video
-        if (currentSrcFile !== targetSrcFile) {
+        if (currentFileName !== targetFileName) {
           sourceElement.src = targetVideoSrc;
           inactiveRef.current.load();
           // Set preload to auto for aggressive preloading on hover
@@ -469,7 +470,10 @@ function App() {
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = videoData[nextIndex].src;
       const currentSrc = sourceElement?.src || '';
-      const needsLoad = !currentSrc.endsWith(nextVideoSrc);
+      // Compare just the filename to handle different path formats
+      const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
+      const nextFileName = nextVideoSrc.split('/').pop()?.split('?')[0] || '';
+      const needsLoad = currentFileName !== nextFileName;
       
       // Complete the switch after video is confirmed rendering
       const completeSwitch = () => {
@@ -779,63 +783,29 @@ function App() {
   }, []);
 
   // Aggressive video preloading: Fully download and cache all videos
-  // Safari-optimized: Use video elements for preloading instead of just fetch
   useEffect(() => {
     if (videoData.length === 0) return;
     
-    // Detect Safari
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    // Preload all videos fully
+    // Preload all videos fully using fetch API
     const preloadVideo = async (video, index) => {
       try {
-        if (isSafari) {
-          // Safari: Use a hidden video element for more reliable caching
-          const tempVideo = document.createElement('video');
-          tempVideo.preload = 'auto';
-          tempVideo.muted = true;
-          tempVideo.playsInline = true;
-          tempVideo.src = video.src;
-          
-          // Wait for video to be loaded enough
-          await new Promise((resolve) => {
-            tempVideo.oncanplaythrough = () => {
-              videoCacheRef.current.add(video.src);
-              resolve();
-            };
-            tempVideo.onerror = () => {
-              // Still mark as cached to avoid blocking
-              videoCacheRef.current.add(video.src);
-              resolve();
-            };
-            // Fallback timeout
-            setTimeout(() => {
-              videoCacheRef.current.add(video.src);
-              resolve();
-            }, 3000);
-            
-            tempVideo.load();
-          });
-        } else {
-          // Other browsers: Use fetch with blob storage
-          const response = await fetch(video.src);
-          if (response.ok) {
-            await response.blob();
-            videoCacheRef.current.add(video.src);
-          }
+        const response = await fetch(video.src);
+        if (response.ok) {
+          // Read the entire response to cache it
+          await response.blob();
+          videoCacheRef.current.add(video.src);
         }
       } catch (e) {
-        // Mark as cached anyway to avoid blocking the loader
-        videoCacheRef.current.add(video.src);
+        // Don't mark as cached on error - let it try to load naturally
+        console.log('Failed to preload video:', video.src);
       }
     };
     
-    // Start preloading all videos immediately
+    // Start preloading all videos immediately with slight stagger
     videoData.forEach((video, index) => {
-      // Slight stagger to avoid overwhelming the browser
       setTimeout(() => {
         preloadVideo(video, index);
-      }, index * 100); // Slightly longer stagger for Safari
+      }, index * 150);
     });
   }, [videoData]);
 
@@ -939,24 +909,19 @@ function App() {
     const setupVideoElement = (videoEl) => {
       if (!videoEl) return;
       
-      // Standard attributes
+      // Standard attributes for all browsers
       videoEl.setAttribute('playsinline', 'true');
       videoEl.setAttribute('webkit-playsinline', 'true');
-      videoEl.setAttribute('x-webkit-airplay', 'allow');
+      videoEl.muted = true;
       
       // Safari-specific optimizations
       if (isSafari) {
+        videoEl.setAttribute('x-webkit-airplay', 'allow');
         // Force hardware acceleration
         videoEl.style.transform = 'translateZ(0)';
         videoEl.style.webkitTransform = 'translateZ(0)';
-        
-        // Ensure preload is set properly for Safari
+        // Set preload to auto for Safari
         videoEl.preload = 'auto';
-        
-        // Safari sometimes needs a manual load trigger
-        if (videoEl.readyState === 0) {
-          videoEl.load();
-        }
       }
     };
     
@@ -975,48 +940,39 @@ function App() {
     }
   }, [isHovered]);
 
-  // Preload next AND previous videos in the inactive element for seamless transitions
+  // Preload next video in the inactive element for seamless transitions
   useEffect(() => {
     if (isTransitioningRef.current || videoData.length === 0) return;
     
     const nextIndex = (videoIndex + 1) % videoData.length;
-    const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
     
-    // Update ref for inactive video to next video
-    if (activeVideo === 1 && video2IndexRef.current !== nextIndex) {
+    // Update the index refs to match current state
+    if (activeVideo === 1) {
+      video1IndexRef.current = videoIndex;
       video2IndexRef.current = nextIndex;
-    } else if (activeVideo === 2 && video1IndexRef.current !== nextIndex) {
+    } else {
+      video2IndexRef.current = videoIndex;
       video1IndexRef.current = nextIndex;
     }
     
-    // Preload next video with auto preload (full video) for instant transitions
-    if (inactiveRef.current) {
+    // Preload next video in the inactive element
+    if (inactiveRef.current && videoData[nextIndex]) {
       const sourceElement = inactiveRef.current.querySelector('source');
-      if (sourceElement && videoData[nextIndex]) {
+      if (sourceElement) {
         const nextVideoSrc = videoData[nextIndex].src;
-        // Check if source needs updating (compare just the filename)
-        const currentSrcFile = (sourceElement.src || '').split('/').pop();
-        const nextSrcFile = nextVideoSrc.split('/').pop();
+        const currentSrc = sourceElement.src || '';
+        const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
+        const nextFileName = nextVideoSrc.split('/').pop()?.split('?')[0] || '';
         
-        if (currentSrcFile !== nextSrcFile) {
+        // Only update if source is different
+        if (currentFileName !== nextFileName) {
           sourceElement.src = nextVideoSrc;
           inactiveRef.current.load();
         }
         
-        // Use auto preload for next video (full preload) for seamless transitions
         inactiveRef.current.preload = 'auto';
       }
-    }
-    
-    // Also preload previous video in background using fetch API
-    // This ensures both directions are ready
-    if (videoData[prevIndex]) {
-      const prevVideoSrc = videoData[prevIndex].src;
-      // Use fetch to preload previous video in browser cache
-      fetch(prevVideoSrc, { method: 'HEAD', priority: 'low' }).catch(() => {
-        // Silently fail - video will load when needed
-      });
     }
   }, [videoIndex, activeVideo, videoData]);
 
@@ -1024,25 +980,49 @@ function App() {
   useEffect(() => {
     if (videoData.length === 0) return;
     
-    if (videoRef1.current) {
+    // Reset indices to ensure sync
+    video1IndexRef.current = 0;
+    video2IndexRef.current = 1;
+    
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    // Setup video 1 (first video, active)
+    if (videoRef1.current && videoData[0]) {
       const source1 = videoRef1.current.querySelector('source');
-      if (source1 && videoData[video1IndexRef.current]) {
-        source1.src = videoData[video1IndexRef.current].src;
+      if (source1) {
+        source1.src = videoData[0].src;
         videoRef1.current.load();
-        const playPromise1 = videoRef1.current.play();
-        if (playPromise1 !== undefined) {
-          playPromise1.catch(error => {
-            console.log('Video autoplay prevented:', error);
-          });
+        
+        // Safari needs a slight delay before playing
+        const playVideo1 = () => {
+          const playPromise1 = videoRef1.current.play();
+          if (playPromise1 !== undefined) {
+            playPromise1.catch(error => {
+              console.log('Video autoplay prevented:', error);
+              // Safari: Try again with user gesture simulation
+              if (isSafari) {
+                videoRef1.current.muted = true;
+                videoRef1.current.play().catch(() => {});
+              }
+            });
+          }
+        };
+        
+        if (isSafari) {
+          // Safari: Wait for canplay event
+          videoRef1.current.oncanplay = playVideo1;
+        } else {
+          playVideo1();
         }
       }
     }
-    if (videoRef2.current) {
+    
+    // Setup video 2 (second video, preloaded but not playing)
+    if (videoRef2.current && videoData[1]) {
       const source2 = videoRef2.current.querySelector('source');
-      if (source2 && videoData[video2IndexRef.current]) {
-        source2.src = videoData[video2IndexRef.current].src;
+      if (source2) {
+        source2.src = videoData[1].src;
         videoRef2.current.load();
-        // Don't play video2 initially, it will play when switching
       }
     }
   }, [videoData]);
@@ -1219,7 +1199,7 @@ function App() {
                 autoPlay
                 muted
                 playsInline
-                preload="metadata"
+                preload="auto"
                 controls={false}
                 loop={isHovered}
                 onEnded={handleVideoEnded}
@@ -1238,7 +1218,7 @@ function App() {
                 autoPlay
                 muted
                 playsInline
-                preload="metadata"
+                preload="auto"
                 controls={false}
                 loop={isHovered}
                 onEnded={handleVideoEnded}
