@@ -512,22 +512,22 @@ background-color: #E8F6FF;
 /* Animate notes on hover - simple unified animation */
 .group\/vinyl:hover .note-1 {
   animation: float-note 2.5s ease-out infinite;
-  animation-delay: 1s;
+  animation-delay: 0.4s;
 }
 
 .group\/vinyl:hover .note-2 {
   animation: float-note 2.5s ease-out infinite;
-  animation-delay: 1.4s;
+  animation-delay: 0.8s;
 }
 
 .group\/vinyl:hover .note-3 {
   animation: float-note 2.5s ease-out infinite;
-  animation-delay: 1.8s;
+  animation-delay: 1.2s;
 }
 
 .group\/vinyl:hover .note-4 {
   animation: float-note 2.5s ease-out infinite;
-  animation-delay: 2.2s;
+  animation-delay: 1.6s;
 }
 
 @keyframes float-note {
