@@ -473,6 +473,12 @@ background-color: #E8F6FF;
   }
 }
 
+/* Vinyl glow when preview is playing */
+.vinyl-playing {
+  box-shadow: 0 0 12px 2px rgba(230, 234, 238, 0.25);
+  transition: box-shadow 0.5s ease-in-out;
+}
+
 /* Floating music notes */
 .music-notes-container {
   z-index: 30;

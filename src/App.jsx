@@ -1369,7 +1369,17 @@ function App() {
               }}
             >
               <div className="status-tab-inner rounded-[8px] px-[12px] py-[7px] flex items-center justify-center gap-[6px]">
-                {currentTrack.isNowPlaying ? (
+                {isPreviewPlaying ? (
+                  <>
+                    <div className="audio-waveform flex items-end gap-[2px]">
+                      <span className="waveform-bar bar-1"></span>
+                      <span className="waveform-bar bar-2"></span>
+                      <span className="waveform-bar bar-3"></span>
+                      <span className="waveform-bar bar-4"></span>
+                    </div>
+                    <span className="font-graphik text-[14px] leading-[20px] text-[#e6eaee] whitespace-nowrap">Preview</span>
+                  </>
+                ) : currentTrack.isNowPlaying ? (
                   <>
                     <div className="audio-waveform flex items-end gap-[2px]">
                       <span className="waveform-bar bar-1"></span>
@@ -1426,7 +1436,7 @@ function App() {
               </div>
               
               {/* Vinyl record - always spinning */}
-              <div className="vinyl-record vinyl-spin absolute inset-0 rounded-full flex items-center justify-center">
+              <div className={`vinyl-record vinyl-spin absolute inset-0 rounded-full flex items-center justify-center ${isPreviewPlaying ? 'vinyl-playing' : ''}`}>
                 {/* Vinyl base with sheen */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#1a1a1a] via-[#252525] to-[#0d0d0d]"></div>
                 <div className="vinyl-sheen absolute inset-0 rounded-full"></div>
