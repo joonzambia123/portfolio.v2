@@ -33,7 +33,6 @@ export function useSounds() {
 
     return () => {
       events.forEach(event => document.removeEventListener(event, handleInteraction))
-      if (audioContextRef.current) audioContextRef.current.close()
     }
   }, [initAudio])
 

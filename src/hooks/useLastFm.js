@@ -112,35 +112,27 @@ export function useLastFm() {
 
   // Play preview with fade in
   const playPreview = useCallback(() => {
-    const previewUrl = currentTrack?.previewUrl;
-    if (!previewUrl) return;
+    if (!currentTrack?.previewUrl) return;
 
-    // Create audio element if it doesn't exist
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+    // Create new audio element each time to avoid stale state
+    if (audioRef.current) {
+      audioRef.current.pause();
     }
-
-    // Update source if needed
-    const secureUrl = previewUrl.replace('http://', 'https://');
-    if (!audioRef.current.src.includes(secureUrl.split('/').pop())) {
-      audioRef.current.src = secureUrl;
-    }
+    audioRef.current = new Audio(currentTrack.previewUrl);
+    audioRef.current.volume = 0;
 
     // Clear any existing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
     }
 
-    // Start at zero volume
-    audioRef.current.volume = 0;
-
-    // Play and fade in very slowly
+    // Play and fade in
     audioRef.current.play().then(() => {
       setIsPlaying(true);
-      // Very slow 15s ramp from 0 to 0.06
-      const targetVolume = 0.06;
-      const duration = 15000;
-      const steps = 150;
+      // 6s ramp from 0 to 0.08
+      const targetVolume = 0.08;
+      const duration = 6000;
+      const steps = 60;
       const stepTime = duration / steps;
       let currentStep = 0;
 
@@ -150,16 +142,15 @@ export function useLastFm() {
           if (audioRef.current) audioRef.current.volume = targetVolume;
           clearInterval(fadeIntervalRef.current);
         } else {
-          // Slow ease-in curve
+          // Linear ramp
           const progress = currentStep / steps;
-          const eased = progress * progress;
-          audioRef.current.volume = eased * targetVolume;
+          audioRef.current.volume = progress * targetVolume;
         }
       }, stepTime);
     }).catch(err => {
       console.warn('Could not play preview:', err);
     });
-  }, [currentTrack]);
+  }, [currentTrack?.previewUrl]);
 
   // Stop preview with fade out
   const stopPreview = useCallback(() => {
