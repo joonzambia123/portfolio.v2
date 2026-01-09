@@ -83,7 +83,12 @@ export function useSounds() {
 
     try {
       const ctx = getAudioContext()
-      if (!ctx || ctx.state === 'suspended') return
+      if (!ctx) return
+
+      // If suspended, try to resume and play anyway (works on click events)
+      if (ctx.state === 'suspended') {
+        ctx.resume()
+      }
 
       const now = ctx.currentTime
 
