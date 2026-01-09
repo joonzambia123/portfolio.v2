@@ -634,33 +634,36 @@ function App() {
     // Don't start animations until loader is done
     if (isLoading) return;
     
-    // Wait 1 second after loader ends, then start sequential animations
-    const startDelay = 1000;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    // Wait after loader ends - Safari needs more time
+    const startDelay = isSafari ? 1200 : 1000;
+    const stagger = isSafari ? 100 : 70; // More time between animations for Safari
     
     // Time component appears first
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, timeComponent: true }));
-    }, startDelay + 50);
+    }, startDelay);
     
     // H1 appears second
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, h1: true }));
-    }, startDelay + 120);
+    }, startDelay + stagger);
     
     // Body paragraphs appear third
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, bodyParagraphs: true }));
-    }, startDelay + 190);
+    }, startDelay + stagger * 2);
     
     // Video frame appears fourth
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, videoFrame: true }));
-    }, startDelay + 260);
+    }, startDelay + stagger * 3);
     
-    // Bottom component appears last
+    // Bottom component appears last - give more time
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, bottomComponent: true }));
-    }, startDelay + 330);
+    }, startDelay + stagger * 4 + 50);
   }, [isLoading]);
 
   // Trigger subtle jiggle animation: initial after 8s, then every 5s. Pause on hover, then resume 15s after leaving.
@@ -941,8 +944,14 @@ function App() {
   }, [isHovered]);
 
   // Preload next video in the inactive element for seamless transitions
+  // Only runs after loader is done and after initial video setup
   useEffect(() => {
-    if (isTransitioningRef.current || videoData.length === 0) return;
+    // Don't run during loading or initial setup
+    if (isLoading || isTransitioningRef.current || videoData.length === 0) return;
+    
+    // Skip initial render (videoIndex === 0 and activeVideo === 1 is handled by mount effect)
+    // Only preload when we've actually changed videos
+    if (videoIndex === 0 && activeVideo === 1) return;
     
     const nextIndex = (videoIndex + 1) % videoData.length;
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
@@ -974,58 +983,69 @@ function App() {
         inactiveRef.current.preload = 'auto';
       }
     }
-  }, [videoIndex, activeVideo, videoData]);
+  }, [isLoading, videoIndex, activeVideo, videoData]);
 
-  // Ensure videos play on mount and when videoData loads
+  // Ensure videos play after loader finishes and videoData is available
   useEffect(() => {
-    if (videoData.length === 0) return;
+    // Wait until loader is done and we have video data
+    if (isLoading || videoData.length === 0) return;
     
-    // Reset indices to ensure sync
+    // Reset state to initial values
+    setVideoIndex(0);
+    setActiveVideo(1);
     video1IndexRef.current = 0;
     video2IndexRef.current = 1;
     
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
-    // Setup video 1 (first video, active)
-    if (videoRef1.current && videoData[0]) {
-      const source1 = videoRef1.current.querySelector('source');
-      if (source1) {
-        source1.src = videoData[0].src;
-        videoRef1.current.load();
-        
-        // Safari needs a slight delay before playing
-        const playVideo1 = () => {
-          const playPromise1 = videoRef1.current.play();
-          if (playPromise1 !== undefined) {
-            playPromise1.catch(error => {
-              console.log('Video autoplay prevented:', error);
-              // Safari: Try again with user gesture simulation
-              if (isSafari) {
-                videoRef1.current.muted = true;
-                videoRef1.current.play().catch(() => {});
-              }
-            });
+    // Small delay to ensure DOM is ready after loader transition
+    const setupDelay = isSafari ? 100 : 50;
+    
+    setTimeout(() => {
+      // Setup video 1 (first video, active)
+      if (videoRef1.current && videoData[0]) {
+        const source1 = videoRef1.current.querySelector('source');
+        if (source1) {
+          source1.src = videoData[0].src;
+          videoRef1.current.load();
+          
+          const playVideo1 = () => {
+            if (!videoRef1.current) return;
+            videoRef1.current.muted = true; // Ensure muted for autoplay
+            const playPromise = videoRef1.current.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(() => {
+                // Retry once more after a delay
+                setTimeout(() => {
+                  if (videoRef1.current) {
+                    videoRef1.current.play().catch(() => {});
+                  }
+                }, 100);
+              });
+            }
+          };
+          
+          if (isSafari) {
+            // Safari: Wait for canplaythrough event
+            videoRef1.current.oncanplaythrough = playVideo1;
+            // Also try after a delay as fallback
+            setTimeout(playVideo1, 500);
+          } else {
+            playVideo1();
           }
-        };
-        
-        if (isSafari) {
-          // Safari: Wait for canplay event
-          videoRef1.current.oncanplay = playVideo1;
-        } else {
-          playVideo1();
         }
       }
-    }
-    
-    // Setup video 2 (second video, preloaded but not playing)
-    if (videoRef2.current && videoData[1]) {
-      const source2 = videoRef2.current.querySelector('source');
-      if (source2) {
-        source2.src = videoData[1].src;
-        videoRef2.current.load();
+      
+      // Setup video 2 (second video, preloaded but not playing)
+      if (videoRef2.current && videoData[1]) {
+        const source2 = videoRef2.current.querySelector('source');
+        if (source2) {
+          source2.src = videoData[1].src;
+          videoRef2.current.load();
+        }
       }
-    }
-  }, [videoData]);
+    }, setupDelay);
+  }, [isLoading, videoData]);
 
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
