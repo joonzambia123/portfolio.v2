@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 // Last.fm API hook to fetch recently played track with iTunes preview
 export function useLastFm() {
@@ -111,7 +111,7 @@ export function useLastFm() {
   };
 
   // Play preview with fade in
-  const playPreview = () => {
+  const playPreview = useCallback(() => {
     if (!currentTrack?.previewUrl) return;
 
     // Create audio element if it doesn't exist
@@ -134,13 +134,13 @@ export function useLastFm() {
     audioRef.current.play().then(() => {
       setIsPlaying(true);
       // Start very quiet, then slowly ramp over 10s
-      const startVolume = 0.01; // Barely audible whisper
+      const startVolume = 0.01;
       const targetVolume = 0.08;
       const steps = 100;
       const stepTime = 10000 / steps;
       let currentStep = 0;
 
-      // Set initial volume so music is immediately noticeable
+      // Set initial volume
       audioRef.current.volume = startVolume;
 
       fadeIntervalRef.current = setInterval(() => {
@@ -149,7 +149,6 @@ export function useLastFm() {
           audioRef.current.volume = targetVolume;
           clearInterval(fadeIntervalRef.current);
         } else {
-          // Linear ramp from start to target - slow and steady
           const progress = currentStep / steps;
           audioRef.current.volume = startVolume + (targetVolume - startVolume) * progress;
         }
@@ -157,10 +156,10 @@ export function useLastFm() {
     }).catch(err => {
       console.warn('Could not play preview:', err);
     });
-  };
+  }, [currentTrack?.previewUrl]);
 
   // Stop preview with fade out
-  const stopPreview = () => {
+  const stopPreview = useCallback(() => {
     if (!audioRef.current) return;
 
     // Clear any existing fade
@@ -187,16 +186,16 @@ export function useLastFm() {
         audioRef.current.volume = Math.max(startVolume - volumeStep * currentStep, 0);
       }
     }, stepTime);
-  };
+  }, []);
 
   // Toggle preview playback
-  const togglePreview = () => {
+  const togglePreview = useCallback(() => {
     if (isPlaying) {
       stopPreview();
     } else {
       playPreview();
     }
-  };
+  }, [isPlaying, stopPreview, playPreview]);
 
   // Cleanup on unmount
   useEffect(() => {

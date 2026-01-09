@@ -25,14 +25,7 @@ function App() {
   const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, playPreview, stopPreview } = useLastFm();
 
   // Sound effects
-  const { playHover, playClick, playArrow, playCardHover, playMusicHover, setEnabled: setSoundsEnabled } = useSounds();
-  const [isMuted, setIsMuted] = useState(() => {
-    // Load mute preference from localStorage
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('soundsMuted') === 'true';
-    }
-    return false;
-  });
+  const { playHover, playClick, playArrow, playCardHover, playMusicHover } = useSounds();
   const videoRef1 = useRef(null);
   const videoRef2 = useRef(null);
   const [videoIndex, setVideoIndex] = useState(0);
@@ -308,33 +301,6 @@ function App() {
     const checkIsMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0 ||
                        navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;
     setIsMac(checkIsMac);
-  }, []);
-
-  // Sync mute state with sounds and localStorage
-  useEffect(() => {
-    setSoundsEnabled(!isMuted);
-    localStorage.setItem('soundsMuted', isMuted.toString());
-  }, [isMuted, setSoundsEnabled]);
-
-  // Stop preview when muted
-  useEffect(() => {
-    if (isMuted) {
-      stopPreview();
-    }
-  }, [isMuted]);
-
-  // 'M' key to toggle mute
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.code === 'KeyM' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        // Don't trigger if typing in an input
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        setIsMuted(prev => !prev);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Command+K / Ctrl+K keyboard shortcut
@@ -1438,10 +1404,8 @@ function App() {
                 }
                 setIsModalExiting(false);
                 setIsMusicHovered(true);
-                if (!isMuted) {
-                  playMusicHover();
-                  playPreview();
-                }
+                playMusicHover();
+                playPreview();
               }}
               onMouseLeave={() => {
                 stopPreview();
