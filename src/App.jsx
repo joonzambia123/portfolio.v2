@@ -11,6 +11,13 @@ function App() {
   const [clockTimeString, setClockTimeString] = useState('');
   const [clockTime, setClockTime] = useState({ hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
   
+  // Loader state - shows coordinates while videos preload
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentCoordIndex, setCurrentCoordIndex] = useState(0);
+  const [coordFading, setCoordFading] = useState(false);
+  const videoCacheRef = useRef(new Set()); // Track which videos are fully cached
+  const loaderMinTimeRef = useRef(false); // Minimum loader display time
+  
   // Last.fm integration
   const { currentTrack, isLoading: musicLoading, error: musicError } = useLastFm();
   const videoRef1 = useRef(null);
@@ -750,24 +757,83 @@ function App() {
   }, [websiteCopy]); // Re-run when CMS data changes
 
 
-  // Background preloading: Preload all videos in browser cache with low priority
+  // Aggressive video preloading: Fully download and cache all videos
   useEffect(() => {
     if (videoData.length === 0) return;
     
-    // Preload all videos in background using fetch API
-    // This keeps them in browser cache for instant access
+    // Preload all videos fully using fetch API with blob storage
+    // This ensures videos are completely cached and never need to reload
+    const preloadVideo = async (video, index) => {
+      try {
+        const response = await fetch(video.src);
+        if (response.ok) {
+          // Read the entire response to cache it
+          await response.blob();
+          videoCacheRef.current.add(video.src);
+        }
+      } catch (e) {
+        // Silently fail - video will load when needed
+      }
+    };
+    
+    // Start preloading all videos immediately
     videoData.forEach((video, index) => {
-      // Stagger preloading to avoid blocking initial page load
+      // Slight stagger to avoid overwhelming the browser
       setTimeout(() => {
-        fetch(video.src, { 
-          method: 'HEAD',
-          priority: 'low'
-        }).catch(() => {
-          // Silently fail - video will load when needed
-        });
-      }, index * 100); // Stagger by 100ms each
+        preloadVideo(video, index);
+      }, index * 50);
     });
   }, [videoData]);
+
+  // Loader animation: Cycle through coordinates
+  useEffect(() => {
+    if (!isLoading || videoData.length === 0) return;
+    
+    // Set minimum loader time (2.5 seconds to show a few coordinates)
+    const minTimeTimer = setTimeout(() => {
+      loaderMinTimeRef.current = true;
+      // Check if we can exit loading
+      if (videoCacheRef.current.size >= Math.min(2, videoData.length)) {
+        setIsLoading(false);
+      }
+    }, 2500);
+    
+    // Cycle through coordinates
+    const coordInterval = setInterval(() => {
+      setCoordFading(true);
+      setTimeout(() => {
+        setCurrentCoordIndex(prev => (prev + 1) % videoData.length);
+        setCoordFading(false);
+      }, 300); // Fade out duration
+    }, 600); // Change every 600ms
+    
+    return () => {
+      clearTimeout(minTimeTimer);
+      clearInterval(coordInterval);
+    };
+  }, [isLoading, videoData]);
+
+  // Check if loading is complete
+  useEffect(() => {
+    if (!isLoading || videoData.length === 0) return;
+    
+    // Check periodically if we have enough cached videos and minimum time has passed
+    const checkLoading = setInterval(() => {
+      if (loaderMinTimeRef.current && videoCacheRef.current.size >= Math.min(2, videoData.length)) {
+        setIsLoading(false);
+      }
+    }, 100);
+    
+    // Maximum loader time (5 seconds) - exit even if videos aren't fully cached
+    const maxTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+    
+    return () => {
+      clearInterval(checkLoading);
+      clearTimeout(maxTimer);
+    };
+  }, [isLoading, videoData]);
 
   // Ensure Safari-specific attributes are set on video elements
   useEffect(() => {
@@ -867,10 +933,17 @@ function App() {
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
   
-  if (!hasAnyData) {
+  // Show coordinates loader while videos preload
+  if (isLoading || !hasAnyData) {
+    const coordinates = videoData.length > 0 
+      ? videoData.map(v => v.coordinates)
+      : ['6.79770°S, 107.57870°E', '37.82975°N, 122.40606°W', '56.76040°N, 4.69090°W', '10.77700°N, 106.69860°E'];
+    
     return (
       <div className="bg-[#FCFCFC] min-h-screen w-full flex items-center justify-center">
-        <div className="text-[#91918e] text-[14px] font-graphik">Loading...</div>
+        <div className={`coord-loader font-graphik text-[16px] text-[#91918e] ${coordFading ? 'coord-fade-out' : 'coord-fade-in'}`}>
+          {coordinates[currentCoordIndex % coordinates.length]}
+        </div>
       </div>
     );
   }

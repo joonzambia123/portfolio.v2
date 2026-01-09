@@ -1141,3 +1141,17 @@ a.dotted-underline-grey:hover {
   text-decoration-color: #9AC8FC !important;
   cursor: pointer;
 }
+
+/* Coordinates loader animations */
+.coord-loader {
+  letter-spacing: 0.02em;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.coord-fade-in {
+  opacity: 1;
+}
+
+.coord-fade-out {
+  opacity: 0;
+}
