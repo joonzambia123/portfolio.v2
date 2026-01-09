@@ -623,33 +623,39 @@ function App() {
     }
   }, []);
 
-  // Trigger component load animations in sequence
+  // Trigger component load animations in sequence - only after loader finishes
   useEffect(() => {
+    // Don't start animations until loader is done
+    if (isLoading) return;
+    
+    // Wait 1 second after loader ends, then start sequential animations
+    const startDelay = 1000;
+    
     // Time component appears first
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, timeComponent: true }));
-    }, 50);
+    }, startDelay + 50);
     
     // H1 appears second
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, h1: true }));
-    }, 120);
+    }, startDelay + 120);
     
     // Body paragraphs appear third
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, bodyParagraphs: true }));
-    }, 190);
+    }, startDelay + 190);
     
     // Video frame appears fourth
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, videoFrame: true }));
-    }, 260);
+    }, startDelay + 260);
     
     // Bottom component appears last
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, bottomComponent: true }));
-    }, 330);
-  }, []);
+    }, startDelay + 330);
+  }, [isLoading]);
 
   // Trigger subtle jiggle animation: initial after 8s, then every 5s. Pause on hover, then resume 15s after leaving.
   const jiggleIntervalRef = useRef(null);
@@ -792,10 +798,6 @@ function App() {
     // Set minimum loader time (2.5 seconds to show a few coordinates)
     const minTimeTimer = setTimeout(() => {
       loaderMinTimeRef.current = true;
-      // Check if we can exit loading
-      if (videoCacheRef.current.size >= Math.min(2, videoData.length)) {
-        setIsLoading(false);
-      }
     }, 2500);
     
     // Cycle through coordinates
@@ -813,18 +815,24 @@ function App() {
     };
   }, [isLoading, videoData]);
 
-  // Check if loading is complete
+  // Check if loading is complete - wait for videos AND Last.fm
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
     
-    // Check periodically if we have enough cached videos and minimum time has passed
+    // Check periodically if:
+    // 1. Minimum time has passed
+    // 2. At least 2 videos are cached
+    // 3. Last.fm is done loading (not in loading state)
     const checkLoading = setInterval(() => {
-      if (loaderMinTimeRef.current && videoCacheRef.current.size >= Math.min(2, videoData.length)) {
+      const videosReady = videoCacheRef.current.size >= Math.min(2, videoData.length);
+      const lastFmReady = !musicLoading;
+      
+      if (loaderMinTimeRef.current && videosReady && lastFmReady) {
         setIsLoading(false);
       }
     }, 100);
     
-    // Maximum loader time (5 seconds) - exit even if videos aren't fully cached
+    // Maximum loader time (5 seconds) - exit even if not everything is ready
     const maxTimer = setTimeout(() => {
       setIsLoading(false);
     }, 5000);
@@ -833,7 +841,7 @@ function App() {
       clearInterval(checkLoading);
       clearTimeout(maxTimer);
     };
-  }, [isLoading, videoData]);
+  }, [isLoading, videoData, musicLoading]);
 
   // Ensure Safari-specific attributes are set on video elements
   useEffect(() => {
