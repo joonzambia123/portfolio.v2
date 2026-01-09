@@ -907,7 +907,10 @@ function App() {
   }, [isLoading, videoData, musicLoading]);
 
   // Ensure Safari-specific attributes are set on video elements
+  // Runs when loader finishes and videos are in DOM
   useEffect(() => {
+    if (isLoading) return; // Wait for loader to finish
+    
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
     const setupVideoElement = (videoEl) => {
@@ -931,7 +934,7 @@ function App() {
     
     setupVideoElement(videoRef1.current);
     setupVideoElement(videoRef2.current);
-  }, []);
+  }, [isLoading]);
 
   // Update loop attribute based on hover state (backup to JSX prop)
   useEffect(() => {
@@ -944,10 +947,7 @@ function App() {
     }
   }, [isHovered]);
 
-  // Track if videos have been initialized
-  const videosInitializedRef = useRef(false);
-  
-  // Helper to encode video src for Safari compatibility
+  // Helper to encode video src for Safari compatibility (handles spaces in filenames)
   const encodeVideoSrc = (src) => {
     if (!src) return src;
     // Encode the path but keep the leading slash
@@ -957,7 +957,8 @@ function App() {
   
   // Preload next video in the inactive element for seamless transitions
   useEffect(() => {
-    if (isTransitioningRef.current || videoData.length === 0) return;
+    // Don't run during loading or transitions
+    if (isLoading || isTransitioningRef.current || videoData.length === 0) return;
     
     const nextIndex = (videoIndex + 1) % videoData.length;
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
@@ -989,65 +990,48 @@ function App() {
         inactiveRef.current.preload = 'auto';
       }
     }
-  }, [videoIndex, activeVideo, videoData]);
+  }, [isLoading, videoIndex, activeVideo, videoData]);
 
-  // Initialize videos when they first become available in the DOM
-  // This runs when videoData loads OR when refs become available
+  // Ensure videos play on mount - runs when loader finishes AND videoData is ready
   useEffect(() => {
-    // Already initialized, skip
-    if (videosInitializedRef.current) return;
+    // Wait for loader to finish and video data to be available
+    if (isLoading || videoData.length === 0) return;
     
-    // Need video data and video elements
-    if (videoData.length === 0) return;
-    if (!videoRef1.current || !videoRef2.current) return;
-    
-    // Mark as initialized
-    videosInitializedRef.current = true;
-    
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    // Reset indices
-    video1IndexRef.current = 0;
-    video2IndexRef.current = 1;
-    
-    // Setup video 1 (first video, active)
-    const source1 = videoRef1.current.querySelector('source');
-    if (source1 && videoData[0]) {
-      const encodedSrc1 = encodeVideoSrc(videoData[0].src);
-      source1.src = encodedSrc1;
-      videoRef1.current.load();
+    // Wait a frame for the DOM to update after conditional render change
+    requestAnimationFrame(() => {
+      // Reset indices
+      video1IndexRef.current = 0;
+      video2IndexRef.current = 1;
       
-      const playVideo1 = () => {
-        if (!videoRef1.current) return;
-        videoRef1.current.muted = true;
-        const playPromise = videoRef1.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            setTimeout(() => {
-              if (videoRef1.current) {
-                videoRef1.current.play().catch(() => {});
-              }
-            }, 100);
-          });
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      
+      // Play video 1 when ready
+      if (videoRef1.current) {
+        const playVideo1 = () => {
+          if (!videoRef1.current) return;
+          videoRef1.current.muted = true;
+          const playPromise = videoRef1.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              setTimeout(() => {
+                if (videoRef1.current) {
+                  videoRef1.current.play().catch(() => {});
+                }
+              }, 100);
+            });
+          }
+        };
+        
+        if (isSafari) {
+          videoRef1.current.oncanplaythrough = playVideo1;
+          setTimeout(playVideo1, 300);
+        } else {
+          // Chrome/Firefox: try to play immediately
+          playVideo1();
         }
-      };
-      
-      if (isSafari) {
-        videoRef1.current.oncanplaythrough = playVideo1;
-        setTimeout(playVideo1, 300);
-      } else {
-        videoRef1.current.oncanplaythrough = playVideo1;
       }
-    }
-    
-    // Setup video 2 (second video, preloaded but not playing)
-    const source2 = videoRef2.current.querySelector('source');
-    if (source2 && videoData[1]) {
-      const encodedSrc2 = encodeVideoSrc(videoData[1].src);
-      source2.src = encodedSrc2;
-      videoRef2.current.load();
-    }
-  }, [videoData, isLoading]); // isLoading change triggers re-check when main content mounts
+    });
+  }, [isLoading, videoData]);
 
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
@@ -1208,7 +1192,7 @@ function App() {
                   <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
                 </div>
               )}
-            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0">
+            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-gray-100">
               {/* Video 1 - source managed via ref, not React state */}
               <video 
                 ref={videoRef1}
