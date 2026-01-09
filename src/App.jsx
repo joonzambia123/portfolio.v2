@@ -22,7 +22,7 @@ function App() {
   const loaderMinTimeRef = useRef(false); // Minimum loader display time
   
   // Last.fm integration
-  const { currentTrack, isLoading: musicLoading, error: musicError } = useLastFm();
+  const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, playPreview, stopPreview } = useLastFm();
 
   // Sound effects
   const { playHover, playClick, playArrow, playCardHover, playMusicHover } = useSounds();
@@ -1405,8 +1405,10 @@ function App() {
                 setIsModalExiting(false);
                 setIsMusicHovered(true);
                 playMusicHover();
+                playPreview();
               }}
               onMouseLeave={() => {
+                stopPreview();
                 setIsModalExiting(true);
                 modalTimeoutRef.current = setTimeout(() => {
                   setIsMusicHovered(false);
