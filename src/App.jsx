@@ -1403,10 +1403,10 @@ function App() {
             <div className="vinyl-container relative shrink-0 w-[40px] h-[40px]">
               {/* Floating music notes - appear on hover */}
               <div className="music-notes-container absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
-                <span className="music-note note-1" style={{ color: '#8BA4C7' }}>♪</span>
-                <span className="music-note note-2" style={{ color: '#C9A0B0' }}>♫</span>
-                <span className="music-note note-3" style={{ color: '#9BB8A0' }}>♪</span>
-                <span className="music-note note-4" style={{ color: '#C4AA9A' }}>♬</span>
+                <span className="music-note note-1" style={{ color: '#5B9FD8' }}>♪</span>
+                <span className="music-note note-2" style={{ color: '#D67A9A' }}>♫</span>
+                <span className="music-note note-3" style={{ color: '#6BB88A' }}>♪</span>
+                <span className="music-note note-4" style={{ color: '#E8A85C' }}>♬</span>
               </div>
               
               {/* Vinyl record - always spinning */}

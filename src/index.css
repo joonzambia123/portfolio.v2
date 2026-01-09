@@ -509,7 +509,7 @@ background-color: #E8F6FF;
   left: -6px;
 }
 
-/* Animate notes on hover - simple unified animation */
+/* Animate notes on hover - simple unified animation (optimized for performance) */
 .group\/vinyl:hover .note-1 {
   animation: float-note 2.5s ease-out infinite;
   animation-delay: 0.4s;
@@ -530,6 +530,7 @@ background-color: #E8F6FF;
   animation-delay: 1.6s;
 }
 
+/* Performance-optimized: uses transform and opacity (GPU-accelerated) */
 @keyframes float-note {
   0% {
     opacity: 0;
