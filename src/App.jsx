@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLastFm } from './hooks/useLastFm'
+import { useSounds } from './hooks/useSounds'
 
 // Image URLs from Figma (valid for 7 days)
 const imgRectangle316 = "https://www.figma.com/api/mcp/asset/8d33530d-0256-40f5-be5d-e642c6a86c84";
@@ -22,6 +23,9 @@ function App() {
   
   // Last.fm integration
   const { currentTrack, isLoading: musicLoading, error: musicError } = useLastFm();
+
+  // Sound effects
+  const { playHover, playClick, playArrow, playLinkHover, playCardHover, playMusicHover } = useSounds();
   const videoRef1 = useRef(null);
   const videoRef2 = useRef(null);
   const [videoIndex, setVideoIndex] = useState(0);
@@ -139,21 +143,21 @@ function App() {
   const renderCopy = (key) => {
     const content = getCopy(key);
     if (!content) return null;
-    
+
     // Parse {text|url} for links and {text} for styled spans
     const parts = content.split(/(\{[^}]+\})/g);
     return parts.map((part, i) => {
       const linkMatch = part.match(/^\{([^|]+)\|([^}]+)\}$/);
       const spanMatch = part.match(/^\{([^}]+)\}$/);
-      
+
       if (linkMatch) {
         return (
-          <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="dotted-underline-grey text-grey-dark">
+          <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="dotted-underline-grey text-grey-dark" onMouseEnter={playLinkHover}>
             {linkMatch[1]}
           </a>
         );
       } else if (spanMatch) {
-        return <span key={i} className="dotted-underline-grey text-grey-dark">{spanMatch[1]}</span>;
+        return <span key={i} className="dotted-underline-grey text-grey-dark" onMouseEnter={playLinkHover}>{spanMatch[1]}</span>;
       }
       return part;
     });
@@ -1089,7 +1093,10 @@ function App() {
           {/* Left Column - Text Content */}
           <div className="flex flex-col w-[375px]">
             {/* Time Component */}
-            <div className={`bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] mb-[15px] w-fit cursor-pointer select-none ${loadedComponents.timeComponent ? 'component-loaded' : 'component-hidden'}`}>
+            <div
+              className={`bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] mb-[15px] w-fit cursor-pointer select-none ${loadedComponents.timeComponent ? 'component-loaded' : 'component-hidden'}`}
+              onMouseEnter={playHover}
+            >
               <div className="overflow-clip relative shrink-0 size-[20px]">
                 <svg 
                   width="20" 
@@ -1196,11 +1203,12 @@ function App() {
           </div>
 
           {/* Right Column - Video Card */}
-            <div 
+            <div
               className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'}`}
               onMouseEnter={() => {
                 setIsHovered(true);
                 isHoveredRef.current = true;
+                playCardHover();
               }}
               onMouseLeave={() => {
                 setIsHovered(false);
@@ -1264,12 +1272,13 @@ function App() {
                         {safeVideoData[videoIndex].location}
                       </p>
                       <div className="absolute right-0 flex items-center group/coord-wrapper">
-                        <a 
+                        <a
                           key={videoIndex}
                           href={safeVideoData[videoIndex].coordinatesUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="black-box-text font-graphik leading-[normal] text-[#969494] text-[14px] whitespace-nowrap group-hover/coord-wrapper:text-[#e6eaee] transition-colors duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] cursor-pointer group-hover/coord-wrapper:-translate-x-[14px] transition-transform duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] relative inline-block"
+                          onMouseEnter={playLinkHover}
                         >
                           {safeVideoData[videoIndex].coordinates}
                           <svg 
@@ -1302,13 +1311,15 @@ function App() {
                     )}
                   </div>
                   <div className="flex gap-[6px] items-center">
-                    <button 
+                    <button
                       className="arrow-button h-[29px] w-[30px] flex items-center justify-center cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
+                        playArrow();
                         changeVideo('prev');
                       }}
                       onMouseEnter={() => {
+                        playHover();
                         preloadVideoOnHover('prev');
                       }}
                     >
@@ -1318,13 +1329,15 @@ function App() {
                         <path d="M16.7706 9.24213C16.9175 9.39721 17 9.60751 17 9.8268C17 10.0461 16.9175 10.2564 16.7706 10.4115L12.8915 14.505L16.7706 18.5985C16.9133 18.7545 16.9923 18.9634 16.9905 19.1802C16.9887 19.397 16.9063 19.6045 16.761 19.7578C16.6157 19.9111 16.4192 19.9981 16.2137 20C16.0082 20.0019 15.8103 19.9185 15.6625 19.7679L11.2294 15.0897C11.0825 14.9346 11 14.7243 11 14.505C11 14.2857 11.0825 14.0754 11.2294 13.9203L15.6625 9.24213C15.8094 9.08709 16.0087 9 16.2165 9C16.4243 9 16.6236 9.08709 16.7706 9.24213Z" fill="#4A474A" className="arrow-path"/>
                       </svg>
                     </button>
-                    <button 
+                    <button
                       className="arrow-button h-[29px] w-[30px] flex items-center justify-center cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
+                        playArrow();
                         changeVideo('next');
                       }}
                       onMouseEnter={() => {
+                        playHover();
                         preloadVideoOnHover('next');
                       }}
                     >
@@ -1382,7 +1395,7 @@ function App() {
             className="h-[64px] w-[238px] flex items-center pl-[6px] pr-[12px] relative flex-shrink-0"
             style={{ overflow: 'visible' }}
           >
-            <button 
+            <button
               className="music-player-button h-[48px] w-full flex items-center gap-[10px] pl-[6px] pr-[10px] cursor-pointer group/vinyl"
               onMouseEnter={() => {
                 if (modalTimeoutRef.current) {
@@ -1391,6 +1404,7 @@ function App() {
                 }
                 setIsModalExiting(false);
                 setIsMusicHovered(true);
+                playMusicHover();
               }}
               onMouseLeave={() => {
                 setIsModalExiting(true);
@@ -1475,10 +1489,14 @@ function App() {
 
             {/* Timeline and Shortcuts buttons */}
             <div className="flex h-[37px] w-[175px]">
-              <button className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer">
+              <button
+                className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer"
+                onMouseEnter={playHover}
+                onClick={playClick}
+              >
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
               </button>
-              <button 
+              <button
                 ref={shortcutsButtonRef}
                 className={`bottom-button h-[37px] rounded-r-[8px] w-[92px] flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''}`}
                 onMouseEnter={() => {
@@ -1488,7 +1506,9 @@ function App() {
                   }
                   setIsShortcutsModalExiting(false);
                   setIsShortcutsHovered(true);
+                  playHover();
                 }}
+                onClick={playClick}
                 onMouseLeave={() => {
                   setIsShortcutsModalExiting(true);
                   shortcutsModalTimeoutRef.current = setTimeout(() => {
@@ -1502,7 +1522,11 @@ function App() {
             </div>
 
             {/* Contact button */}
-            <button className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center px-[14px] py-[11px] cursor-pointer">
+            <button
+              className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center px-[14px] py-[11px] cursor-pointer"
+              onMouseEnter={playHover}
+              onClick={playClick}
+            >
               <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
             </button>
           </div>
