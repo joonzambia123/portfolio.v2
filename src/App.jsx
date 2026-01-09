@@ -795,10 +795,10 @@ function App() {
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
     
-    // Set minimum loader time (2.5 seconds to show a few coordinates)
+    // Set minimum loader time (3 seconds to show a nice loop of coordinates)
     const minTimeTimer = setTimeout(() => {
       loaderMinTimeRef.current = true;
-    }, 2500);
+    }, 3000);
     
     // Cycle through coordinates
     const coordInterval = setInterval(() => {
@@ -815,27 +815,29 @@ function App() {
     };
   }, [isLoading, videoData]);
 
-  // Check if loading is complete - wait for videos AND Last.fm
+  // Check if loading is complete - wait for ALL videos to be cached
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
     
-    // Check periodically if:
-    // 1. Minimum time has passed
-    // 2. At least 2 videos are cached
-    // 3. Last.fm is done loading (not in loading state)
+    // Check periodically if everything is ready:
+    // 1. Minimum time has passed (3 seconds for coordinates loop)
+    // 2. ALL videos are cached
+    // 3. Last.fm is done loading
     const checkLoading = setInterval(() => {
-      const videosReady = videoCacheRef.current.size >= Math.min(2, videoData.length);
+      const allVideosCached = videoCacheRef.current.size >= videoData.length;
       const lastFmReady = !musicLoading;
       
-      if (loaderMinTimeRef.current && videosReady && lastFmReady) {
+      if (loaderMinTimeRef.current && allVideosCached && lastFmReady) {
         setIsLoading(false);
       }
     }, 100);
     
-    // Maximum loader time (5 seconds) - exit even if not everything is ready
+    // Maximum loader time (13 seconds) - exit even if not everything is cached
+    // On very slow connections, the page will eventually load
+    // Component animations will still work smoothly, remaining videos will load in background
     const maxTimer = setTimeout(() => {
       setIsLoading(false);
-    }, 5000);
+    }, 13000);
     
     return () => {
       clearInterval(checkLoading);
@@ -1086,8 +1088,8 @@ function App() {
                 isHoveredRef.current = false;
               }}
             >
-              {/* Loading indicator during video transitions */}
-              {isTransitioning && (
+              {/* Loading indicator during video transitions - only show if video is NOT cached */}
+              {isTransitioning && safeVideoData[targetVideoIndexRef.current] && !videoCacheRef.current.has(safeVideoData[targetVideoIndexRef.current].src) && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
                   <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
                 </div>
