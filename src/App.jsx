@@ -1379,16 +1379,6 @@ function App() {
                     </div>
                     <span className="font-graphik text-[14px] leading-[20px] text-[#e6eaee] whitespace-nowrap">Live now</span>
                   </>
-                ) : isPreviewPlaying ? (
-                  <>
-                    <div className="audio-waveform flex items-end gap-[2px]">
-                      <span className="waveform-bar bar-1"></span>
-                      <span className="waveform-bar bar-2"></span>
-                      <span className="waveform-bar bar-3"></span>
-                      <span className="waveform-bar bar-4"></span>
-                    </div>
-                    <span className="font-graphik text-[14px] leading-[20px] text-[#e6eaee] whitespace-nowrap">Preview</span>
-                  </>
                 ) : (
                   <>
                     <span className="font-graphik text-[14px] leading-[20px] whitespace-nowrap">
