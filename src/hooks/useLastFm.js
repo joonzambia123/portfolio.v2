@@ -133,11 +133,15 @@ export function useLastFm() {
     // Play and fade in
     audioRef.current.play().then(() => {
       setIsPlaying(true);
-      // Fade in over 8s - extremely slow ramp to let user opt out
+      // Start at audible level, then slowly ramp over 10s
+      const startVolume = 0.025; // Immediately audible but quiet
       const targetVolume = 0.08;
       const steps = 100;
-      const stepTime = 8000 / steps;
+      const stepTime = 10000 / steps;
       let currentStep = 0;
+
+      // Set initial volume so music is immediately noticeable
+      audioRef.current.volume = startVolume;
 
       fadeIntervalRef.current = setInterval(() => {
         currentStep++;
@@ -145,10 +149,9 @@ export function useLastFm() {
           audioRef.current.volume = targetVolume;
           clearInterval(fadeIntervalRef.current);
         } else {
-          // Cubic ease-in: stays very quiet for longer, then ramps up
+          // Linear ramp from start to target - slow and steady
           const progress = currentStep / steps;
-          const easedProgress = progress * progress * progress;
-          audioRef.current.volume = easedProgress * targetVolume;
+          audioRef.current.volume = startVolume + (targetVolume - startVolume) * progress;
         }
       }, stepTime);
     }).catch(err => {
