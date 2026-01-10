@@ -763,16 +763,25 @@ function App() {
   }, [websiteCopy]); // Re-run when CMS data changes
 
 
-  // Font loading check
+  // Font loading check - ensure fonts are loaded before loader animation
   useEffect(() => {
     // Wait for fonts to be ready
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => {
-        fontsLoadedRef.current = true;
+        // Small delay to ensure font is actually rendered in the DOM
+        // This prevents FOUT (Flash of Unstyled Text) in the loader
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fontsLoadedRef.current = true;
+          });
+        });
       });
     } else {
       // Fallback for browsers without font loading API
-      fontsLoadedRef.current = true;
+      // Wait a bit for fonts to potentially load
+      setTimeout(() => {
+        fontsLoadedRef.current = true;
+      }, 200);
     }
   }, []);
 
@@ -839,27 +848,63 @@ function App() {
     });
   }, [videoData]);
 
-  // Loader animation: Cycle through coordinates
+  // Loader animation: Cycle through coordinates (only after fonts are loaded)
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
     
-    // Set minimum loader time (3 seconds to show a nice loop of coordinates)
-    const minTimeTimer = setTimeout(() => {
-      loaderMinTimeRef.current = true;
-    }, 3000);
+    let minTimeTimer = null;
+    let coordInterval = null;
+    let isMounted = true;
     
-    // Cycle through coordinates
-    const coordInterval = setInterval(() => {
-      setCoordFading(true);
-      setTimeout(() => {
-        setCurrentCoordIndex(prev => (prev + 1) % videoData.length);
-        setCoordFading(false);
-      }, 300); // Fade out duration
-    }, 600); // Change every 600ms
+    // Wait for fonts to load before starting the animation
+    const startAnimation = () => {
+      if (!isMounted) return;
+      
+      // Set minimum loader time (3 seconds to show a nice loop of coordinates)
+      minTimeTimer = setTimeout(() => {
+        if (isMounted) {
+          loaderMinTimeRef.current = true;
+        }
+      }, 3000);
+      
+      // Cycle through coordinates
+      coordInterval = setInterval(() => {
+        if (!isMounted) return;
+        setCoordFading(true);
+        setTimeout(() => {
+          if (isMounted) {
+            setCurrentCoordIndex(prev => (prev + 1) % videoData.length);
+            setCoordFading(false);
+          }
+        }, 300); // Fade out duration
+      }, 600); // Change every 600ms
+    };
+    
+    // Check if fonts are already loaded
+    if (fontsLoadedRef.current) {
+      startAnimation();
+    } else {
+      // Wait for fonts to load
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+          if (isMounted && isLoading && videoData.length > 0) {
+            startAnimation();
+          }
+        });
+      } else {
+        // Fallback: start after a short delay if font API not available
+        setTimeout(() => {
+          if (isMounted) {
+            startAnimation();
+          }
+        }, 100);
+      }
+    }
     
     return () => {
-      clearTimeout(minTimeTimer);
-      clearInterval(coordInterval);
+      isMounted = false;
+      if (minTimeTimer) clearTimeout(minTimeTimer);
+      if (coordInterval) clearInterval(coordInterval);
     };
   }, [isLoading, videoData]);
 
@@ -1088,8 +1133,8 @@ function App() {
   return (
     <div className="bg-[#FCFCFC] min-h-screen w-full">
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-[250px] pt-[180px] pb-[150px] text-left" style={{ width: '100%', height: 'fit-content' }}>
-        <div className="flex gap-[50px] items-start justify-center w-full h-fit" style={{ width: '100%', height: 'fit-content' }}>
+      <div className="w-full flex justify-center items-start pt-[180px] pb-[150px]">
+        <div className="flex gap-[50px] items-start text-left px-4" style={{ width: 'fit-content' }}>
           {/* Left Column - Text Content */}
           <div className="flex flex-col w-[375px]">
             {/* Time Component */}
