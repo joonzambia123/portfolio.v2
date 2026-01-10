@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLastFm } from './hooks/useLastFm'
 import { useSounds } from './hooks/useSounds'
+import SlideUpModal, {
+  MusicModalContent,
+  ActivityModalContent,
+  ShortcutsModalContent,
+  ContactModalContent
+} from './components/SlideUpModal'
 
 // Image URLs from Figma (valid for 7 days)
 const imgRectangle316 = "https://www.figma.com/api/mcp/asset/8d33530d-0256-40f5-be5d-e642c6a86c84";
@@ -54,6 +60,7 @@ function App() {
   const [isShortcutsModalExiting, setIsShortcutsModalExiting] = useState(false);
   const [isShortcutsActive, setIsShortcutsActive] = useState(false);
   const [isMac, setIsMac] = useState(true);
+  const [activeModal, setActiveModal] = useState(null); // 'music' | 'activity' | 'shortcuts' | 'contact' | null
   const isHoveredRef = useRef(false);
   const isTransitioningRef = useRef(false);
   const modalTimeoutRef = useRef(null);
@@ -307,19 +314,31 @@ function App() {
     setIsMac(checkIsMac);
   }, []);
 
-  // Command+K / Ctrl+K keyboard shortcut
+  // Keyboard shortcuts: Cmd+K / Ctrl+K and Escape to close modal
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Escape to close modal
+      if (e.code === 'Escape' && activeModal) {
+        e.preventDefault();
+        setActiveModal(null);
+        return;
+      }
+
       // Check for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
       if ((e.metaKey || e.ctrlKey) && e.code === 'KeyK') {
         e.preventDefault();
-        
+
+        // If modal is open, close it and show shortcuts
+        if (activeModal) {
+          setActiveModal(null);
+        }
+
         // Show active state animation
         setIsShortcutsActive(true);
-        
+
         // Also show the hover state briefly
         setIsShortcutsHovered(true);
-        
+
         setTimeout(() => {
           setIsShortcutsActive(false);
           setIsShortcutsModalExiting(true);
@@ -333,7 +352,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [activeModal]);
 
   // Handle video ended event - auto-advance to next video
   const handleVideoEnded = (e) => {
@@ -1680,7 +1699,7 @@ function App() {
               onClick={(e) => {
                 e.preventDefault();
                 playClick();
-                window.open('https://www.last.fm/user/joonzambia123', '_blank', 'noopener,noreferrer');
+                setActiveModal('music');
               }}
               onMouseEnter={() => {
                 if (modalTimeoutRef.current) {
@@ -1779,7 +1798,7 @@ function App() {
               <button
                 className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer"
                 onMouseEnter={playHover}
-                onClick={playClick}
+                onClick={() => { playClick(); setActiveModal('activity'); }}
               >
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Activity</p>
               </button>
@@ -1795,7 +1814,7 @@ function App() {
                   setIsShortcutsHovered(true);
                   playHover();
                 }}
-                onClick={playClick}
+                onClick={() => { playClick(); setActiveModal('shortcuts'); }}
                 onMouseLeave={() => {
                   setIsShortcutsModalExiting(true);
                   shortcutsModalTimeoutRef.current = setTimeout(() => {
@@ -1812,13 +1831,25 @@ function App() {
             <button
               className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center cursor-pointer"
               onMouseEnter={playHover}
-              onClick={playClick}
+              onClick={() => { playClick(); setActiveModal('contact'); }}
             >
               <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Slide Up Modal */}
+      <SlideUpModal
+        isOpen={activeModal !== null}
+        onClose={() => setActiveModal(null)}
+        type={activeModal}
+      >
+        {activeModal === 'music' && <MusicModalContent currentTrack={currentTrack} />}
+        {activeModal === 'activity' && <ActivityModalContent />}
+        {activeModal === 'shortcuts' && <ShortcutsModalContent isMac={isMac} />}
+        {activeModal === 'contact' && <ContactModalContent />}
+      </SlideUpModal>
     </div>
   )
 }
