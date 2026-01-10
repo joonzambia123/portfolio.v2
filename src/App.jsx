@@ -593,27 +593,22 @@ function App() {
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
 
-      // Check if this video element already has the correct source loaded
-      const currentSrc = decodeURIComponent(sourceElement?.src || '');
-      const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
-      const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
-      const needsLoad = currentFileName !== nextFileName;
-
-      // Check if video is already buffered in the pool (for loading indicator only)
-      const pooledVideo = safariVideoPoolRef.current.get(nextVideoSrc);
-      const isPooledReady = pooledVideo && pooledVideo.readyState >= 3;
-
       // Show loading indicator on Safari
       setSafariLoading(true);
 
-      // Always set source on Safari for reliability
+      // Always set source on Safari - update both source element and video src for reliability
       if (sourceElement) {
         sourceElement.src = nextVideoSrc;
       }
+      // Also set video src directly as fallback for Safari
+      nextRef.current.src = nextVideoSrc;
 
       // Ensure muted for autoplay
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
+      
+      // CRITICAL: Call load() after setting source on Safari to ensure it loads the new video
+      nextRef.current.load();
 
       // Wait for canplay then play
       const onCanPlay = () => {
