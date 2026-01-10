@@ -570,16 +570,22 @@ function App() {
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
 
-      // Check if video is already buffered in the pool
+      // Check if this video element already has the correct source loaded
+      const currentSrc = decodeURIComponent(sourceElement?.src || '');
+      const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
+      const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
+      const needsLoad = currentFileName !== nextFileName;
+
+      // Check if video is already buffered in the pool (for loading indicator only)
       const pooledVideo = safariVideoPoolRef.current.get(nextVideoSrc);
       const isPooledReady = pooledVideo && pooledVideo.readyState >= 3;
 
-      // Only show loading indicator if not already buffered
-      if (!isPooledReady) {
+      // Only show loading indicator if not already buffered in pool
+      if (!isPooledReady && needsLoad) {
         setSafariLoading(true);
       }
 
-      // Always set source and load on Safari for reliability
+      // Always set source on Safari for reliability
       if (sourceElement) {
         sourceElement.src = nextVideoSrc;
       }
@@ -587,9 +593,6 @@ function App() {
       // Ensure muted for autoplay
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
-
-      // Check if video already has enough data (readyState >= 3 means HAVE_FUTURE_DATA)
-      const hasEnoughData = nextRef.current.readyState >= 3;
 
       let eventsFired = false;
       const tryPlay = () => {
@@ -612,20 +615,12 @@ function App() {
 
       const onReady = () => tryPlay();
 
-      // If already buffered, play immediately
-      if (hasEnoughData || isPooledReady) {
-        // Small delay to ensure smooth transition
-        requestAnimationFrame(() => {
-          if (transitionIdRef.current === thisTransitionId) {
-            tryPlay();
-          }
-        });
-      } else {
-        // Listen for both canplay and loadeddata (Safari fires these differently)
-        nextRef.current.addEventListener('canplay', onReady);
-        nextRef.current.addEventListener('loadeddata', onReady);
-        nextRef.current.load();
-      }
+      // Listen for both canplay and loadeddata (Safari fires these differently)
+      nextRef.current.addEventListener('canplay', onReady);
+      nextRef.current.addEventListener('loadeddata', onReady);
+
+      // ALWAYS call load() on Safari - this is critical for source changes
+      nextRef.current.load();
 
       // Fallback timeout for Safari (reduced since we check buffer state)
       setTimeout(() => {
@@ -1616,7 +1611,7 @@ function App() {
         </div>
       </div>
 
-      {/* Bottom Component - Born Slippy, Timeline, Shortcuts, Contact */}
+      {/* Bottom Component - Born Slippy, Activity, Shortcuts, Contact */}
       <div className={`fixed bottom-[50px] left-1/2 transform -translate-x-1/2 h-[64px] w-[529px] ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`} style={{ overflow: 'visible' }}>
         <div className="flex h-full bottom-pill-container rounded-[14px] relative">
           {/* Status Tab - aligned to right edge of music hover box, 10px above pill */}
@@ -1755,14 +1750,14 @@ function App() {
               </div>
             )}
 
-            {/* Timeline and Shortcuts buttons */}
+            {/* Activity and Shortcuts buttons */}
             <div className="flex h-[37px] w-[175px]">
               <button
                 className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer"
                 onMouseEnter={playHover}
                 onClick={playClick}
               >
-                <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
+                <p className="font-graphik text-[14px] text-[#5b5b5e]">Activity</p>
               </button>
               <button
                 ref={shortcutsButtonRef}
@@ -1791,7 +1786,7 @@ function App() {
 
             {/* Contact button */}
             <button
-              className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center px-[14px] py-[11px] cursor-pointer"
+              className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center cursor-pointer"
               onMouseEnter={playHover}
               onClick={playClick}
             >
