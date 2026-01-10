@@ -1308,7 +1308,7 @@ function App() {
               className="relative z-30 w-full black-box-container" 
               onClick={(e) => e.stopPropagation()}
             >
-              <div className={`bg-[#222122] h-[40px] rounded-[14px] w-full black-box-slide group-hover:h-[145px] overflow-hidden relative outline outline-1 outline-white/5 ${showJiggle ? 'black-box-jiggle' : ''}`}>
+              <div className={`bg-[#222122] h-[40px] rounded-[14px] w-full black-box-slide group-hover:h-[130px] overflow-hidden relative outline outline-1 outline-white/5 ${showJiggle ? 'black-box-jiggle' : ''}`}>
                 <div className="absolute left-[12px] right-[12px] top-[12px] flex items-center justify-between transition-all duration-300 ease-in-out group-hover:items-start group-hover:justify-between min-w-0 max-w-full z-10">
                   {safeVideoData[videoIndex] && (
                     <>
@@ -1341,7 +1341,7 @@ function App() {
                     </>
                   )}
                 </div>
-                <div className="absolute left-[12px] right-[12px] bottom-[17px] flex items-end justify-between metadata-fade z-10">
+                <div className="absolute left-[12px] right-[12px] bottom-[15px] flex items-end justify-between metadata-fade z-10">
                   <div className="flex flex-col gap-[8px]">
                     {safeVideoData[videoIndex] && (
                       <>
