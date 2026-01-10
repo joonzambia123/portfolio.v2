@@ -149,11 +149,8 @@ background-color: #E8F6FF;
 
 /* Lock everything in place above 813px - prevent any responsive changes */
 @media (min-width: 814px) {
+  /* Main content centering - content width is 375 + 50 + 346 = 771px */
   /* Force all fixed widths to stay exactly as specified */
-  [class*="px-[250px]"] {
-    padding-left: max(250px, calc((100% - 721px) / 2)) !important;
-    padding-right: max(250px, calc((100% - 721px) / 2)) !important;
-  }
 
   [class*="w-[375px]"] {
     width: 375px !important;
@@ -190,17 +187,18 @@ background-color: #E8F6FF;
     flex-direction: row !important;
   }
 
-  /* Ensure main container centers content */
-  .max-w-7xl {
+  /* Ensure main content wrapper is centered - content is 771px wide (375 + 50 + 346) */
+  .main-content-wrapper {
     margin-left: auto !important;
     margin-right: auto !important;
+    display: flex !important;
   }
 }
 
 /* Responsive styles - only apply below 813px */
 @media (max-width: 813px) {
-  /* Main content container - reduce padding */
-  [class*="px-[250px]"] {
+  /* Main content wrapper - responsive padding */
+  .main-content-wrapper {
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
   }
