@@ -594,44 +594,57 @@ function App() {
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
 
-      let eventsFired = false;
-      const tryPlay = () => {
-        if (eventsFired || transitionIdRef.current !== thisTransitionId) return;
-        eventsFired = true;
+      let hasCompleted = false;
 
-        // Clean up listeners
-        nextRef.current.removeEventListener('canplay', onReady);
-        nextRef.current.removeEventListener('loadeddata', onReady);
+      const finishTransition = () => {
+        if (hasCompleted || transitionIdRef.current !== thisTransitionId) return;
+        hasCompleted = true;
 
-        nextRef.current.play().then(() => {
-          setSafariLoading(false);
-          completeSwitch();
-        }).catch(() => {
-          // Even if play fails, switch anyway
-          setSafariLoading(false);
-          completeSwitch();
+        // Clean up all listeners
+        nextRef.current.removeEventListener('canplay', onCanPlay);
+        nextRef.current.removeEventListener('loadeddata', onCanPlay);
+        nextRef.current.removeEventListener('playing', onPlaying);
+
+        setSafariLoading(false);
+        completeSwitch();
+      };
+
+      const onPlaying = () => {
+        // Video is actually rendering frames now - safe to switch
+        finishTransition();
+      };
+
+      const onCanPlay = () => {
+        if (hasCompleted || transitionIdRef.current !== thisTransitionId) return;
+
+        // Add playing listener before calling play
+        nextRef.current.addEventListener('playing', onPlaying, { once: true });
+
+        nextRef.current.play().catch(() => {
+          // If play fails, switch anyway after a small delay
+          setTimeout(() => finishTransition(), 50);
         });
       };
 
-      const onReady = () => tryPlay();
-
-      // Listen for both canplay and loadeddata (Safari fires these differently)
-      nextRef.current.addEventListener('canplay', onReady);
-      nextRef.current.addEventListener('loadeddata', onReady);
+      // Listen for video ready states
+      nextRef.current.addEventListener('canplay', onCanPlay);
+      nextRef.current.addEventListener('loadeddata', onCanPlay);
 
       // ALWAYS call load() on Safari - this is critical for source changes
       nextRef.current.load();
 
-      // Fallback timeout for Safari (reduced since we check buffer state)
+      // Fallback timeout for Safari - ensures we don't get stuck
       setTimeout(() => {
-        if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current && !eventsFired) {
-          nextRef.current.removeEventListener('canplay', onReady);
-          nextRef.current.removeEventListener('loadeddata', onReady);
-          setSafariLoading(false);
+        if (!hasCompleted && transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
+          nextRef.current.removeEventListener('canplay', onCanPlay);
+          nextRef.current.removeEventListener('loadeddata', onCanPlay);
+          nextRef.current.removeEventListener('playing', onPlaying);
+          // Try to play one more time before giving up
           nextRef.current.play().catch(() => {});
-          completeSwitch();
+          // Give it a moment to render, then switch
+          setTimeout(() => finishTransition(), 100);
         }
-      }, 400);
+      }, 600);
 
       return;
     }
@@ -1465,21 +1478,19 @@ function App() {
                 isHoveredRef.current = false;
               }}
             >
-              {/* Loading indicator during video transitions on Safari */}
-              {safariLoading && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
-                  <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
-                </div>
-              )}
-            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0">
+              {/* Video container with black background to prevent white flashes */}
+            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-black">
               {/* Video 1 */}
-              <video 
+              <video
                 ref={videoRef1}
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
-                style={{ 
+                style={{
                   zIndex: activeVideo === 1 ? 20 : 10,
-                  transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)'
+                  opacity: activeVideo === 1 ? 1 : 0,
+                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
+                  transform: 'translateZ(0)',
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden'
                 }}
                 autoPlay
                 muted
@@ -1492,13 +1503,16 @@ function App() {
                 {safeVideoData[0] && <source src={encodeVideoSrc(safeVideoData[0].src)} type="video/mp4" />}
               </video>
               {/* Video 2 */}
-              <video 
+              <video
                 ref={videoRef2}
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
-                style={{ 
+                style={{
                   zIndex: activeVideo === 2 ? 20 : 10,
-                  transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)'
+                  opacity: activeVideo === 2 ? 1 : 0,
+                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
+                  transform: 'translateZ(0)',
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden'
                 }}
                 muted
                 playsInline
@@ -1509,6 +1523,16 @@ function App() {
               >
                 {safeVideoData[1] && <source src={encodeVideoSrc(safeVideoData[1].src)} type="video/mp4" />}
               </video>
+              {/* Loading indicator - subtle pulse on the location text area */}
+              {safariLoading && (
+                <div className="absolute inset-0 z-30 flex items-end justify-center pb-[60px] pointer-events-none">
+                  <div className="flex gap-1">
+                    <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              )}
             </div>
             <div 
               className="relative z-30 w-full black-box-container" 
