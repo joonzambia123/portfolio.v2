@@ -1337,8 +1337,8 @@ function App() {
   return (
     <div className="bg-[#FCFCFC] min-h-screen w-full">
       {/* Main Content */}
-      <div className="w-full pt-[180px] pb-[150px]">
-        <div className="flex gap-[50px] items-start text-left main-content-wrapper" style={{ width: 'fit-content', margin: '0 auto', maxWidth: '100%', padding: '0 16px' }}>
+      <div className="w-full pt-[180px] pb-[150px] flex justify-center">
+        <div className="flex gap-[50px] items-start text-left main-content-wrapper" style={{ width: 'fit-content', maxWidth: '100%', padding: '0 16px' }}>
           {/* Left Column - Text Content */}
           <div className="flex flex-col w-[375px]">
             {/* Time Component */}
