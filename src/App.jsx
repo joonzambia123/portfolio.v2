@@ -1274,9 +1274,9 @@ function App() {
             <div
               className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'}`}
               onMouseEnter={() => {
-                // Stop jiggle immediately before setting hover state
-                setShowJiggle(false);
+                // Set ref FIRST to prevent race condition with jiggle interval
                 isHoveredRef.current = true;
+                setShowJiggle(false);
                 setIsHovered(true);
               }}
               onMouseLeave={() => {
@@ -1333,10 +1333,9 @@ function App() {
               className="relative z-30 w-full black-box-container" 
               onClick={(e) => e.stopPropagation()}
               onMouseEnter={() => {
-                // Stop jiggle immediately when entering black box area
-                // Hover state is already set by parent video frame
-                setShowJiggle(false);
+                // Set ref FIRST to prevent race condition with jiggle interval
                 isHoveredRef.current = true;
+                setShowJiggle(false);
                 setIsHovered(true);
               }}
             >
@@ -1473,6 +1472,11 @@ function App() {
           >
             <button
               className="music-player-button h-[48px] w-full flex items-center gap-[10px] pl-[6px] pr-[10px] cursor-pointer group/vinyl"
+              onClick={(e) => {
+                e.preventDefault();
+                playClick();
+                window.open('https://www.last.fm/user/joonzambia123', '_blank', 'noopener,noreferrer');
+              }}
               onMouseEnter={() => {
                 if (modalTimeoutRef.current) {
                   clearTimeout(modalTimeoutRef.current);
