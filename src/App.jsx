@@ -25,7 +25,7 @@ function App() {
   const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, playPreview, stopPreview } = useLastFm();
 
   // Sound effects
-  const { playHover, playClick, playArrow, playCardHover, playMusicHover } = useSounds();
+  const { playHover, playClick, playArrow, playMusicHover } = useSounds();
   const videoRef1 = useRef(null);
   const videoRef2 = useRef(null);
   const [videoIndex, setVideoIndex] = useState(0);
@@ -1208,7 +1208,6 @@ function App() {
               onMouseEnter={() => {
                 setIsHovered(true);
                 isHoveredRef.current = true;
-                playCardHover();
               }}
               onMouseLeave={() => {
                 setIsHovered(false);
