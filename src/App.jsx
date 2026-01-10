@@ -61,6 +61,10 @@ function App() {
   const [isShortcutsActive, setIsShortcutsActive] = useState(false);
   const [isMac, setIsMac] = useState(true);
   const [activeModal, setActiveModal] = useState(null); // 'music' | 'activity' | 'shortcuts' | 'contact' | null
+  const [activeAnchorRef, setActiveAnchorRef] = useState(null);
+  const musicButtonRef = useRef(null);
+  const activityButtonRef = useRef(null);
+  const contactButtonRef = useRef(null);
   const isHoveredRef = useRef(false);
   const isTransitioningRef = useRef(false);
   const modalTimeoutRef = useRef(null);
@@ -599,10 +603,8 @@ function App() {
       const pooledVideo = safariVideoPoolRef.current.get(nextVideoSrc);
       const isPooledReady = pooledVideo && pooledVideo.readyState >= 3;
 
-      // Only show loading indicator if not already buffered in pool
-      if (!isPooledReady && needsLoad) {
-        setSafariLoading(true);
-      }
+      // Show loading indicator on Safari
+      setSafariLoading(true);
 
       // Always set source on Safari for reliability
       if (sourceElement) {
@@ -613,57 +615,32 @@ function App() {
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
 
-      let hasCompleted = false;
-
-      const finishTransition = () => {
-        if (hasCompleted || transitionIdRef.current !== thisTransitionId) return;
-        hasCompleted = true;
-
-        // Clean up all listeners
-        nextRef.current.removeEventListener('canplay', onCanPlay);
-        nextRef.current.removeEventListener('loadeddata', onCanPlay);
-        nextRef.current.removeEventListener('playing', onPlaying);
-
-        setSafariLoading(false);
-        completeSwitch();
-      };
-
-      const onPlaying = () => {
-        // Video is actually rendering frames now - safe to switch
-        finishTransition();
-      };
-
+      // Wait for canplay then play
       const onCanPlay = () => {
-        if (hasCompleted || transitionIdRef.current !== thisTransitionId) return;
-
-        // Add playing listener before calling play
-        nextRef.current.addEventListener('playing', onPlaying, { once: true });
-
-        nextRef.current.play().catch(() => {
-          // If play fails, switch anyway after a small delay
-          setTimeout(() => finishTransition(), 50);
+        if (transitionIdRef.current !== thisTransitionId) return;
+        nextRef.current.removeEventListener('canplay', onCanPlay);
+        
+        nextRef.current.play().then(() => {
+          setSafariLoading(false);
+          completeSwitch();
+        }).catch(() => {
+          // Even if play fails, switch anyway
+          setSafariLoading(false);
+          completeSwitch();
         });
       };
-
-      // Listen for video ready states
+      
       nextRef.current.addEventListener('canplay', onCanPlay);
-      nextRef.current.addEventListener('loadeddata', onCanPlay);
-
-      // ALWAYS call load() on Safari - this is critical for source changes
-      nextRef.current.load();
-
-      // Fallback timeout for Safari - ensures we don't get stuck
+      
+      // Fallback timeout for Safari
       setTimeout(() => {
-        if (!hasCompleted && transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
+        if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
           nextRef.current.removeEventListener('canplay', onCanPlay);
-          nextRef.current.removeEventListener('loadeddata', onCanPlay);
-          nextRef.current.removeEventListener('playing', onPlaying);
-          // Try to play one more time before giving up
+          setSafariLoading(false);
           nextRef.current.play().catch(() => {});
-          // Give it a moment to render, then switch
-          setTimeout(() => finishTransition(), 100);
+          completeSwitch();
         }
-      }, 600);
+      }, 500);
 
       return;
     }
@@ -707,17 +684,7 @@ function App() {
         }
       };
 
-      // Check if video is fully cached (from fetch preload) or has enough buffered data
-      const isCached = videoCacheRef.current.has(videoData[nextIndex].src);
-      const hasEnoughData = nextRef.current.readyState >= 3; // HAVE_FUTURE_DATA
-
-      // If video is cached or has enough data, play immediately
-      if ((isCached || hasEnoughData) && !needsLoad) {
-        startPlaying();
-        return;
-      }
-
-      // Even if needs load, check if source was already set and buffered
+      // If video already has data, play immediately
       if (!needsLoad && nextRef.current.readyState >= 2) {
         startPlaying();
         return;
@@ -727,14 +694,10 @@ function App() {
       const tryStart = () => {
         if (hasStarted || transitionIdRef.current !== thisTransitionId) return;
         hasStarted = true;
-        nextRef.current.removeEventListener('canplay', tryStart);
-        nextRef.current.removeEventListener('loadeddata', tryStart);
         startPlaying();
       };
 
-      // Listen for both events for faster response
       nextRef.current.addEventListener('canplay', tryStart, { once: true });
-      nextRef.current.addEventListener('loadeddata', tryStart, { once: true });
 
       if (needsLoad) {
         if (sourceElement) {
@@ -743,12 +706,12 @@ function App() {
         nextRef.current.load();
       }
 
-      // Reduced fallback timeout since we check cache state
+      // Fallback timeout
       setTimeout(() => {
         if (!hasStarted && transitionIdRef.current === thisTransitionId) {
           tryStart();
         }
-      }, 150);
+      }, 200);
     });
   };
 
@@ -1497,19 +1460,21 @@ function App() {
                 isHoveredRef.current = false;
               }}
             >
-              {/* Video container with black background to prevent white flashes */}
-            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-black">
+              {/* Loading indicator during video transitions on Safari */}
+              {safariLoading && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
+                  <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
+                </div>
+              )}
+            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0">
               {/* Video 1 */}
               <video
                 ref={videoRef1}
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
                 style={{
                   zIndex: activeVideo === 1 ? 20 : 10,
-                  opacity: activeVideo === 1 ? 1 : 0,
-                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
-                  transform: 'translateZ(0)',
-                  backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden'
+                  transition: 'filter 250ms ease-in-out',
+                  transform: 'translateZ(0)'
                 }}
                 autoPlay
                 muted
@@ -1527,11 +1492,8 @@ function App() {
                 className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
                 style={{
                   zIndex: activeVideo === 2 ? 20 : 10,
-                  opacity: activeVideo === 2 ? 1 : 0,
-                  transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
-                  transform: 'translateZ(0)',
-                  backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden'
+                  transition: 'filter 250ms ease-in-out',
+                  transform: 'translateZ(0)'
                 }}
                 muted
                 playsInline
@@ -1542,16 +1504,6 @@ function App() {
               >
                 {safeVideoData[1] && <source src={encodeVideoSrc(safeVideoData[1].src)} type="video/mp4" />}
               </video>
-              {/* Loading indicator - subtle pulse on the location text area */}
-              {safariLoading && (
-                <div className="absolute inset-0 z-30 flex items-end justify-center pb-[60px] pointer-events-none">
-                  <div className="flex gap-1">
-                    <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-1 h-1 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                </div>
-              )}
             </div>
             <div 
               className="relative z-30 w-full black-box-container" 
@@ -1695,11 +1647,18 @@ function App() {
             style={{ overflow: 'visible' }}
           >
             <button
+              ref={musicButtonRef}
               className="music-player-button h-[48px] w-full flex items-center gap-[10px] pl-[6px] pr-[10px] cursor-pointer group/vinyl"
               onClick={(e) => {
                 e.preventDefault();
                 playClick();
-                setActiveModal('music');
+                if (activeModal === 'music') {
+                  setActiveModal(null);
+                  setActiveAnchorRef(null);
+                } else {
+                  setActiveModal('music');
+                  setActiveAnchorRef(musicButtonRef);
+                }
               }}
               onMouseEnter={() => {
                 if (modalTimeoutRef.current) {
@@ -1796,9 +1755,19 @@ function App() {
             {/* Activity and Shortcuts buttons */}
             <div className="flex h-[37px] w-[175px]">
               <button
+                ref={activityButtonRef}
                 className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer"
                 onMouseEnter={playHover}
-                onClick={() => { playClick(); setActiveModal('activity'); }}
+                onClick={() => {
+                  playClick();
+                  if (activeModal === 'activity') {
+                    setActiveModal(null);
+                    setActiveAnchorRef(null);
+                  } else {
+                    setActiveModal('activity');
+                    setActiveAnchorRef(activityButtonRef);
+                  }
+                }}
               >
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Activity</p>
               </button>
