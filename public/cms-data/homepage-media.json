@@ -11,7 +11,8 @@
       "aperture": "ƒ9.0",
       "shutter": "1/60s",
       "iso": "320",
-      "alt": "Indonesian kids"
+      "alt": "Indonesian kids",
+      "fileSize": ""
     },
     {
       "id": 1,
@@ -24,7 +25,8 @@
       "aperture": "ƒ4.0",
       "shutter": "1/60s",
       "iso": "800",
-      "alt": "San Francisco cityscape"
+      "alt": "San Francisco cityscape",
+      "fileSize": ""
     },
     {
       "id": 2,
@@ -37,7 +39,8 @@
       "aperture": "ƒ9.0",
       "shutter": "1/60s",
       "iso": "500",
-      "alt": "Corrour mountain landscape"
+      "alt": "Corrour mountain landscape",
+      "fileSize": ""
     },
     {
       "id": 3,
@@ -50,7 +53,8 @@
       "aperture": "ƒ2.8",
       "shutter": "1/60s",
       "iso": "270",
-      "alt": "Framer office in San Francisco"
+      "alt": "Framer office in San Francisco",
+      "fileSize": ""
     },
     {
       "id": 5,
@@ -63,7 +67,8 @@
       "aperture": "ƒ2.8",
       "shutter": "1/60s",
       "iso": "400",
-      "alt": "Students hanging out at University Town, Singapore"
+      "alt": "Students hanging out at University Town, Singapore",
+      "fileSize": ""
     },
     {
       "id": 6,
@@ -76,7 +81,8 @@
       "aperture": "ƒ2.8",
       "shutter": "1/60s",
       "iso": "650",
-      "alt": "Japanese chef serving dish in Fukuoka"
+      "alt": "Japanese chef serving dish in Fukuoka",
+      "fileSize": ""
     },
     {
       "id": 7,
@@ -89,7 +95,8 @@
       "aperture": "ƒ8.0",
       "shutter": "1/60s",
       "iso": "150",
-      "alt": "Man walking dogs in Caol, Scotland."
+      "alt": "Man walking dogs in Caol, Scotland.",
+      "fileSize": ""
     }
   ]
 }

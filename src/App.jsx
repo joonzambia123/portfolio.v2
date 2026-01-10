@@ -18,6 +18,10 @@ function App() {
   const [coordFading, setCoordFading] = useState(false);
   const [loaderMessage, setLoaderMessage] = useState(''); // Encouraging messages after 5 seconds
   const videoCacheRef = useRef(new Set()); // Track which videos are fully cached
+  const safariVideoPoolRef = useRef(new Map()); // Safari: pool of preloaded video elements
+  const safariPoolOrderRef = useRef([]); // Track insertion order for LRU eviction
+  const MAX_SAFARI_POOL_SIZE = 5; // Limit pool size for memory efficiency with many videos
+  const MAX_CONCURRENT_PRELOADS = 3; // Limit concurrent video preloads
   const fontsLoadedRef = useRef(false); // Track if fonts are loaded
   const loaderMinTimeRef = useRef(false); // Minimum loader display time
   
@@ -372,19 +376,86 @@ function App() {
   const transitionIdRef = useRef(0);
   const pendingDirectionRef = useRef(null);
   const targetVideoIndexRef = useRef(0); // Track ultimate target when clicking fast
-  
+
+  // Helper to encode video src for Safari compatibility (handles spaces in filenames)
+  const encodeVideoSrc = (src) => {
+    if (!src) return src;
+    // Encode the path but keep the leading slash
+    const parts = src.split('/');
+    return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
+  };
+
+  // Safari: Aggressively preload a video into the buffer pool with LRU eviction
+  const preloadVideoToPool = (src) => {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (!isSafari || !src) return;
+
+    const encodedSrc = encodeVideoSrc(src);
+
+    // If already in pool, move to end of LRU order (most recently used)
+    if (safariVideoPoolRef.current.has(encodedSrc)) {
+      const orderIndex = safariPoolOrderRef.current.indexOf(encodedSrc);
+      if (orderIndex > -1) {
+        safariPoolOrderRef.current.splice(orderIndex, 1);
+        safariPoolOrderRef.current.push(encodedSrc);
+      }
+      return;
+    }
+
+    // Evict oldest entry if pool is at capacity (LRU eviction)
+    if (safariVideoPoolRef.current.size >= MAX_SAFARI_POOL_SIZE) {
+      const oldestSrc = safariPoolOrderRef.current.shift();
+      if (oldestSrc) {
+        const oldVideo = safariVideoPoolRef.current.get(oldestSrc);
+        if (oldVideo) {
+          oldVideo.src = ''; // Release resources
+          oldVideo.load();
+        }
+        safariVideoPoolRef.current.delete(oldestSrc);
+      }
+    }
+
+    // Create hidden video element for buffering
+    const poolVideo = document.createElement('video');
+    poolVideo.preload = 'auto';
+    poolVideo.muted = true;
+    poolVideo.playsInline = true;
+    poolVideo.setAttribute('playsinline', 'true');
+    poolVideo.setAttribute('webkit-playsinline', 'true');
+    poolVideo.src = encodedSrc;
+    poolVideo.load();
+
+    safariVideoPoolRef.current.set(encodedSrc, poolVideo);
+    safariPoolOrderRef.current.push(encodedSrc);
+  };
+
   // Preload video on hover for faster transitions
   const preloadVideoOnHover = (direction) => {
     if (videoData.length === 0 || isTransitioningRef.current) return;
-    
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const baseIndex = isTransitioningRef.current ? targetVideoIndexRef.current : videoIndex;
-    const targetIndex = direction === 'next' 
-      ? (baseIndex + 1) % videoData.length 
+    const targetIndex = direction === 'next'
+      ? (baseIndex + 1) % videoData.length
       : (baseIndex - 1 + videoData.length) % videoData.length;
-    
+
+    // Safari: Also preload the opposite direction for smoother back-and-forth navigation
+    if (isSafari) {
+      const oppositeIndex = direction === 'next'
+        ? (baseIndex - 1 + videoData.length) % videoData.length
+        : (baseIndex + 1) % videoData.length;
+
+      if (videoData[oppositeIndex]) {
+        preloadVideoToPool(videoData[oppositeIndex].src);
+      }
+      if (videoData[targetIndex]) {
+        preloadVideoToPool(videoData[targetIndex].src);
+      }
+    }
+
     // Determine which video element to use for preloading
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
-    
+
     if (inactiveRef.current) {
       const sourceElement = inactiveRef.current.querySelector('source');
       if (sourceElement && videoData[targetIndex]) {
@@ -392,7 +463,7 @@ function App() {
         const currentSrc = decodeURIComponent(sourceElement.src || '');
         const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
         const targetFileName = decodeURIComponent(targetVideoSrc).split('/').pop()?.split('?')[0] || '';
-        
+
         // Only preload if it's a different video
         if (currentFileName !== targetFileName) {
           sourceElement.src = targetVideoSrc;
@@ -488,35 +559,47 @@ function App() {
       }, isSafari ? 50 : 30);
     };
     
-    // Safari: Use simpler, more robust approach with loading indicator
+    // Safari: Use robust approach with multiple event listeners and buffer checking
     if (isSafari) {
       if (!nextRef.current) {
         setIsTransitioning(false);
         isTransitioningRef.current = false;
         return;
       }
-      
-      // Show loading indicator on Safari
-      setSafariLoading(true);
-      
+
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
-      
+
+      // Check if video is already buffered in the pool
+      const pooledVideo = safariVideoPoolRef.current.get(nextVideoSrc);
+      const isPooledReady = pooledVideo && pooledVideo.readyState >= 3;
+
+      // Only show loading indicator if not already buffered
+      if (!isPooledReady) {
+        setSafariLoading(true);
+      }
+
       // Always set source and load on Safari for reliability
       if (sourceElement) {
         sourceElement.src = nextVideoSrc;
       }
-      
+
       // Ensure muted for autoplay
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
-      nextRef.current.load();
-      
-      // Wait for canplay then play
-      const onCanPlay = () => {
-        if (transitionIdRef.current !== thisTransitionId) return;
-        nextRef.current.removeEventListener('canplay', onCanPlay);
-        
+
+      // Check if video already has enough data (readyState >= 3 means HAVE_FUTURE_DATA)
+      const hasEnoughData = nextRef.current.readyState >= 3;
+
+      let eventsFired = false;
+      const tryPlay = () => {
+        if (eventsFired || transitionIdRef.current !== thisTransitionId) return;
+        eventsFired = true;
+
+        // Clean up listeners
+        nextRef.current.removeEventListener('canplay', onReady);
+        nextRef.current.removeEventListener('loadeddata', onReady);
+
         nextRef.current.play().then(() => {
           setSafariLoading(false);
           completeSwitch();
@@ -526,23 +609,39 @@ function App() {
           completeSwitch();
         });
       };
-      
-      nextRef.current.addEventListener('canplay', onCanPlay);
-      
-      // Fallback timeout for Safari
+
+      const onReady = () => tryPlay();
+
+      // If already buffered, play immediately
+      if (hasEnoughData || isPooledReady) {
+        // Small delay to ensure smooth transition
+        requestAnimationFrame(() => {
+          if (transitionIdRef.current === thisTransitionId) {
+            tryPlay();
+          }
+        });
+      } else {
+        // Listen for both canplay and loadeddata (Safari fires these differently)
+        nextRef.current.addEventListener('canplay', onReady);
+        nextRef.current.addEventListener('loadeddata', onReady);
+        nextRef.current.load();
+      }
+
+      // Fallback timeout for Safari (reduced since we check buffer state)
       setTimeout(() => {
-        if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
-          nextRef.current.removeEventListener('canplay', onCanPlay);
+        if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current && !eventsFired) {
+          nextRef.current.removeEventListener('canplay', onReady);
+          nextRef.current.removeEventListener('loadeddata', onReady);
           setSafariLoading(false);
           nextRef.current.play().catch(() => {});
           completeSwitch();
         }
-      }, 500);
-      
+      }, 400);
+
       return;
     }
     
-    // Chrome/Firefox: Optimized fast path
+    // Chrome/Firefox: Optimized fast path with aggressive buffering checks
     requestAnimationFrame(() => {
       if (transitionIdRef.current !== thisTransitionId) {
         if (pendingDirectionRef.current) {
@@ -553,62 +652,76 @@ function App() {
         }
         return;
       }
-      
+
       if (!nextRef.current) {
         setIsTransitioning(false);
         isTransitioningRef.current = false;
         return;
       }
-      
+
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
       const currentSrc = decodeURIComponent(sourceElement?.src || '');
       const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
       const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
       const needsLoad = currentFileName !== nextFileName;
-      
+
       const startPlaying = () => {
         if (transitionIdRef.current !== thisTransitionId) return;
         if (!nextRef.current) return;
-        
+
         nextRef.current.currentTime = 0;
         const playPromise = nextRef.current.play();
-        
+
         if (playPromise !== undefined) {
           playPromise.then(() => completeSwitch()).catch(() => completeSwitch());
         } else {
           completeSwitch();
         }
       };
-      
-      // If video already has data, play immediately
+
+      // Check if video is fully cached (from fetch preload) or has enough buffered data
+      const isCached = videoCacheRef.current.has(videoData[nextIndex].src);
+      const hasEnoughData = nextRef.current.readyState >= 3; // HAVE_FUTURE_DATA
+
+      // If video is cached or has enough data, play immediately
+      if ((isCached || hasEnoughData) && !needsLoad) {
+        startPlaying();
+        return;
+      }
+
+      // Even if needs load, check if source was already set and buffered
       if (!needsLoad && nextRef.current.readyState >= 2) {
         startPlaying();
         return;
       }
-      
+
       let hasStarted = false;
       const tryStart = () => {
         if (hasStarted || transitionIdRef.current !== thisTransitionId) return;
         hasStarted = true;
+        nextRef.current.removeEventListener('canplay', tryStart);
+        nextRef.current.removeEventListener('loadeddata', tryStart);
         startPlaying();
       };
-      
+
+      // Listen for both events for faster response
       nextRef.current.addEventListener('canplay', tryStart, { once: true });
-      
+      nextRef.current.addEventListener('loadeddata', tryStart, { once: true });
+
       if (needsLoad) {
         if (sourceElement) {
           sourceElement.src = nextVideoSrc;
         }
         nextRef.current.load();
       }
-      
-      // Fallback timeout
+
+      // Reduced fallback timeout since we check cache state
       setTimeout(() => {
         if (!hasStarted && transitionIdRef.current === thisTransitionId) {
           tryStart();
         }
-      }, 200);
+      }, 150);
     });
   };
 
@@ -843,32 +956,90 @@ function App() {
     };
   }, [videoData]);
   
-  // Aggressive video preloading: Fully download and cache all videos
+  // Aggressive video preloading: Fully download and cache all videos with concurrency control
   useEffect(() => {
     if (videoData.length === 0) return;
-    
-    // Preload all videos fully using fetch API
-    const preloadVideo = async (video, index) => {
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    let activePreloads = 0;
+    const preloadQueue = [];
+    let isCancelled = false;
+
+    // Preload a single video
+    const preloadVideo = async (video) => {
+      if (isCancelled) return;
       try {
         const encodedSrc = encodeVideoSrc(video.src);
         const response = await fetch(encodedSrc);
-        if (response.ok) {
-          // Read the entire response to cache it
+        if (response.ok && !isCancelled) {
           await response.blob();
-          videoCacheRef.current.add(video.src); // Store original src for comparison
+          videoCacheRef.current.add(video.src);
+
+          // Safari: Also add to buffer pool for instant playback
+          if (isSafari) {
+            preloadVideoToPool(video.src);
+          }
         }
       } catch (e) {
-        // Don't mark as cached on error - let it try to load naturally
-        console.log('Failed to preload video:', video.src);
+        // Don't mark as cached on error
       }
     };
-    
-    // Start preloading all videos immediately with slight stagger
-    videoData.forEach((video, index) => {
-      setTimeout(() => {
-        preloadVideo(video, index);
-      }, index * 150);
+
+    // Process queue with concurrency limit
+    const processQueue = async () => {
+      while (preloadQueue.length > 0 && activePreloads < MAX_CONCURRENT_PRELOADS && !isCancelled) {
+        const video = preloadQueue.shift();
+        if (video && !videoCacheRef.current.has(video.src)) {
+          activePreloads++;
+          preloadVideo(video).finally(() => {
+            activePreloads--;
+            processQueue(); // Process next in queue
+          });
+        }
+      }
+    };
+
+    // Prioritize: current video, then adjacent videos, then rest
+    // This ensures smooth navigation even with many videos
+    const prioritizedVideos = [];
+    const currentIdx = 0; // Start with first video
+
+    // Add current video first
+    if (videoData[currentIdx]) prioritizedVideos.push(videoData[currentIdx]);
+
+    // Add next few adjacent videos (high priority)
+    for (let i = 1; i <= Math.min(3, Math.floor(videoData.length / 2)); i++) {
+      const nextIdx = (currentIdx + i) % videoData.length;
+      const prevIdx = (currentIdx - i + videoData.length) % videoData.length;
+      if (videoData[nextIdx] && !prioritizedVideos.includes(videoData[nextIdx])) {
+        prioritizedVideos.push(videoData[nextIdx]);
+      }
+      if (videoData[prevIdx] && !prioritizedVideos.includes(videoData[prevIdx])) {
+        prioritizedVideos.push(videoData[prevIdx]);
+      }
+    }
+
+    // Add remaining videos
+    videoData.forEach(video => {
+      if (!prioritizedVideos.includes(video)) {
+        prioritizedVideos.push(video);
+      }
     });
+
+    // Add to queue with stagger
+    const staggerDelay = isSafari ? 100 : 50;
+    prioritizedVideos.forEach((video, index) => {
+      setTimeout(() => {
+        if (!isCancelled) {
+          preloadQueue.push(video);
+          processQueue();
+        }
+      }, index * staggerDelay);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [videoData]);
 
   // Loader animation: Cycle through coordinates (only after fonts are loaded)
@@ -1043,22 +1214,16 @@ function App() {
     }
   }, [isHovered]);
 
-  // Helper to encode video src for Safari compatibility (handles spaces in filenames)
-  const encodeVideoSrc = (src) => {
-    if (!src) return src;
-    // Encode the path but keep the leading slash
-    const parts = src.split('/');
-    return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
-  };
-  
   // Preload next video in the inactive element for seamless transitions
   useEffect(() => {
     // Don't run during loading or transitions
     if (isLoading || isTransitioningRef.current || videoData.length === 0) return;
-    
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const nextIndex = (videoIndex + 1) % videoData.length;
+    const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
-    
+
     // Update the index refs to match current state
     if (activeVideo === 1) {
       video1IndexRef.current = videoIndex;
@@ -1067,7 +1232,28 @@ function App() {
       video2IndexRef.current = videoIndex;
       video1IndexRef.current = nextIndex;
     }
-    
+
+    // Safari: Proactively preload both adjacent videos into the buffer pool
+    if (isSafari) {
+      if (videoData[nextIndex]) {
+        preloadVideoToPool(videoData[nextIndex].src);
+      }
+      if (videoData[prevIndex]) {
+        preloadVideoToPool(videoData[prevIndex].src);
+      }
+    }
+
+    // All browsers: Trigger background fetch for adjacent videos if not cached
+    // This ensures smooth navigation even when jumping around
+    [nextIndex, prevIndex].forEach(idx => {
+      if (videoData[idx] && !videoCacheRef.current.has(videoData[idx].src)) {
+        const encodedSrc = encodeVideoSrc(videoData[idx].src);
+        fetch(encodedSrc).then(res => res.ok && res.blob()).then(() => {
+          videoCacheRef.current.add(videoData[idx].src);
+        }).catch(() => {});
+      }
+    });
+
     // Preload next video in the inactive element
     if (inactiveRef.current && videoData[nextIndex]) {
       const sourceElement = inactiveRef.current.querySelector('source');
@@ -1076,13 +1262,13 @@ function App() {
         const currentSrc = decodeURIComponent(sourceElement.src || '');
         const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
         const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
-        
+
         // Only update if source is different
         if (currentFileName !== nextFileName) {
           sourceElement.src = nextVideoSrc;
           inactiveRef.current.load();
         }
-        
+
         inactiveRef.current.preload = 'auto';
       }
     }

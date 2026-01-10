@@ -13,7 +13,8 @@
       { "key": "aperture", "label": "Aperture", "type": "text", "required": true },
       { "key": "shutter", "label": "Shutter", "type": "text", "required": true },
       { "key": "iso", "label": "ISO", "type": "text", "required": true },
-      { "key": "alt", "label": "Alt Text", "type": "text", "required": false }
+      { "key": "alt", "label": "Alt Text", "type": "text", "required": false },
+      { "key": "fileSize", "label": "File Size", "type": "text", "required": false }
     ]
   },
   "website-copy": {
