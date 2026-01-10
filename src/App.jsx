@@ -685,11 +685,17 @@ function App() {
     };
 
     const startJiggle = () => {
-      // Always check the ref for current hover state
-      if (isHoveredRef.current) return;
+      // Always check the ref for current hover state - double check before starting
+      if (isHoveredRef.current) {
+        setShowJiggle(false);
+        return;
+      }
       setShowJiggle(true);
       jiggleTimeoutRef.current = setTimeout(() => {
-        setShowJiggle(false);
+        // Check again before ending - if hovered, don't set to false (already false)
+        if (!isHoveredRef.current) {
+          setShowJiggle(false);
+        }
         jiggleTimeoutRef.current = null;
       }, 600);
     };
@@ -707,9 +713,26 @@ function App() {
     };
 
     if (isHovered) {
-      // Stop everything immediately
+      // Stop everything immediately - ensure jiggle stops right away
+      // Clear state first, then timers to prevent any race conditions
       setShowJiggle(false);
-      clearAllJiggleTimers();
+      // Clear all timers immediately
+      if (jiggleTimeoutRef.current) {
+        clearTimeout(jiggleTimeoutRef.current);
+        jiggleTimeoutRef.current = null;
+      }
+      if (jiggleIntervalRef.current) {
+        clearInterval(jiggleIntervalRef.current);
+        jiggleIntervalRef.current = null;
+      }
+      if (jigglePauseTimeoutRef.current) {
+        clearTimeout(jigglePauseTimeoutRef.current);
+        jigglePauseTimeoutRef.current = null;
+      }
+      if (jiggleInitialRef.current) {
+        clearTimeout(jiggleInitialRef.current);
+        jiggleInitialRef.current = null;
+      }
     } else {
       // Start jiggle cycle after delay
       jigglePauseTimeoutRef.current = setTimeout(() => {
@@ -1251,8 +1274,10 @@ function App() {
             <div
               className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'}`}
               onMouseEnter={() => {
-                setIsHovered(true);
+                // Stop jiggle immediately before setting hover state
+                setShowJiggle(false);
                 isHoveredRef.current = true;
+                setIsHovered(true);
               }}
               onMouseLeave={() => {
                 setIsHovered(false);
@@ -1307,6 +1332,13 @@ function App() {
             <div 
               className="relative z-30 w-full black-box-container" 
               onClick={(e) => e.stopPropagation()}
+              onMouseEnter={() => {
+                // Stop jiggle immediately when entering black box area
+                // Hover state is already set by parent video frame
+                setShowJiggle(false);
+                isHoveredRef.current = true;
+                setIsHovered(true);
+              }}
             >
               <div className={`bg-[#222122] h-[40px] rounded-[14px] w-full black-box-slide group-hover:h-[130px] overflow-hidden relative outline outline-1 outline-white/5 ${showJiggle ? 'black-box-jiggle' : ''}`}>
                 <div className="absolute left-[12px] right-[12px] top-[12px] flex items-center justify-between transition-all duration-300 ease-in-out group-hover:items-start group-hover:justify-between min-w-0 max-w-full z-10">

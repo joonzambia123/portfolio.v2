@@ -328,9 +328,12 @@ background-color: #E8F6FF;
 /* Stop jiggle animation immediately when hovering on video frame or black box */
 .video-frame-hover:hover .black-box-jiggle,
 .video-frame-hover:hover .black-box-container,
-.black-box-container:hover .black-box-jiggle {
+.video-frame-hover:hover ~ .black-box-container .black-box-jiggle,
+.black-box-container:hover .black-box-jiggle,
+.group:hover .black-box-jiggle {
   animation: none !important;
-  transform: translateY(0) !important;
+  transform: translateY(0) translateX(0) !important;
+  transition: none !important;
 }
 
 @keyframes subtleJiggle {
