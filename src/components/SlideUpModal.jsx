@@ -1,16 +1,25 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
-const SlideUpModal = ({ isOpen, onClose, type, children }) => {
-  // Click outside to close - attach to document
+const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
+  const [position, setPosition] = useState({ left: 0 });
+  const popoverRef = useRef(null);
+
+  // Calculate position based on anchor button
+  useEffect(() => {
+    if (isOpen && anchorRef?.current) {
+      const rect = anchorRef.current.getBoundingClientRect();
+      const buttonCenterX = rect.left + rect.width / 2;
+      setPosition({ left: buttonCenterX });
+    }
+  }, [isOpen, anchorRef, type]);
+
+  // Click outside to close
   useEffect(() => {
     if (!isOpen) return;
 
     const handleClickOutside = (e) => {
-      // Check if click is outside the popover
-      const popover = document.getElementById('slide-up-popover');
-      if (popover && !popover.contains(e.target)) {
-        // Don't close if clicking on the bottom pill buttons
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
         const bottomPill = e.target.closest('.bottom-pill-container');
         if (!bottomPill) {
           onClose();
@@ -18,7 +27,6 @@ const SlideUpModal = ({ isOpen, onClose, type, children }) => {
       }
     };
 
-    // Delay to prevent immediate close on the same click that opened it
     const timer = setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
     }, 100);
@@ -40,62 +48,27 @@ const SlideUpModal = ({ isOpen, onClose, type, children }) => {
     }
   };
 
-  // Get alignment based on button type
-  // The bottom pill is 529px wide, centered on screen
-  // Music: left side, Activity: center-left, Shortcuts: center-right, Contact: right side
-  const getAlignment = () => {
-    switch (type) {
-      case 'music':
-        return { left: 'calc(50% - 264px + 119px)', transform: 'translateX(-50%)' }; // Center of music button
-      case 'activity':
-        return { left: 'calc(50% + 12px)', transform: 'translateX(-50%)' }; // Center of activity button
-      case 'shortcuts':
-        return { left: 'calc(50% + 100px)', transform: 'translateX(-50%)' }; // Center of shortcuts button
-      case 'contact':
-        return { left: 'calc(50% + 210px)', transform: 'translateX(-50%)' }; // Center of contact button
-      default:
-        return { left: '50%', transform: 'translateX(-50%)' };
-    }
-  };
-
-  const alignment = getAlignment();
-
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
-          id="slide-up-popover"
+          ref={popoverRef}
+          key={type}
           className="fixed z-[200]"
           style={{
-            bottom: 'calc(50px + 64px + 10px)', // bottom pill position + height + gap
-            left: alignment.left,
-            transform: alignment.transform
+            bottom: 'calc(50px + 64px + 10px)',
+            left: position.left,
+            x: '-50%'
           }}
-          initial={{
-            opacity: 0,
-            y: 20,
-            filter: 'blur(4px)'
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-            filter: 'blur(0px)'
-          }}
-          exit={{
-            opacity: 0,
-            y: 20,
-            filter: 'blur(4px)'
-          }}
-          transition={{
-            type: 'spring',
-            duration: 0.45,
-            bounce: 0
-          }}
+          initial={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
+          transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
         >
           <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden border border-black/[0.04]">
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-black/[0.06]">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-8">
                 <h2 className="font-graphik text-[15px] font-medium text-[#1a1a1a]">
                   {getTitle()}
                 </h2>

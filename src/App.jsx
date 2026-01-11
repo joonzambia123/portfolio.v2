@@ -43,7 +43,7 @@ function App() {
   const video1IndexRef = useRef(0); // Which video data index is in video1
   const video2IndexRef = useRef(1); // Which video data index is in video2
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [safariLoading, setSafariLoading] = useState(false); // Safari-specific loading state
+  const [videoLoading, setVideoLoading] = useState(false); // Loading state during video transitions
   const firstVideoReadyRef = useRef(false); // Track if first video is ready for loader
   const [loadedComponents, setLoadedComponents] = useState({
     timeComponent: false,
@@ -593,8 +593,8 @@ function App() {
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
 
-      // Show loading indicator on Safari
-      setSafariLoading(true);
+      // Show loading indicator
+      setVideoLoading(true);
 
       // Always set source on Safari - update both source element and video src for reliability
       if (sourceElement) {
@@ -606,47 +606,51 @@ function App() {
       // Ensure muted for autoplay
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
-      
+
       // CRITICAL: Call load() after setting source on Safari to ensure it loads the new video
       nextRef.current.load();
 
-      // Wait for canplay then play
-      const onCanPlay = () => {
+      // Wait for canplaythrough - this ensures video can play to the end without buffering
+      const onCanPlayThrough = () => {
         if (transitionIdRef.current !== thisTransitionId) return;
-        nextRef.current.removeEventListener('canplay', onCanPlay);
-        
+        nextRef.current.removeEventListener('canplaythrough', onCanPlayThrough);
+
         nextRef.current.play().then(() => {
-          setSafariLoading(false);
+          setVideoLoading(false);
           completeSwitch();
         }).catch(() => {
           // Even if play fails, switch anyway
-          setSafariLoading(false);
+          setVideoLoading(false);
           completeSwitch();
         });
       };
-      
-      nextRef.current.addEventListener('canplay', onCanPlay);
-      
-      // Fallback timeout for Safari
+
+      nextRef.current.addEventListener('canplaythrough', onCanPlayThrough);
+
+      // Fallback timeout for Safari - give more time for video to buffer properly
       setTimeout(() => {
         if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
-          nextRef.current.removeEventListener('canplay', onCanPlay);
-          setSafariLoading(false);
+          nextRef.current.removeEventListener('canplaythrough', onCanPlayThrough);
+          setVideoLoading(false);
           nextRef.current.play().catch(() => {});
           completeSwitch();
         }
-      }, 500);
+      }, 800);
 
       return;
     }
     
-    // Chrome/Firefox: Optimized fast path with aggressive buffering checks
+    // Chrome/Firefox: Wait for video to be fully ready before switching
+    // Show loading indicator for all browsers
+    setVideoLoading(true);
+
     requestAnimationFrame(() => {
       if (transitionIdRef.current !== thisTransitionId) {
         if (pendingDirectionRef.current) {
           const dir = pendingDirectionRef.current;
           pendingDirectionRef.current = null;
           isTransitioningRef.current = false;
+          setVideoLoading(false);
           changeVideo(dir);
         }
         return;
@@ -655,6 +659,7 @@ function App() {
       if (!nextRef.current) {
         setIsTransitioning(false);
         isTransitioningRef.current = false;
+        setVideoLoading(false);
         return;
       }
 
@@ -673,14 +678,21 @@ function App() {
         const playPromise = nextRef.current.play();
 
         if (playPromise !== undefined) {
-          playPromise.then(() => completeSwitch()).catch(() => completeSwitch());
+          playPromise.then(() => {
+            setVideoLoading(false);
+            completeSwitch();
+          }).catch(() => {
+            setVideoLoading(false);
+            completeSwitch();
+          });
         } else {
+          setVideoLoading(false);
           completeSwitch();
         }
       };
 
-      // If video already has data, play immediately
-      if (!needsLoad && nextRef.current.readyState >= 2) {
+      // If video already has enough data to play through without buffering (readyState >= 4)
+      if (!needsLoad && nextRef.current.readyState >= 4) {
         startPlaying();
         return;
       }
@@ -692,7 +704,8 @@ function App() {
         startPlaying();
       };
 
-      nextRef.current.addEventListener('canplay', tryStart, { once: true });
+      // Wait for canplaythrough - ensures video can play to end without interruption
+      nextRef.current.addEventListener('canplaythrough', tryStart, { once: true });
 
       if (needsLoad) {
         if (sourceElement) {
@@ -701,12 +714,12 @@ function App() {
         nextRef.current.load();
       }
 
-      // Fallback timeout
+      // Fallback timeout - give more time for video to buffer properly
       setTimeout(() => {
         if (!hasStarted && transitionIdRef.current === thisTransitionId) {
           tryStart();
         }
-      }, 200);
+      }, 500);
     });
   };
 
@@ -1455,8 +1468,8 @@ function App() {
                 isHoveredRef.current = false;
               }}
             >
-              {/* Loading indicator during video transitions on Safari */}
-              {safariLoading && (
+              {/* Loading indicator during video transitions */}
+              {videoLoading && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
                   <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
                 </div>
