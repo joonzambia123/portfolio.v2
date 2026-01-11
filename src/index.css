@@ -196,11 +196,14 @@ background-color: #E8F6FF;
     justify-content: center !important;
   }
 
-  /* Center the parent container on large screens */
+  /* Center the parent container both horizontally and vertically on large screens */
   .w-full.pt-\[180px\].pb-\[150px\].flex.justify-center {
     display: flex !important;
     justify-content: center !important;
-    align-items: flex-start !important;
+    align-items: center !important;
+    min-height: 100vh !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
 }
 
