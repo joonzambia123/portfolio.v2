@@ -48,6 +48,9 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
     }
   };
 
+  // Contact modal has a different design (no header)
+  const isContactModal = type === 'contact';
+
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -65,29 +68,37 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
           exit={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
           transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
         >
-          <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden border border-black/[0.04]">
-            {/* Header */}
-            <div className="px-5 pt-4 pb-3 border-b border-black/[0.06]">
-              <div className="flex items-center justify-between gap-8">
-                <h2 className="font-graphik text-[15px] font-medium text-[#1a1a1a]">
-                  {getTitle()}
-                </h2>
-                <button
-                  onClick={onClose}
-                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M9 3L3 9M3 3L9 9" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-5">
+          {isContactModal ? (
+            // Contact modal - custom container without header
+            <div className="bg-white rounded-[26px] shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-[#EBEEF5] p-[15px]">
               {children}
             </div>
-          </div>
+          ) : (
+            // Default modal with header
+            <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden border border-black/[0.04]">
+              {/* Header */}
+              <div className="px-5 pt-4 pb-3 border-b border-black/[0.06]">
+                <div className="flex items-center justify-between gap-8">
+                  <h2 className="font-graphik text-[15px] font-medium text-[#1a1a1a]">
+                    {getTitle()}
+                  </h2>
+                  <button
+                    onClick={onClose}
+                    className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M9 3L3 9M3 3L9 9" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-5">
+                {children}
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
@@ -279,45 +290,106 @@ export const ShortcutsModalContent = ({ isMac }) => (
   </div>
 );
 
-export const ContactModalContent = () => (
-  <div className="w-[320px] space-y-4">
-    {/* Contact methods */}
-    <div className="space-y-2">
-      {[
-        { label: 'Email', value: 'hello@joonseo.com', icon: '✉️', href: 'mailto:hello@joonseo.com' },
-        { label: 'Twitter', value: '@joonseo', icon: '𝕏', href: 'https://twitter.com/joonseo' },
-        { label: 'LinkedIn', value: 'in/joonseo', icon: '💼', href: 'https://linkedin.com/in/joonseo' },
-        { label: 'GitHub', value: 'joonseo', icon: '🐙', href: 'https://github.com/joonseo' },
-      ].map((contact, i) => (
-        <a
-          key={i}
-          href={contact.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 p-3 rounded-[10px] bg-[#fafafa] hover:bg-[#f5f5f5] transition-colors group"
-        >
-          <div className="w-8 h-8 rounded-full bg-white border border-black/[0.06] flex items-center justify-center text-sm">
-            {contact.icon}
-          </div>
-          <div className="flex-1">
-            <p className="font-graphik text-[11px] text-[#999] uppercase tracking-wide">{contact.label}</p>
-            <p className="font-graphik text-[13px] text-[#1a1a1a] group-hover:text-[#0066cc] transition-colors">{contact.value}</p>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-[#ccc] group-hover:text-[#999] transition-colors">
-            <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </a>
-      ))}
-    </div>
+export const ContactModalContent = () => {
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
-    {/* Availability status */}
-    <div className="p-3 rounded-[10px] bg-[#f0fdf4] border border-[#bbf7d0]">
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"/>
-        <p className="font-graphik text-[13px] text-[#166534]">Available for new projects</p>
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText('changjoonseo126@gmail.com');
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy email:', err);
+    }
+  };
+
+  const contactItems = [
+    {
+      title: 'Email',
+      description: 'changjoonseo126@gmail.com',
+      buttonText: copiedEmail ? 'Copied!' : 'Copy',
+      onClick: handleCopyEmail,
+    },
+    {
+      title: 'Instagram',
+      description: 'Most active here unfortunately',
+      buttonText: 'DM me',
+      href: 'https://instagram.com/joonzambia',
+    },
+    {
+      title: 'LinkedIn',
+      description: 'Attempting to be an adult',
+      buttonText: 'Connect',
+      href: 'https://linkedin.com/in/joonseo-chang',
+    },
+    {
+      title: 'Twitter',
+      description: 'Peer pressure is real kids',
+      buttonText: 'Chirp',
+      href: 'https://twitter.com/joonzambia',
+    },
+  ];
+
+  return (
+    <div className="flex flex-col items-center gap-[12px]">
+      {/* Inner card with contact rows */}
+      <div className="bg-[#FAFAFA] rounded-[14px] border border-[#EBEEF5] py-[15px]">
+        <div className="w-[359px] flex flex-col items-center gap-[12px]">
+          {contactItems.map((item, index) => (
+            <div key={item.title} className="w-full">
+              {/* Contact row */}
+              <div className="flex items-center justify-between px-[14px]">
+                <div className="flex flex-col">
+                  <span className="font-graphik text-[14px] text-[#333333] leading-[25px]">
+                    {item.title}
+                  </span>
+                  <span className="font-graphik text-[14px] text-[#B7B7B9] leading-[25px]">
+                    {item.description}
+                  </span>
+                </div>
+                {item.onClick ? (
+                  <button
+                    onClick={item.onClick}
+                    className="h-[37px] px-[14px] py-[6px] bg-white rounded-[8px] border border-[#EBEEF5] flex items-center justify-center hover:bg-[#f5f5f5] transition-colors"
+                  >
+                    <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
+                      {item.buttonText}
+                    </span>
+                  </button>
+                ) : (
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-[37px] px-[14px] py-[6px] bg-white rounded-[8px] border border-[#EBEEF5] flex items-center justify-center hover:bg-[#f5f5f5] transition-colors"
+                  >
+                    <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
+                      {item.buttonText}
+                    </span>
+                  </a>
+                )}
+              </div>
+              {/* Divider (not after last item) */}
+              {index < contactItems.length - 1 && (
+                <div className="w-full h-[1px] bg-[#EBEEF5] mt-[12px]" />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer text */}
+      <div className="flex items-center justify-center gap-[5px]">
+        <span className="font-graphik text-[14px] text-[#C3C3C3] leading-[25px]">
+          or send me a woof
+        </span>
+        {/* Dog icon */}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10.5 4.5C10.5 4.5 10.5 3 9.75 2.25C9 1.5 8.25 1.5 8.25 1.5L7.5 3H4.5L3.75 1.5C3.75 1.5 3 1.5 2.25 2.25C1.5 3 1.5 4.5 1.5 4.5L2.25 5.25V7.5C2.25 8.25 3 9 3.75 9.75L4.5 10.5H7.5L8.25 9.75C9 9 9.75 8.25 9.75 7.5V5.25L10.5 4.5ZM4.125 5.625C3.9175 5.625 3.75 5.4575 3.75 5.25C3.75 5.0425 3.9175 4.875 4.125 4.875C4.3325 4.875 4.5 5.0425 4.5 5.25C4.5 5.4575 4.3325 5.625 4.125 5.625ZM5.625 7.5C5.625 7.7075 5.4575 7.875 5.25 7.875H6.75C6.5425 7.875 6.375 7.7075 6.375 7.5V6.75H5.625V7.5ZM7.875 5.625C7.6675 5.625 7.5 5.4575 7.5 5.25C7.5 5.0425 7.6675 4.875 7.875 4.875C8.0825 4.875 8.25 5.0425 8.25 5.25C8.25 5.4575 8.0825 5.625 7.875 5.625Z" fill="#C3C3C3"/>
+        </svg>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default SlideUpModal;

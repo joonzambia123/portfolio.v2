@@ -1857,9 +1857,19 @@ function App() {
 
             {/* Contact button */}
             <button
+              ref={contactButtonRef}
               className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center cursor-pointer"
               onMouseEnter={playHover}
-              onClick={() => { playClick(); setActiveModal('contact'); }}
+              onClick={() => {
+                playClick();
+                if (activeModal === 'contact') {
+                  setActiveModal(null);
+                  setActiveAnchorRef(null);
+                } else {
+                  setActiveModal('contact');
+                  setActiveAnchorRef(contactButtonRef);
+                }
+              }}
             >
               <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
             </button>
@@ -1872,6 +1882,7 @@ function App() {
         isOpen={activeModal !== null}
         onClose={() => setActiveModal(null)}
         type={activeModal}
+        anchorRef={activeAnchorRef}
       >
         {activeModal === 'music' && <MusicModalContent currentTrack={currentTrack} />}
         {activeModal === 'activity' && <ActivityModalContent />}
