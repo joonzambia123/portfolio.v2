@@ -593,8 +593,9 @@ function App() {
       const sourceElement = nextRef.current.querySelector('source');
       const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
 
-      // Show loading indicator
-      setVideoLoading(true);
+      // Check if video is already cached/ready - only show loading if not
+      const isVideoCached = videoCacheRef.current.has(videoData[nextIndex].src);
+      const isVideoReady = nextRef.current.readyState >= 2;
 
       // Always set source on Safari - update both source element and video src for reliability
       if (sourceElement) {
@@ -610,47 +611,55 @@ function App() {
       // CRITICAL: Call load() after setting source on Safari to ensure it loads the new video
       nextRef.current.load();
 
-      // Wait for canplaythrough - this ensures video can play to the end without buffering
-      const onCanPlayThrough = () => {
+      // If video is cached, try to play immediately without loading indicator
+      if (isVideoCached || isVideoReady) {
+        nextRef.current.play().then(() => {
+          completeSwitch();
+        }).catch(() => {
+          completeSwitch();
+        });
+        return;
+      }
+
+      // Only show loading indicator if video is not cached
+      setVideoLoading(true);
+
+      // Wait for canplay (not canplaythrough - faster switch)
+      const onCanPlay = () => {
         if (transitionIdRef.current !== thisTransitionId) return;
-        nextRef.current.removeEventListener('canplaythrough', onCanPlayThrough);
+        nextRef.current.removeEventListener('canplay', onCanPlay);
 
         nextRef.current.play().then(() => {
           setVideoLoading(false);
           completeSwitch();
         }).catch(() => {
-          // Even if play fails, switch anyway
           setVideoLoading(false);
           completeSwitch();
         });
       };
 
-      nextRef.current.addEventListener('canplaythrough', onCanPlayThrough);
+      nextRef.current.addEventListener('canplay', onCanPlay);
 
-      // Fallback timeout for Safari - give more time for video to buffer properly
+      // Fallback timeout for Safari
       setTimeout(() => {
         if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
-          nextRef.current.removeEventListener('canplaythrough', onCanPlayThrough);
+          nextRef.current.removeEventListener('canplay', onCanPlay);
           setVideoLoading(false);
           nextRef.current.play().catch(() => {});
           completeSwitch();
         }
-      }, 800);
+      }, 400);
 
       return;
     }
-    
-    // Chrome/Firefox: Wait for video to be fully ready before switching
-    // Show loading indicator for all browsers
-    setVideoLoading(true);
 
+    // Chrome/Firefox: Fast path - immediate switch for cached videos
     requestAnimationFrame(() => {
       if (transitionIdRef.current !== thisTransitionId) {
         if (pendingDirectionRef.current) {
           const dir = pendingDirectionRef.current;
           pendingDirectionRef.current = null;
           isTransitioningRef.current = false;
-          setVideoLoading(false);
           changeVideo(dir);
         }
         return;
@@ -659,7 +668,6 @@ function App() {
       if (!nextRef.current) {
         setIsTransitioning(false);
         isTransitioningRef.current = false;
-        setVideoLoading(false);
         return;
       }
 
@@ -669,6 +677,9 @@ function App() {
       const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
       const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
       const needsLoad = currentFileName !== nextFileName;
+
+      // Check if video is cached - no loading indicator needed
+      const isVideoCached = videoCacheRef.current.has(videoData[nextIndex].src);
 
       const startPlaying = () => {
         if (transitionIdRef.current !== thisTransitionId) return;
@@ -691,10 +702,16 @@ function App() {
         }
       };
 
-      // If video already has enough data to play through without buffering (readyState >= 4)
-      if (!needsLoad && nextRef.current.readyState >= 4) {
+      // If video already has data ready (readyState >= 2), play immediately
+      if (!needsLoad && nextRef.current.readyState >= 2) {
         startPlaying();
         return;
+      }
+
+      // If video is cached but needs source update, it should load fast
+      // Only show loading indicator if video is NOT cached
+      if (!isVideoCached) {
+        setVideoLoading(true);
       }
 
       let hasStarted = false;
@@ -704,8 +721,8 @@ function App() {
         startPlaying();
       };
 
-      // Wait for canplaythrough - ensures video can play to end without interruption
-      nextRef.current.addEventListener('canplaythrough', tryStart, { once: true });
+      // Wait for canplay (faster than canplaythrough)
+      nextRef.current.addEventListener('canplay', tryStart, { once: true });
 
       if (needsLoad) {
         if (sourceElement) {
@@ -714,12 +731,12 @@ function App() {
         nextRef.current.load();
       }
 
-      // Fallback timeout - give more time for video to buffer properly
+      // Short fallback timeout - videos are pre-cached so should be fast
       setTimeout(() => {
         if (!hasStarted && transitionIdRef.current === thisTransitionId) {
           tryStart();
         }
-      }, 500);
+      }, 150);
     });
   };
 
