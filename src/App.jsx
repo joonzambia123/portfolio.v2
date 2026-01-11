@@ -1356,6 +1356,40 @@ function App() {
 
   return (
     <div className="bg-[#FCFCFC] min-h-screen w-full">
+      {/* Navigation Bar */}
+      <div className={`fixed top-[50px] left-1/2 transform -translate-x-1/2 h-[50px] w-[580px] z-50 ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}>
+        <div className="flex h-full nav-pill-container rounded-[14px] items-center justify-center px-[20px] gap-[16px]">
+          <button
+            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
+            onMouseEnter={playHover}
+            onClick={playClick}
+          >
+            <p className="font-graphik text-[14px] text-[#5b5b5e]">Home</p>
+          </button>
+          <button
+            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
+            onMouseEnter={playHover}
+            onClick={playClick}
+          >
+            <p className="font-graphik text-[14px] text-[#5b5b5e]">About</p>
+          </button>
+          <button
+            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
+            onMouseEnter={playHover}
+            onClick={playClick}
+          >
+            <p className="font-graphik text-[14px] text-[#5b5b5e]">Work</p>
+          </button>
+          <button
+            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
+            onMouseEnter={playHover}
+            onClick={playClick}
+          >
+            <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="w-full pt-[180px] pb-[150px] flex justify-center">
         <div className="flex gap-[50px] items-start text-left main-content-wrapper">
