@@ -69,9 +69,30 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
           transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
         >
           {isContactModal ? (
-            // Contact modal - custom container without header
-            <div className="bg-white rounded-[26px] shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] border border-[#EBEEF5] p-[15px]">
-              {children}
+            // Contact modal - skeuomorphic container matching bottom pill style
+            <div
+              className="rounded-[26px] border border-[#EBEEF5]/90 p-[15px] relative"
+              style={{
+                background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
+                boxShadow: `
+                  0 1px 2px rgba(0, 0, 0, 0.04),
+                  0 2px 4px rgba(0, 0, 0, 0.02),
+                  0 4px 8px rgba(0, 0, 0, 0.02),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                  inset 0 -1px 0 rgba(0, 0, 0, 0.02)
+                `
+              }}
+            >
+              {/* Top highlight gradient */}
+              <div
+                className="absolute top-0 left-0 right-0 h-1/2 rounded-t-[26px] pointer-events-none"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%)'
+                }}
+              />
+              <div className="relative z-10">
+                {children}
+              </div>
             </div>
           ) : (
             // Default modal with header
@@ -350,7 +371,7 @@ export const ContactModalContent = () => {
                 {item.onClick ? (
                   <button
                     onClick={item.onClick}
-                    className="h-[37px] px-[14px] py-[6px] bg-white rounded-[8px] border border-[#EBEEF5] flex items-center justify-center hover:bg-[#f5f5f5] transition-colors"
+                    className="contact-button h-[37px] px-[14px] py-[6px] rounded-[8px] flex items-center justify-center"
                   >
                     <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
                       {item.buttonText}
@@ -361,7 +382,7 @@ export const ContactModalContent = () => {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-[37px] px-[14px] py-[6px] bg-white rounded-[8px] border border-[#EBEEF5] flex items-center justify-center hover:bg-[#f5f5f5] transition-colors"
+                    className="contact-button h-[37px] px-[14px] py-[6px] rounded-[8px] flex items-center justify-center"
                   >
                     <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
                       {item.buttonText}
