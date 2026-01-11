@@ -1,7 +1,5 @@
 # Portfolio 3.0
 
-A modern, minimalist portfolio website built with React and Vite.
-
 ## Getting Started
 
 ### Installation
