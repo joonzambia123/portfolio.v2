@@ -189,16 +189,27 @@ background-color: #E8F6FF;
 
   /* Ensure main content wrapper is centered - content is 771px wide (375 + 50 + 346) */
   .main-content-wrapper {
+    width: 771px !important;
     margin-left: auto !important;
     margin-right: auto !important;
     display: flex !important;
+    justify-content: center !important;
+  }
+
+  /* Center the parent container on large screens */
+  .w-full.pt-\[180px\].pb-\[150px\].flex.justify-center {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
   }
 }
 
 /* Responsive styles - only apply below 813px */
 @media (max-width: 813px) {
-  /* Main content wrapper - responsive padding */
+  /* Main content wrapper - responsive padding and full width */
   .main-content-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
   }
