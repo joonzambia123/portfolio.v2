@@ -72,7 +72,7 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
           {isContactModal ? (
             // Contact modal - skeuomorphic container matching bottom pill style
             <div
-              className="rounded-[26px] border border-[#EBEEF5]/90 p-[15px] relative"
+              className="rounded-[26px] border border-[#EBEEF5]/90 pt-[15px] pb-[10px] px-[12px] relative"
               style={{
                 background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
                 boxShadow: `
@@ -355,14 +355,14 @@ export const ContactModalContent = () => {
   ];
 
   return (
-    <div className="flex flex-col items-center gap-[12px]">
+    <div className="flex flex-col items-center gap-[10px]">
       {/* Inner card with contact rows */}
       <div className="bg-[#FAFAFA] rounded-[14px] border border-[#EBEEF5] py-[15px]">
-        <div className="w-[359px] flex flex-col items-center gap-[12px]">
+        <div className="w-[338px] flex flex-col items-center gap-[12px]">
           {contactItems.map((item, index) => (
             <div key={item.title} className="w-full">
               {/* Contact row */}
-              <div className="flex items-center justify-between px-[14px]">
+              <div className="flex items-center justify-between px-[12px]">
                 <div className="flex flex-col">
                   <span className="font-graphik text-[14px] text-[#333333] leading-[25px]">
                     {item.title}
