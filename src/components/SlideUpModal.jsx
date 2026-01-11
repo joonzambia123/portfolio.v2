@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
+import { useSounds } from '../hooks/useSounds';
 
 const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
   const [position, setPosition] = useState({ left: 0 });
@@ -313,8 +314,10 @@ export const ShortcutsModalContent = ({ isMac }) => (
 
 export const ContactModalContent = () => {
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const { playHover, playClick } = useSounds();
 
   const handleCopyEmail = async () => {
+    playClick();
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
       setCopiedEmail(true);
@@ -371,6 +374,7 @@ export const ContactModalContent = () => {
                 {item.onClick ? (
                   <button
                     onClick={item.onClick}
+                    onMouseEnter={playHover}
                     className="contact-button h-[37px] px-[14px] py-[6px] rounded-[8px] flex items-center justify-center"
                   >
                     <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
@@ -382,6 +386,8 @@ export const ContactModalContent = () => {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={playClick}
+                    onMouseEnter={playHover}
                     className="contact-button h-[37px] px-[14px] py-[6px] rounded-[8px] flex items-center justify-center"
                   >
                     <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
