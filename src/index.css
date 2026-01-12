@@ -1480,3 +1480,16 @@ a.dotted-underline-grey:hover {
 .coord-fade-out {
   opacity: 0;
 }
+
+/* Easter egg: Second Breakfasts hover effect */
+.easter-egg-second-breakfast {
+  position: relative;
+  cursor: help;
+  transition: all 0.3s ease;
+}
+
+.easter-egg-second-breakfast:hover {
+  color: #FFB800;
+  text-shadow: 0 0 8px rgba(255, 184, 0, 0.4);
+  transform: scale(1.05);
+}

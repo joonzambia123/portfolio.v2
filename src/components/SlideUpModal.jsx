@@ -20,23 +20,39 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, chil
     if (!isOpen) return;
 
     const handleClickOutside = (e) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-        const bottomPill = e.target.closest('.bottom-pill-container');
-        if (!bottomPill) {
-          onClose();
-        }
+      // Don't close if clicking inside the modal
+      if (popoverRef.current?.contains(e.target)) {
+        return;
+      }
+
+      // Don't close if clicking on the anchor button (toggling is handled by button's onClick)
+      if (anchorRef?.current?.contains(e.target)) {
+        return;
+      }
+
+      // For contact modal, close on any other outside click
+      if (type === 'contact') {
+        onClose();
+        return;
+      }
+
+      // For other modals, don't close if clicking on bottom pill
+      const bottomPill = e.target.closest('.bottom-pill-container');
+      if (!bottomPill) {
+        onClose();
       }
     };
 
+    // Use a small delay to avoid immediate close when opening
     const timer = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-    }, 100);
+      document.addEventListener('click', handleClickOutside, true);
+    }, 0);
 
     return () => {
       clearTimeout(timer);
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside, true);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, type, anchorRef]);
 
   // Get modal title based on type
   const getTitle = () => {
@@ -64,14 +80,31 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, chil
             left: position.left,
             x: '-50%'
           }}
-          initial={{ opacity: 0, y: 32, filter: 'blur(2px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: 20, filter: 'blur(2px)' }}
-          transition={{
-            type: 'tween',
-            duration: 0.25,
-            ease: [0.25, 0.46, 0.45, 0.94]
-          }}
+          initial={isContactModal 
+            ? { opacity: 0, y: 24 }
+            : { opacity: 0, y: 32, filter: 'blur(2px)' }
+          }
+          animate={isContactModal
+            ? { opacity: 1, y: 0 }
+            : { opacity: 1, y: 0, filter: 'blur(0px)' }
+          }
+          exit={isContactModal
+            ? { opacity: 0, y: 16 }
+            : { opacity: 0, y: 20, filter: 'blur(2px)' }
+          }
+          transition={isContactModal
+            ? {
+                type: 'spring',
+                stiffness: 400,
+                damping: 35,
+                mass: 0.8
+              }
+            : {
+                type: 'tween',
+                duration: 0.25,
+                ease: [0.25, 0.46, 0.45, 0.94]
+              }
+          }
         >
           {isContactModal ? (
             // Contact modal - skeuomorphic design
@@ -313,7 +346,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const contactItems = [
     {
       title: 'Email',
-      description: 'changjoonseo126@gmail.com',
+      description: 'Send me a digital pigeon',
       buttonText: copiedEmail ? 'Copied!' : 'Copy',
       onClick: handleCopyEmail,
     },

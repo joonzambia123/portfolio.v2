@@ -174,6 +174,23 @@ function App() {
       } else if (spanMatch) {
         return <span key={i} className="dotted-underline-grey text-grey-dark">{spanMatch[1]}</span>;
       }
+      
+      // Check for "second breakfasts" easter egg (case-insensitive)
+      if (/second breakfasts/i.test(part)) {
+        const regex = /(second breakfasts)/gi;
+        const splitParts = part.split(regex);
+        return splitParts.map((splitPart, j) => {
+          if (regex.test(splitPart)) {
+            return (
+              <span key={`${i}-${j}`} className="easter-egg-second-breakfast">
+                {splitPart}
+              </span>
+            );
+          }
+          return splitPart;
+        });
+      }
+      
       return part;
     });
   };
