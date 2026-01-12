@@ -347,7 +347,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
     {
       title: 'Email',
       description: 'Send me a digital pigeon',
-      buttonText: copiedEmail ? 'Copied!' : 'Copy',
+      buttonText: copiedEmail ? 'Copied :)' : 'Copy',
       onClick: handleCopyEmail,
     },
     {
