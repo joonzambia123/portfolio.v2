@@ -380,7 +380,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
             </div>
             {/* Divider (not after last item) */}
             {index < contactItems.length - 1 && (
-              <div className="w-full h-[1px] bg-[#EBEEF5]" />
+              <div className="w-full border-t border-dashed border-[#EBEEF5]" />
             )}
           </div>
         ))}
