@@ -297,7 +297,7 @@ export const ShortcutsModalContent = ({ isMac }) => (
 
 export const ContactModalContent = ({ darkMode = false }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
-  const { playHover, playClick } = useSounds();
+  const { playClick } = useSounds();
 
   const handleCopyEmail = async () => {
     playClick();
@@ -356,7 +356,6 @@ export const ContactModalContent = ({ darkMode = false }) => {
               {item.onClick ? (
                 <button
                   onClick={item.onClick}
-                  onMouseEnter={playHover}
                   className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                 >
                   <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">
@@ -369,7 +368,6 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={playClick}
-                  onMouseEnter={playHover}
                   className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                 >
                   <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">

@@ -188,48 +188,54 @@ export function useSounds() {
   // ============================================
 
   /**
-   * Hover sound - crisp, subtle, almost imperceptible
+   * Hover sound - disabled (no-op)
    */
   const playHover = useCallback(() => {
-    createSweepTone({
-      startFreq: 440,
-      endFreq: 523.25, // A4 to C5 - clean musical interval
-      type: 'sine',
-      duration: 0.04,
-      volume: 0.015,
-      attack: 0.001,
-      decay: 0.035,
-      filterFreq: 3000,
-      filterQ: 0.3,
-    })
-  }, [createSweepTone])
+    // No-op: hover sounds removed
+  }, [])
 
   /**
-   * Click sound - precise, clean tap with subtle harmonic
+   * Click sound - pleasant, satisfying pop with musical quality
    */
   const playClick = useCallback(() => {
-    // Main tone - clean and crisp
-    createSynthTone({
-      frequency: 600,
+    // Base tone - warm mid frequency with upward sweep for "pop" feeling
+    createSweepTone({
+      startFreq: 440, // A4
+      endFreq: 523.25, // C5 - pleasant musical interval
       type: 'sine',
-      duration: 0.03,
-      volume: 0.03,
-      attack: 0.0005,
-      decay: 0.028,
-      filterFreq: 4000,
-      filterQ: 0.2,
+      duration: 0.08,
+      volume: 0.035,
+      attack: 0.001,
+      decay: 0.075,
+      filterFreq: 3500,
+      filterQ: 0.4,
     })
-    // Subtle harmonic - adds richness without brightness
-    createSynthTone({
-      frequency: 1200,
+
+    // Harmonic overtone - adds richness and "sparkle"
+    createSweepTone({
+      startFreq: 659.25, // E5
+      endFreq: 783.99, // G5 - completes the major triad
       type: 'sine',
-      duration: 0.02,
-      volume: 0.008,
-      attack: 0.0003,
-      decay: 0.018,
-      filterFreq: 5000,
+      duration: 0.06,
+      volume: 0.018,
+      attack: 0.002,
+      decay: 0.055,
+      filterFreq: 4500,
+      filterQ: 0.3,
     })
-  }, [createSynthTone])
+
+    // Sub-bass for satisfying "thump" (very subtle)
+    createSynthTone({
+      frequency: 110, // A2 - deep but not boomy
+      type: 'sine',
+      duration: 0.05,
+      volume: 0.025,
+      attack: 0.001,
+      decay: 0.045,
+      filterFreq: 800,
+      filterQ: 1.0,
+    })
+  }, [createSweepTone, createSynthTone])
 
   /**
    * Arrow navigation - clean directional sweep
@@ -249,56 +255,25 @@ export function useSounds() {
   }, [createSweepTone])
 
   /**
-   * Link hover - whisper quiet, refined
+   * Link hover - disabled (no-op)
    */
   const playLinkHover = useCallback(() => {
-    createSweepTone({
-      startFreq: 523.25, // C5
-      endFreq: 587.33, // D5
-      type: 'sine',
-      duration: 0.035,
-      volume: 0.012,
-      attack: 0.001,
-      decay: 0.032,
-      filterFreq: 3500,
-    })
-  }, [createSweepTone])
+    // No-op: hover sounds removed
+  }, [])
 
   /**
-   * Video card hover - soft ambient pad (kept for potential future use)
+   * Video card hover - disabled (no-op)
    */
   const playCardHover = useCallback(() => {
-    createChord([261.63, 329.63, 392.00], { // C4, E4, G4 - clean major triad
-      type: 'sine',
-      duration: 0.12,
-      volume: 0.03,
-      attack: 0.01,
-      decay: 0.1,
-      filterFreq: 2500,
-    })
-  }, [createChord])
+    // No-op: hover sounds removed
+  }, [])
 
   /**
-   * Music player hover - elegant, refined arpeggio
+   * Music player hover - disabled (no-op)
    */
   const playMusicHover = useCallback(() => {
-    const notes = [523.25, 659.25, 783.99] // C5, E5, G5 - clean major triad
-    notes.forEach((freq, i) => {
-      setTimeout(() => {
-        createSweepTone({
-          startFreq: freq * 0.98,
-          endFreq: freq,
-          type: 'sine',
-          duration: 0.08,
-          volume: 0.018,
-          attack: 0.002,
-          decay: 0.075,
-          filterFreq: 4000,
-          filterQ: 0.2,
-        })
-      }, i * 30)
-    })
-  }, [createSweepTone])
+    // No-op: hover sounds removed
+  }, [])
 
   /**
    * Toggle/enable sounds
