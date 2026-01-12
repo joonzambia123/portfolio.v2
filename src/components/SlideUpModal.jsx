@@ -346,7 +346,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const contactItems = [
     {
       title: 'Email',
-      description: 'Send me a digital pigeon',
+      description: 'Send me a digital raven',
       buttonText: copiedEmail ? 'Copied :)' : 'Copy',
       onClick: handleCopyEmail,
     },
