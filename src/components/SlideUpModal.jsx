@@ -206,7 +206,7 @@ export const MusicModalContent = ({ currentTrack }) => {
 
       {/* Last.fm link */}
       <a
-        href="https://www.last.fm/user/joonzambia"
+        href="https://www.last.fm/user/joonzambia123"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-black/[0.04] font-graphik text-[12px] text-[#999] hover:text-[#666] transition-colors"
@@ -358,7 +358,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   onClick={item.onClick}
                   className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                 >
-                  <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">
+                  <span className="font-graphik text-[14px] leading-[25px] text-[#FFFFFF]">
                     {item.buttonText}
                   </span>
                 </button>
@@ -370,7 +370,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   onClick={playClick}
                   className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                 >
-                  <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">
+                  <span className="font-graphik text-[14px] leading-[25px] text-[#FFFFFF]">
                     {item.buttonText}
                   </span>
                 </a>

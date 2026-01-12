@@ -1065,15 +1065,15 @@ background-color: #E8F6FF;
   pointer-events: none;
 }
 
-/* Skeuomorphic contact modal buttons */
+/* Skeuomorphic contact modal buttons - light blue theme */
 .contact-button {
-  background: linear-gradient(180deg, #ffffff 0%, #fefefe 100%);
+  background: #4A9EFF;
   box-shadow:
-    0 0.5px 1px rgba(0, 0, 0, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.02),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -0.5px 0 rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(235, 238, 245, 0.9);
+    0 1px 2px rgba(74, 158, 255, 0.12),
+    0 2px 4px rgba(74, 158, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(90, 176, 255, 0.2);
   position: relative;
   transition: all 180ms cubic-bezier(0.34, 1.2, 0.64, 1);
   user-select: none;
@@ -1089,39 +1089,41 @@ background-color: #E8F6FF;
   left: 0;
   right: 0;
   height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
   border-radius: 7px 7px 0 0;
   pointer-events: none;
   transition: all 180ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
 .contact-button:hover {
-  background: linear-gradient(180deg, #fafafa 0%, #f5f5f6 100%);
+  background: #5AB0FF;
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    0 2px 4px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -0.5px 0 rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(225, 228, 238, 0.85);
+    0 2px 4px rgba(74, 158, 255, 0.15),
+    0 4px 8px rgba(74, 158, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(90, 176, 255, 0.25);
   transform: translateY(-0.5px);
 }
 
 .contact-button:hover::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 100%);
 }
 
 .contact-button:active {
-  background: linear-gradient(180deg, #f0f0f2 0%, #f5f5f6 100%);
+  background: #3D8EFF;
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.06),
-    inset 0 0.5px 1px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(220, 224, 235, 0.9);
+    inset 0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 0.5px 1px rgba(0, 0, 0, 0.06),
+    0 1px 1px rgba(74, 158, 255, 0.08);
+  border: 1px solid rgba(61, 142, 255, 0.25);
   transform: translateY(0) scale(0.98);
   transition: all 60ms ease;
 }
 
 .contact-button:active::before {
   opacity: 0.5;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
 }
 
 /* Light mode contact modal container (default) */
