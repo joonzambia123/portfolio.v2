@@ -353,7 +353,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
     {
       title: 'Instagram',
       description: 'Most active here',
-      buttonText: 'DM me',
+      buttonText: 'Stalk',
       href: 'https://instagram.com/joonseochang',
     },
     {
