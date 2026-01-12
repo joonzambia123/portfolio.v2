@@ -72,7 +72,7 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
           {isContactModal ? (
             // Contact modal - skeuomorphic container matching bottom pill style
             <div
-              className="rounded-[26px] border border-[#EBEEF5]/90 pt-[15px] pb-[10px] px-[12px] relative"
+              className="rounded-[26px] border border-[#EBEEF5]/90 pt-[12px] pb-[10px] px-[10px] relative"
               style={{
                 background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
                 boxShadow: `
@@ -336,7 +336,7 @@ export const ContactModalContent = () => {
     },
     {
       title: 'Instagram',
-      description: 'Most active here unfortunately',
+      description: 'Most active here',
       buttonText: 'DM me',
       href: 'https://instagram.com/joonzambia',
     },
@@ -358,7 +358,7 @@ export const ContactModalContent = () => {
     <div className="flex flex-col items-center gap-[10px]">
       {/* Inner card with contact rows */}
       <div className="bg-[#FAFAFA] rounded-[14px] border border-[#EBEEF5] py-[15px]">
-        <div className="w-[338px] flex flex-col items-center gap-[12px]">
+        <div className="w-[306px] flex flex-col items-center gap-[10px]">
           {contactItems.map((item, index) => (
             <div key={item.title} className="w-full">
               {/* Contact row */}
@@ -375,7 +375,7 @@ export const ContactModalContent = () => {
                   <button
                     onClick={item.onClick}
                     onMouseEnter={playHover}
-                    className="contact-button h-[37px] px-[14px] py-[6px] rounded-[8px] flex items-center justify-center"
+                    className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                   >
                     <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
                       {item.buttonText}
@@ -388,7 +388,7 @@ export const ContactModalContent = () => {
                     rel="noopener noreferrer"
                     onClick={playClick}
                     onMouseEnter={playHover}
-                    className="contact-button h-[37px] px-[14px] py-[6px] rounded-[8px] flex items-center justify-center"
+                    className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                   >
                     <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
                       {item.buttonText}
@@ -398,7 +398,7 @@ export const ContactModalContent = () => {
               </div>
               {/* Divider (not after last item) */}
               {index < contactItems.length - 1 && (
-                <div className="w-full h-[1px] bg-[#EBEEF5] mt-[12px]" />
+                <div className="w-full h-[1px] bg-[#EBEEF5] mt-[10px]" />
               )}
             </div>
           ))}
