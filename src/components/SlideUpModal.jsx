@@ -338,7 +338,7 @@ export const ContactModalContent = () => {
       title: 'Instagram',
       description: 'Most active here',
       buttonText: 'DM me',
-      href: 'https://instagram.com/joonzambia',
+      href: 'https://instagram.com/joonseochang',
     },
     {
       title: 'LinkedIn',
@@ -350,7 +350,7 @@ export const ContactModalContent = () => {
       title: 'Twitter',
       description: 'Peer pressure is real kids',
       buttonText: 'Chirp',
-      href: 'https://twitter.com/joonzambia',
+      href: 'https://twitter.com/joonseochang',
     },
   ];
 
