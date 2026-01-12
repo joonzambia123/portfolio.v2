@@ -206,7 +206,7 @@ export const MusicModalContent = ({ currentTrack }) => {
 
       {/* Last.fm link */}
       <a
-        href="https://www.last.fm/user/joonzambia123"
+        href="https://www.last.fm/user/joonzambia"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-black/[0.04] font-graphik text-[12px] text-[#999] hover:text-[#666] transition-colors"
@@ -297,7 +297,7 @@ export const ShortcutsModalContent = ({ isMac }) => (
 
 export const ContactModalContent = ({ darkMode = false }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
-  const { playHover, playClick } = useSounds();
+  const { playClick } = useSounds();
 
   const handleCopyEmail = async () => {
     playClick();
@@ -321,7 +321,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
       title: 'Instagram',
       description: 'Most active here',
       buttonText: 'DM me',
-      href: 'https://instagram.com/joonzambia',
+      href: 'https://instagram.com/joonseochang',
     },
     {
       title: 'LinkedIn',
@@ -333,7 +333,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
       title: 'Twitter',
       description: 'Peer pressure is real kids',
       buttonText: 'Chirp',
-      href: 'https://twitter.com/joonzambia',
+      href: 'https://twitter.com/joonseochang',
     },
   ];
 
@@ -356,7 +356,6 @@ export const ContactModalContent = ({ darkMode = false }) => {
               {item.onClick ? (
                 <button
                   onClick={item.onClick}
-                  onMouseEnter={playHover}
                   className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                 >
                   <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">
@@ -369,7 +368,6 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={playClick}
-                  onMouseEnter={playHover}
                   className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
                 >
                   <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">
