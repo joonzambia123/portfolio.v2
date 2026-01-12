@@ -35,7 +35,7 @@ function App() {
   const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, playPreview, stopPreview } = useLastFm();
 
   // Sound effects
-  const { playHover, playClick, playArrow, playMusicHover } = useSounds();
+  const { playClick, playArrow } = useSounds();
   const videoRef1 = useRef(null);
   const videoRef2 = useRef(null);
   const [videoIndex, setVideoIndex] = useState(0);
@@ -1361,28 +1361,24 @@ function App() {
         <div className="flex h-full nav-pill-container rounded-[14px] items-center justify-center px-[20px] gap-[16px]">
           <button
             className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onMouseEnter={playHover}
             onClick={playClick}
           >
             <p className="font-graphik text-[14px] text-[#5b5b5e]">Home</p>
           </button>
           <button
             className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onMouseEnter={playHover}
             onClick={playClick}
           >
             <p className="font-graphik text-[14px] text-[#5b5b5e]">About</p>
           </button>
           <button
             className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onMouseEnter={playHover}
             onClick={playClick}
           >
             <p className="font-graphik text-[14px] text-[#5b5b5e]">Work</p>
           </button>
           <button
             className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onMouseEnter={playHover}
             onClick={playClick}
           >
             <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
@@ -1398,7 +1394,6 @@ function App() {
             {/* Time Component */}
             <div
               className={`bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] mb-[15px] w-fit cursor-pointer select-none ${loadedComponents.timeComponent ? 'component-loaded' : 'component-hidden'}`}
-              onMouseEnter={playHover}
             >
               <div className="overflow-clip relative shrink-0 size-[20px]">
                 <svg 
@@ -1629,7 +1624,6 @@ function App() {
                         changeVideo('prev');
                       }}
                       onMouseEnter={() => {
-                        playHover();
                         preloadVideoOnHover('prev');
                       }}
                     >
@@ -1647,7 +1641,6 @@ function App() {
                         changeVideo('next');
                       }}
                       onMouseEnter={() => {
-                        playHover();
                         preloadVideoOnHover('next');
                       }}
                     >
@@ -1726,7 +1719,6 @@ function App() {
                 }
                 setIsModalExiting(false);
                 setIsMusicHovered(true);
-                playMusicHover();
                 // playPreview(); // Disabled for now
               }}
               onMouseLeave={() => {
@@ -1816,7 +1808,6 @@ function App() {
               <button
                 ref={activityButtonRef}
                 className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer"
-                onMouseEnter={playHover}
                 onClick={() => {
                   playClick();
                   if (activeModal === 'activity') {
@@ -1840,7 +1831,6 @@ function App() {
                   }
                   setIsShortcutsModalExiting(false);
                   setIsShortcutsHovered(true);
-                  playHover();
                 }}
                 onClick={() => { playClick(); setActiveModal('shortcuts'); }}
                 onMouseLeave={() => {
@@ -1859,7 +1849,6 @@ function App() {
             <button
               ref={contactButtonRef}
               className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center cursor-pointer"
-              onMouseEnter={playHover}
               onClick={() => {
                 playClick();
                 if (activeModal === 'contact') {
