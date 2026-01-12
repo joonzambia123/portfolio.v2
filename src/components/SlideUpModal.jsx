@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { useSounds } from '../hooks/useSounds';
 
-const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
+const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, children }) => {
   const [position, setPosition] = useState({ left: 0 });
   const popoverRef = useRef(null);
 
@@ -64,36 +64,19 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, children }) => {
             left: position.left,
             x: '-50%'
           }}
-          initial={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
+          initial={{ opacity: 0, y: 32, filter: 'blur(2px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
-          transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
+          exit={{ opacity: 0, y: 20, filter: 'blur(2px)' }}
+          transition={{
+            type: 'tween',
+            duration: 0.25,
+            ease: [0.25, 0.46, 0.45, 0.94]
+          }}
         >
           {isContactModal ? (
-            // Contact modal - skeuomorphic container matching bottom pill style
-            <div
-              className="rounded-[26px] border border-[#EBEEF5]/90 pt-[12px] pb-[10px] px-[10px] relative"
-              style={{
-                background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
-                boxShadow: `
-                  0 1px 2px rgba(0, 0, 0, 0.04),
-                  0 2px 4px rgba(0, 0, 0, 0.02),
-                  0 4px 8px rgba(0, 0, 0, 0.02),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.5),
-                  inset 0 -1px 0 rgba(0, 0, 0, 0.02)
-                `
-              }}
-            >
-              {/* Top highlight gradient */}
-              <div
-                className="absolute top-0 left-0 right-0 h-1/2 rounded-t-[26px] pointer-events-none"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%)'
-                }}
-              />
-              <div className="relative z-10">
-                {children}
-              </div>
+            // Contact modal - skeuomorphic design
+            <div className="contact-modal-outer rounded-[18px] flex justify-center">
+              {children}
             </div>
           ) : (
             // Default modal with header
@@ -312,7 +295,7 @@ export const ShortcutsModalContent = ({ isMac }) => (
   </div>
 );
 
-export const ContactModalContent = () => {
+export const ContactModalContent = ({ darkMode = false }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const { playHover, playClick } = useSounds();
 
@@ -355,64 +338,62 @@ export const ContactModalContent = () => {
   ];
 
   return (
-    <div className="flex flex-col items-center gap-[10px]">
-      {/* Inner card with contact rows */}
-      <div className="bg-[#FAFAFA] rounded-[14px] border border-[#EBEEF5] py-[15px]">
-        <div className="w-[306px] flex flex-col items-center gap-[10px]">
-          {contactItems.map((item, index) => (
-            <div key={item.title} className="w-full">
-              {/* Contact row */}
-              <div className="flex items-center justify-between px-[12px]">
-                <div className="flex flex-col">
-                  <span className="font-graphik text-[14px] text-[#333333] leading-[25px]">
-                    {item.title}
-                  </span>
-                  <span className="font-graphik text-[14px] text-[#B7B7B9] leading-[25px]">
-                    {item.description}
-                  </span>
-                </div>
-                {item.onClick ? (
-                  <button
-                    onClick={item.onClick}
-                    onMouseEnter={playHover}
-                    className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
-                  >
-                    <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
-                      {item.buttonText}
-                    </span>
-                  </button>
-                ) : (
-                  <a
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={playClick}
-                    onMouseEnter={playHover}
-                    className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
-                  >
-                    <span className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
-                      {item.buttonText}
-                    </span>
-                  </a>
-                )}
+    <div className="flex flex-col items-center">
+      {/* Inner card with contact rows - skeuomorphic white card */}
+      <div className="contact-modal-inner w-[306px] py-[15px] flex flex-col items-center gap-[10px]">
+        {contactItems.map((item, index) => (
+          <div key={item.title} className="contents">
+            {/* Contact row */}
+            <div className="w-full flex items-center justify-between px-[12px]">
+              <div className="flex flex-col">
+                <span className="font-graphik text-[14px] leading-[25px] text-[#333333]">
+                  {item.title}
+                </span>
+                <span className="font-graphik text-[14px] leading-[25px] text-[#B7B7B9]">
+                  {item.description}
+                </span>
               </div>
-              {/* Divider (not after last item) */}
-              {index < contactItems.length - 1 && (
-                <div className="w-full h-[1px] bg-[#EBEEF5] mt-[10px]" />
+              {item.onClick ? (
+                <button
+                  onClick={item.onClick}
+                  onMouseEnter={playHover}
+                  className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
+                >
+                  <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">
+                    {item.buttonText}
+                  </span>
+                </button>
+              ) : (
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={playClick}
+                  onMouseEnter={playHover}
+                  className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
+                >
+                  <span className="font-graphik text-[14px] leading-[25px] text-[#5B5B5E]">
+                    {item.buttonText}
+                  </span>
+                </a>
               )}
             </div>
-          ))}
-        </div>
+            {/* Divider (not after last item) */}
+            {index < contactItems.length - 1 && (
+              <div className="w-full h-[1px] bg-[#EBEEF5]" />
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* Footer text */}
-      <div className="flex items-center justify-center gap-[5px]">
-        <span className="font-graphik text-[14px] text-[#C3C3C3] leading-[25px]">
-          or send me a woof
+      {/* Footer text - sits on grey background */}
+      <div className="flex items-center justify-center gap-[5px] py-[10px]">
+        <span className="font-graphik text-[14px] leading-[25px] text-[#B3B3B3]">
+          or send me a wuphf
         </span>
-        {/* Dog icon */}
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 4H2V6H3V4ZM3 4H4V2H7V4H8V2H9V1H2V2H3V4ZM5 12H6V11H5V12ZM1 9H2V6H1V3H0V7H1V9ZM4 11H5V10H6V11H7V10H9V9H6V8H5V9H2V10H4V11ZM4 7H5V5H4V7ZM1 3H2V2H1V3ZM6 7H7V5H6V7ZM8 6H9V4H8V6ZM9 9H10V7H11V3H10V6H9V9ZM9 3H10V2H9V3Z" fill="#C3C3C3"/>
+        {/* Dog icon - 14x14 */}
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 4H2V6H3V4ZM3 4H4V2H7V4H8V2H9V1H2V2H3V4ZM5 12H6V11H5V12ZM1 9H2V6H1V3H0V7H1V9ZM4 11H5V10H6V11H7V10H9V9H6V8H5V9H2V10H4V11ZM4 7H5V5H4V7ZM1 3H2V2H1V3ZM6 7H7V5H6V7ZM8 6H9V4H8V6ZM9 9H10V7H11V3H10V6H9V9ZM9 3H10V2H9V3Z" fill="#B3B3B3"/>
         </svg>
       </div>
     </div>
