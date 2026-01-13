@@ -330,6 +330,12 @@ export const ShortcutsModalContent = ({ isMac }) => (
 
 export const ContactModalContent = ({ darkMode = false }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [emailHover, setEmailHover] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [smoothPos, setSmoothPos] = useState({ x: 0, y: 0 });
+  const emailRowRef = useRef(null);
+  const animationRef = useRef(null);
   const { playClick } = useSounds();
 
   const handleCopyEmail = async () => {
@@ -337,35 +343,122 @@ export const ContactModalContent = ({ darkMode = false }) => {
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
       setCopiedEmail(true);
-      setTimeout(() => setCopiedEmail(false), 2000);
+      setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
       console.error('Failed to copy email:', err);
     }
   };
 
+  const handleEmailMouseMove = (e) => {
+    if (emailRowRef.current) {
+      const rect = emailRowRef.current.getBoundingClientRect();
+      setMousePos({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
+  // Smooth mouse following with easing
+  useEffect(() => {
+    const animate = () => {
+      setSmoothPos(prev => ({
+        x: prev.x + (mousePos.x - prev.x) * 0.15,
+        y: prev.y + (mousePos.y - prev.y) * 0.15
+      }));
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animationRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [mousePos]);
+
+  // Icons for each contact method - subtle outline style with gentle hover tint
+  const MailIcon = ({ hovered }) => (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={hovered ? "#6b7280" : "#a3a3a3"}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ transition: 'stroke 300ms ease' }}
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2"/>
+      <path d="M3 7l9 6 9-6"/>
+    </svg>
+  );
+
+  const InstagramIcon = ({ hovered }) => (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={hovered ? "#6b7280" : "#a3a3a3"}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ transition: 'stroke 300ms ease' }}
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1.5" fill={hovered ? "#6b7280" : "#a3a3a3"} stroke="none" style={{ transition: 'fill 300ms ease' }}/>
+    </svg>
+  );
+
+  const LinkedInIcon = ({ hovered }) => (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill={hovered ? "#6b7280" : "#a3a3a3"}
+      style={{ transition: 'fill 300ms ease' }}
+    >
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+    </svg>
+  );
+
+  const TwitterIcon = ({ hovered }) => (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill={hovered ? "#6b7280" : "#a3a3a3"}
+      style={{ transition: 'fill 300ms ease' }}
+    >
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  );
+
   const contactItems = [
     {
+      id: 'email',
       title: 'Email',
-      description: 'Send me a digital raven',
-      buttonText: copiedEmail ? 'Copied :)' : 'Copy',
+      description: copiedEmail ? 'Copied!' : 'changjoonseo126@gmail.com',
+      Icon: MailIcon,
       onClick: handleCopyEmail,
     },
     {
+      id: 'instagram',
       title: 'Instagram',
-      description: 'Often rot here',
-      buttonText: 'Stalk',
+      description: '@joonseochang',
+      Icon: InstagramIcon,
       href: 'https://instagram.com/joonseochang',
     },
     {
+      id: 'linkedin',
       title: 'LinkedIn',
-      description: 'Attempting to be an adult',
-      buttonText: 'Connect',
+      description: '/in/joonseo-chang',
+      Icon: LinkedInIcon,
       href: 'https://linkedin.com/in/joonseo-chang',
     },
     {
+      id: 'twitter',
       title: 'Twitter',
-      description: 'Peer pressure is real kids',
-      buttonText: 'Chirp',
+      description: '@joonseochang',
+      Icon: TwitterIcon,
       href: 'https://twitter.com/joonseochang',
     },
   ];
@@ -377,38 +470,81 @@ export const ContactModalContent = ({ darkMode = false }) => {
         {contactItems.map((item, index) => (
           <div key={item.title} className="contents">
             {/* Contact row */}
-            <div className="w-full flex items-center justify-between px-[12px]">
-              <div className="flex flex-col">
-                <span className="font-graphik text-[14px] leading-[25px] text-[#333333]">
-                  {item.title}
-                </span>
-                <span className="font-graphik text-[14px] leading-[25px] text-[#B7B7B9]">
-                  {item.description}
-                </span>
-              </div>
-              {item.onClick ? (
-                <button
-                  onClick={item.onClick}
-                  className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
+            {item.onClick ? (
+              <button
+                ref={emailRowRef}
+                onClick={item.onClick}
+                onMouseEnter={() => { setEmailHover(true); setHoveredRow(item.id); }}
+                onMouseLeave={() => { setEmailHover(false); setHoveredRow(null); }}
+                onMouseMove={handleEmailMouseMove}
+                className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer text-left relative"
+              >
+                {/* Mouse-tracking tooltip pill */}
+                <div
+                  className="pointer-events-none absolute z-10"
+                  style={{
+                    left: smoothPos.x,
+                    top: smoothPos.y,
+                    transform: `translate(-50%, -130%) scale(${emailHover ? 1 : 0.9})`,
+                    opacity: emailHover ? 1 : 0,
+                    transition: 'opacity 150ms ease, transform 150ms ease'
+                  }}
                 >
-                  <span className="font-graphik text-[14px] leading-[25px] text-[#FFFFFF]">
-                    {item.buttonText}
+                  <div className={`copy-tooltip-pill px-[10px] py-[5px] rounded-[8px] whitespace-nowrap flex items-center gap-[5px] ${copiedEmail ? 'copied' : ''}`}>
+                    {copiedEmail ? (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    ) : (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    )}
+                    <span className="font-graphik text-[12px]">
+                      {copiedEmail ? 'Copied' : 'Copy'}
+                    </span>
+                  </div>
+                </div>
+                {/* Icon box */}
+                <div className="contact-icon-box w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0">
+                  <item.Icon hovered={hoveredRow === item.id} />
+                </div>
+                {/* Text content */}
+                <div className="flex flex-col">
+                  <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
+                    {item.title}
                   </span>
-                </button>
-              ) : (
-                <a
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={playClick}
-                  className="contact-button px-[10px] py-[4px] rounded-[8px] flex items-center justify-center"
-                >
-                  <span className="font-graphik text-[14px] leading-[25px] text-[#FFFFFF]">
-                    {item.buttonText}
+                  <span className="font-graphik text-[14px] leading-[20px] text-[#B7B7B9]">
+                    {item.description}
                   </span>
-                </a>
-              )}
-            </div>
+                </div>
+              </button>
+            ) : (
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={playClick}
+                onMouseEnter={() => setHoveredRow(item.id)}
+                onMouseLeave={() => setHoveredRow(null)}
+                className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer"
+              >
+                {/* Icon box */}
+                <div className="contact-icon-box w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0">
+                  <item.Icon hovered={hoveredRow === item.id} />
+                </div>
+                {/* Text content */}
+                <div className="flex flex-col">
+                  <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
+                    {item.title}
+                  </span>
+                  <span className="font-graphik text-[14px] leading-[20px] text-[#B7B7B9]">
+                    {item.description}
+                  </span>
+                </div>
+              </a>
+            )}
             {/* Divider (not after last item) */}
             {index < contactItems.length - 1 && (
               <div className="w-full border-t border-dashed border-[#EBEEF5]" />
@@ -418,14 +554,10 @@ export const ContactModalContent = ({ darkMode = false }) => {
       </div>
 
       {/* Footer text - sits on grey background */}
-      <div className="flex items-center justify-center gap-[5px] py-[10px]">
-        <span className="font-graphik text-[14px] leading-[25px] text-[#B3B3B3]">
-          or send me a wuphf
+      <div className="flex items-center justify-center pt-[6px] pb-[10px]">
+        <span className="font-graphik text-[14px] text-[#B3B3B3]">
+          or leave a message here
         </span>
-        {/* Dog icon - 14x14 */}
-        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 4H2V6H3V4ZM3 4H4V2H7V4H8V2H9V1H2V2H3V4ZM5 12H6V11H5V12ZM1 9H2V6H1V3H0V7H1V9ZM4 11H5V10H6V11H7V10H9V9H6V8H5V9H2V10H4V11ZM4 7H5V5H4V7ZM1 3H2V2H1V3ZM6 7H7V5H6V7ZM8 6H9V4H8V6ZM9 9H10V7H11V3H10V6H9V9ZM9 3H10V2H9V3Z" fill="#B3B3B3"/>
-        </svg>
       </div>
     </div>
   );
