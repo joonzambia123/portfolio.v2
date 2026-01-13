@@ -466,7 +466,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
   return (
     <div className="flex flex-col items-center">
       {/* Inner card with contact rows - skeuomorphic white card */}
-      <div className="contact-modal-inner w-[306px] py-[15px] flex flex-col items-center gap-[10px]">
+      <div className="contact-modal-inner w-[280px] py-[15px] flex flex-col items-center gap-[10px]">
         {contactItems.map((item, index) => (
           <div key={item.title} className="contents">
             {/* Contact row */}

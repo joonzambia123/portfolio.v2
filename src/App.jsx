@@ -1373,8 +1373,8 @@ function App() {
 
   return (
     <div className="bg-[#FCFCFC] min-h-screen w-full">
-      {/* Navigation Bar */}
-      <div className={`fixed top-[50px] left-1/2 transform -translate-x-1/2 h-[50px] w-[580px] z-50 ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}>
+      {/* Navigation Bar - Hidden for now */}
+      <div className={`fixed top-[50px] left-1/2 transform -translate-x-1/2 h-[50px] w-[580px] z-50 hidden ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}>
         <div className="flex h-full nav-pill-container rounded-[14px] items-center justify-center px-[20px] gap-[16px]">
           <button
             className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
@@ -1404,7 +1404,7 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="w-full pt-[180px] pb-[150px] flex justify-center">
+      <div className="w-full pt-[170px] pb-[150px] flex justify-center">
         <div className="flex gap-[50px] items-start text-left main-content-wrapper">
           {/* Left Column - Text Content */}
           <div className="flex flex-col w-[375px]">
