@@ -13,13 +13,13 @@
       "content": "Translating complex, architecturally vast systems into fluid experiences calls for second breakfasts."
     },
     {
-      "id": 3,
+      "id": 4,
       "key": "bio_current",
       "label": "Bio - Current Work",
       "content": "I'm currently building {Student Machine Lab|https://studentmachines.com}, where we craft delightful AI interfaces for local LLMs."
     },
     {
-      "id": 4,
+      "id": 3,
       "key": "bio_mobbin",
       "label": "Bio - Mobbin",
       "content": "Running fun projects at {Mobbin|https://mobbin.com} as a growth engineer, previously led a national campaign for {Perplexity}."
@@ -28,7 +28,7 @@
       "id": 5,
       "key": "bio_hanriver",
       "label": "Bio - Han River",
-      "content": "I was the sole analyst at {Han River Partners|https://www.businesswire.com/news/home/20241022128248/en/HRZ-Han-River-Launches-%24100-Million-Venture-Fund-to-Fuel-Korea-Graph-Tech-Startups}, and was somehow nominated for {Framer Site of the Year|https://www.framer.com/awards/}."
+      "content": "I was the sole analyst at {Han River Partners|https://www.businesswire.com/news/home/20241022128248/en/HRZ-Han-River-Launches-%24100-Million-Venture-Fund-to-Fuel-Korea-Graph-Tech-Startups}, and was once nominated for {Framer Site of the Year|https://www.framer.com/awards/}."
     },
     {
       "id": 6,
@@ -41,6 +41,12 @@
       "key": "clock_location",
       "label": "Clock Location",
       "content": "Kagoshima"
+    },
+    {
+      "id": 9,
+      "key": "",
+      "label": "",
+      "content": ""
     }
   ]
 }
