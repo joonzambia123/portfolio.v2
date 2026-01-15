@@ -344,14 +344,14 @@ function App() {
     // Discrete size steps based on character count
     // Short (≤6 chars): 172px - for very short titles like "是你"
     // Medium (7-14 chars): 205px - for typical song names
-    // Long (>14 chars): 256px - for longer titles with balanced spacing
+    // Long (>14 chars): 248px - for longer titles with balanced spacing
     let newWidth = 205;
     if (charCount <= 6) {
       newWidth = 172;
     } else if (charCount <= 14) {
       newWidth = 205;
     } else {
-      newWidth = 256;
+      newWidth = 248;
     }
 
     // Update the ref for next time
@@ -1839,10 +1839,10 @@ function App() {
               </div>
             </div>
             <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[4px] items-start min-w-0 flex-shrink">
-              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 76px)' }}>
+              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 68px)' }}>
                 {currentTrack?.name || (musicLoading ? 'Loading...' : 'No recent track')}
               </p>
-              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 76px)' }}>
+              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 68px)' }}>
                 {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
               </p>
             </div>
