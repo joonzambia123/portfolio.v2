@@ -316,8 +316,9 @@ function App() {
     isTransitioningRef.current = isTransitioning;
   }, [isTransitioning]);
 
+
   // Calculate music pill width using discrete size steps for visual stability
-  // Three sizes: small (172px), medium (205px), large (238px)
+  // Three sizes: small (172px), medium (205px), large (250px)
   const musicPillWidth = useMemo(() => {
     if (!currentTrack?.name || !currentTrack?.artist) return 205; // Default to medium
 
@@ -330,14 +331,14 @@ function App() {
     // Discrete size steps based on character count
     // Short (≤6 chars): 172px - for very short titles like "是你"
     // Medium (7-14 chars): 205px - for typical song names
-    // Long (>14 chars): 238px - for longer titles
+    // Long (>14 chars): 250px - for longer titles with balanced spacing
     if (charCount <= 6) {
       return 172;
     }
     if (charCount <= 14) {
       return 205;
     }
-    return 238;
+    return 250;
   }, [currentTrack?.name, currentTrack?.artist]);
 
   // Cleanup modal timeout on unmount
@@ -1705,7 +1706,7 @@ function App() {
         style={{
           width: `${musicPillWidth + 1 + 290}px`,
           overflow: 'visible',
-          transition: 'width 350ms cubic-bezier(0.34, 1.2, 0.64, 1)'
+          transition: 'width 500ms cubic-bezier(0.34, 1.2, 0.64, 1)'
         }}
       >
         <div className="flex h-full bottom-pill-container rounded-[14px] relative">
@@ -1821,10 +1822,10 @@ function App() {
             </div>
             <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[4px] items-start min-w-0 flex-shrink">
               <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 72px)' }}>
-                {musicLoading ? 'Loading...' : currentTrack?.name || 'No recent track'}
+                {currentTrack?.name || (musicLoading ? 'Loading...' : 'No recent track')}
               </p>
               <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 72px)' }}>
-                {musicLoading ? '...' : currentTrack?.artist || 'Connect Last.fm'}
+                {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
               </p>
             </div>
           </button>
