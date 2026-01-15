@@ -1821,10 +1821,10 @@ function App() {
               </div>
             </div>
             <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[4px] items-start min-w-0 flex-shrink">
-              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 72px)' }}>
+              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 76px)' }}>
                 {currentTrack?.name || (musicLoading ? 'Loading...' : 'No recent track')}
               </p>
-              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 72px)' }}>
+              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 76px)' }}>
                 {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
               </p>
             </div>
