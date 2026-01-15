@@ -1709,7 +1709,7 @@ function App() {
           transition: 'width 500ms cubic-bezier(0.34, 1.2, 0.64, 1), opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), transform 500ms cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
-        <div className="flex h-full bottom-pill-container rounded-[14px] relative">
+        <div className="flex h-full bottom-pill-container rounded-[14px] relative" style={{ '--music-pill-width': `${musicPillWidth}px` }}>
           {/* Status Tab - aligned to right edge of music hover box, 10px above pill */}
           {(isMusicHovered || isModalExiting) && currentTrack && (
             <div 
