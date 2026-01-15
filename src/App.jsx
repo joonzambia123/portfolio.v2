@@ -32,7 +32,7 @@ function App() {
   const loaderMinTimeRef = useRef(false); // Minimum loader display time
   
   // Last.fm integration
-  const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, playPreview, stopPreview } = useLastFm();
+  const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, isDataComplete, playPreview, stopPreview } = useLastFm();
 
   // Sound effects
   const { playClick, playArrow } = useSounds();
@@ -317,10 +317,17 @@ function App() {
   }, [isTransitioning]);
 
 
+  // Track the last known width to prevent resetting during data refresh
+  const lastMusicPillWidthRef = useRef(205);
+
   // Calculate music pill width using discrete size steps for visual stability
   // Three sizes: small (172px), medium (205px), large (250px)
+  // Only updates when isDataComplete is true (album art preloaded)
   const musicPillWidth = useMemo(() => {
-    if (!currentTrack?.name || !currentTrack?.artist) return 205; // Default to medium
+    // Don't update width until data is complete (album art preloaded)
+    // Keep the previous width while loading new data
+    if (!isDataComplete) return lastMusicPillWidthRef.current;
+    if (!currentTrack?.name || !currentTrack?.artist) return lastMusicPillWidthRef.current;
 
     // Get the longer of title or artist
     const longerText = currentTrack.name.length >= currentTrack.artist.length
@@ -332,14 +339,19 @@ function App() {
     // Short (≤6 chars): 172px - for very short titles like "是你"
     // Medium (7-14 chars): 205px - for typical song names
     // Long (>14 chars): 250px - for longer titles with balanced spacing
+    let newWidth = 205;
     if (charCount <= 6) {
-      return 172;
+      newWidth = 172;
+    } else if (charCount <= 14) {
+      newWidth = 205;
+    } else {
+      newWidth = 250;
     }
-    if (charCount <= 14) {
-      return 205;
-    }
-    return 250;
-  }, [currentTrack?.name, currentTrack?.artist]);
+
+    // Update the ref for next time
+    lastMusicPillWidthRef.current = newWidth;
+    return newWidth;
+  }, [currentTrack?.name, currentTrack?.artist, isDataComplete]);
 
   // Cleanup modal timeout on unmount
   useEffect(() => {

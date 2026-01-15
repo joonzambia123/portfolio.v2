@@ -105,6 +105,23 @@ export function useLastFm() {
         // Fetch iTunes preview URL
         const previewUrl = await getItunesPreview(trackName, artistName);
 
+        // Preload album art before updating state
+        const preloadImage = (src) => {
+          return new Promise((resolve) => {
+            if (!src) {
+              resolve();
+              return;
+            }
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // Resolve anyway on error
+            img.src = src;
+          });
+        };
+
+        // Preload the album art image used in the vinyl
+        await preloadImage(albumArtSmall);
+
         setCurrentTrack({
           name: trackName,
           artist: artistName,
