@@ -1165,6 +1165,23 @@ background-color: #E8F6FF;
   border-color: #DCDFE6;
 }
 
+/* Coordinates link expanded hitbox */
+.coord-link {
+  position: relative;
+}
+
+.coord-link::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -12px;
+  right: -12px;
+  bottom: -10px;
+  background: transparent;
+  pointer-events: auto;
+  z-index: 1;
+}
+
 /* Copy tooltip pill - mouse tracking */
 .copy-tooltip-pill {
   background: rgba(255, 255, 255, 0.95);
