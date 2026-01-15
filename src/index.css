@@ -1135,10 +1135,7 @@ background-color: #E8F6FF;
   transform: translateY(-1px);
 }
 
-.contact-row:hover::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
-  opacity: 1;
-}
+/* ::before is now the invisible hitbox - no visual changes on hover */
 
 .contact-row:active {
   transform: translateY(0);
