@@ -2,10 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Font Face Declarations */
+/* Font Face Declarations - WOFF2 for smaller file size, OTF fallback */
 @font-face {
   font-family: 'Calluna';
-  src: url('./fonts/Calluna-Regular.otf') format('opentype');
+  src: url('./fonts/Calluna-Regular.woff2') format('woff2'),
+       url('./fonts/Calluna-Regular.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -13,7 +14,8 @@
 
 @font-face {
   font-family: 'Graphik';
-  src: url('./fonts/GraphikRegular.otf') format('opentype');
+  src: url('./fonts/GraphikRegular.woff2') format('woff2'),
+       url('./fonts/GraphikRegular.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -21,7 +23,8 @@
 
 @font-face {
   font-family: 'Graphik';
-  src: url('./fonts/GraphikMedium.otf') format('opentype');
+  src: url('./fonts/GraphikMedium.woff2') format('woff2'),
+       url('./fonts/GraphikMedium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
