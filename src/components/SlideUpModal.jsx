@@ -446,6 +446,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
       description: '@joonseochang',
       Icon: InstagramIcon,
       href: 'https://instagram.com/joonseochang',
+      appLink: 'instagram://user?username=joonseochang',
     },
     {
       id: 'linkedin',
@@ -453,6 +454,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
       description: '/in/joonseo-chang',
       Icon: LinkedInIcon,
       href: 'https://linkedin.com/in/joonseo-chang',
+      appLink: 'linkedin://in/joonseo-chang',
     },
     {
       id: 'twitter',
@@ -460,6 +462,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
       description: '@joonseochang',
       Icon: TwitterIcon,
       href: 'https://twitter.com/joonseochang',
+      appLink: 'twitter://user?screen_name=joonseochang',
     },
   ];
 
@@ -525,7 +528,17 @@ export const ContactModalContent = ({ darkMode = false }) => {
                 href={item.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={playClick}
+                onClick={(e) => {
+                  playClick();
+                  // Try app link on mobile if available
+                  if (item.appLink && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
+                    e.preventDefault();
+                    window.location.href = item.appLink;
+                    setTimeout(() => {
+                      window.location.href = item.href;
+                    }, 500);
+                  }
+                }}
                 onMouseEnter={() => setHoveredRow(item.id)}
                 onMouseLeave={() => setHoveredRow(null)}
                 className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer"
