@@ -326,33 +326,39 @@ function App() {
   // Track the last known width to prevent resetting during data refresh
   const lastMusicPillWidthRef = useRef(205);
 
-  // Calculate music pill width using discrete size steps for visual stability
-  // Three sizes: small (172px), medium (205px), large (270px)
-  // Only updates when isDataComplete is true (album art preloaded)
+  // Measure actual text width using canvas for accurate dynamic sizing
+  const measureTextWidth = (text, font = '14px Graphik, sans-serif') => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.font = font;
+    return ctx.measureText(text).width;
+  };
+
+  // Calculate music pill width dynamically based on actual text width
+  // Measures text, adds padding for album art + gaps + hover box margin
   const musicPillWidth = useMemo(() => {
     // Don't update width until data is complete (album art preloaded)
-    // Keep the previous width while loading new data
     if (!isDataComplete) return lastMusicPillWidthRef.current;
     if (!currentTrack?.name || !currentTrack?.artist) return lastMusicPillWidthRef.current;
 
-    // Get the longer of title or artist
-    const longerText = currentTrack.name.length >= currentTrack.artist.length
-      ? currentTrack.name
-      : currentTrack.artist;
-    const charCount = longerText.length;
+    // Measure actual pixel width of title and artist
+    const titleWidth = measureTextWidth(currentTrack.name);
+    const artistWidth = measureTextWidth(currentTrack.artist);
+    const maxTextWidth = Math.max(titleWidth, artistWidth);
 
-    // Discrete size steps based on character count
-    // Short (≤6 chars): 172px - for very short titles like "是你"
-    // Medium (7-14 chars): 205px - for typical song names
-    // Long (>14 chars): 248px - for longer titles with balanced spacing
-    let newWidth = 205;
-    if (charCount <= 6) {
-      newWidth = 172;
-    } else if (charCount <= 14) {
-      newWidth = 205;
-    } else {
-      newWidth = 248;
-    }
+    // Fixed offsets:
+    // - Album art: 40px
+    // - Gap between art and text: 10px
+    // - Button padding (left 6px + right 16px): 22px
+    // - Wrapper padding (left 6px + right 12px): 18px
+    // - Comfortable breathing room: 45px (matches original live version feel)
+    const fixedOffset = 40 + 10 + 22 + 18 + 45; // = 135px
+
+    // Calculate dynamic width with min/max constraints
+    // Min: 185px (more than original 172px, but less whitespace for short text)
+    // Max: 265px (prevent excessive width while allowing longer titles)
+    const calculatedWidth = Math.round(maxTextWidth + fixedOffset);
+    const newWidth = Math.max(185, Math.min(265, calculatedWidth));
 
     // Update the ref for next time
     lastMusicPillWidthRef.current = newWidth;
@@ -1839,10 +1845,10 @@ function App() {
               </div>
             </div>
             <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[4px] items-start min-w-0 flex-shrink">
-              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 68px)' }}>
+              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 100px)' }}>
                 {currentTrack?.name || (musicLoading ? 'Loading...' : 'No recent track')}
               </p>
-              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 68px)' }}>
+              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 100px)' }}>
                 {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
               </p>
             </div>
