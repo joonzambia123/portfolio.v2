@@ -321,7 +321,7 @@ function App() {
   const lastMusicPillWidthRef = useRef(205);
 
   // Calculate music pill width using discrete size steps for visual stability
-  // Three sizes: small (172px), medium (205px), large (250px)
+  // Three sizes: small (172px), medium (205px), large (270px)
   // Only updates when isDataComplete is true (album art preloaded)
   const musicPillWidth = useMemo(() => {
     // Don't update width until data is complete (album art preloaded)
@@ -338,14 +338,14 @@ function App() {
     // Discrete size steps based on character count
     // Short (≤6 chars): 172px - for very short titles like "是你"
     // Medium (7-14 chars): 205px - for typical song names
-    // Long (>14 chars): 250px - for longer titles with balanced spacing
+    // Long (>14 chars): 256px - for longer titles with balanced spacing
     let newWidth = 205;
     if (charCount <= 6) {
       newWidth = 172;
     } else if (charCount <= 14) {
       newWidth = 205;
     } else {
-      newWidth = 250;
+      newWidth = 256;
     }
 
     // Update the ref for next time
