@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useLastFm } from './hooks/useLastFm'
 import { useSounds } from './hooks/useSounds'
 import SlideUpModal, {
@@ -315,6 +315,30 @@ function App() {
   useEffect(() => {
     isTransitioningRef.current = isTransitioning;
   }, [isTransitioning]);
+
+  // Calculate music pill width using discrete size steps for visual stability
+  // Three sizes: small (172px), medium (205px), large (238px)
+  const musicPillWidth = useMemo(() => {
+    if (!currentTrack?.name || !currentTrack?.artist) return 205; // Default to medium
+
+    // Get the longer of title or artist
+    const longerText = currentTrack.name.length >= currentTrack.artist.length
+      ? currentTrack.name
+      : currentTrack.artist;
+    const charCount = longerText.length;
+
+    // Discrete size steps based on character count
+    // Short (≤6 chars): 172px - for very short titles like "是你"
+    // Medium (7-14 chars): 205px - for typical song names
+    // Long (>14 chars): 238px - for longer titles
+    if (charCount <= 6) {
+      return 172;
+    }
+    if (charCount <= 14) {
+      return 205;
+    }
+    return 238;
+  }, [currentTrack?.name, currentTrack?.artist]);
 
   // Cleanup modal timeout on unmount
   useEffect(() => {
@@ -1676,7 +1700,14 @@ function App() {
       </div>
 
       {/* Bottom Component - Born Slippy, Activity, Shortcuts, Contact */}
-      <div className={`fixed bottom-[50px] left-1/2 transform -translate-x-1/2 h-[64px] w-[529px] ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`} style={{ overflow: 'visible' }}>
+      <div
+        className={`fixed bottom-[50px] left-1/2 transform -translate-x-1/2 h-[64px] ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}
+        style={{
+          width: `${musicPillWidth + 1 + 290}px`,
+          overflow: 'visible',
+          transition: 'width 350ms cubic-bezier(0.34, 1.2, 0.64, 1)'
+        }}
+      >
         <div className="flex h-full bottom-pill-container rounded-[14px] relative">
           {/* Status Tab - aligned to right edge of music hover box, 10px above pill */}
           {(isMusicHovered || isModalExiting) && currentTrack && (
@@ -1711,9 +1742,9 @@ function App() {
             </div>
           )}
           
-          <div 
-            className="h-[64px] w-[238px] flex items-center pl-[6px] pr-[12px] relative flex-shrink-0"
-            style={{ overflow: 'visible' }}
+          <div
+            className="music-pill-wrapper h-[64px] flex items-center pl-[6px] pr-[12px] relative flex-shrink-0"
+            style={{ '--music-pill-width': `${musicPillWidth}px`, overflow: 'visible' }}
           >
             <button
               ref={musicButtonRef}
@@ -1788,11 +1819,11 @@ function App() {
                 <div className="absolute w-[2px] h-[2px] rounded-full bg-[#0a0a0a] z-20"></div>
               </div>
             </div>
-            <div className="flex flex-col font-graphik text-[14px] justify-center gap-[4px] items-start min-w-0 flex-shrink">
-              <p className="text-[#333] leading-none truncate max-w-[154px]">
+            <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[4px] items-start min-w-0 flex-shrink">
+              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 72px)' }}>
                 {musicLoading ? 'Loading...' : currentTrack?.name || 'No recent track'}
               </p>
-              <p className="text-[#c3c3c3] leading-none truncate max-w-[154px]">
+              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 72px)' }}>
                 {musicLoading ? '...' : currentTrack?.artist || 'Connect Last.fm'}
               </p>
             </div>

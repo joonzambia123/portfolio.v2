@@ -6,8 +6,10 @@ export function useLastFm() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isDataComplete, setIsDataComplete] = useState(false);
   const audioRef = useRef(null);
   const fadeIntervalRef = useRef(null);
+  const previousTrackRef = useRef(null);
 
   // Fetch iTunes preview URL for a track
   const getItunesPreview = async (trackName, artistName) => {
@@ -50,6 +52,13 @@ export function useLastFm() {
       return;
     }
 
+    // Only show loading state on initial fetch, not on refresh
+    if (!currentTrack) {
+      setIsLoading(true);
+    }
+    // Mark data as incomplete while fetching (to delay resize animation)
+    setIsDataComplete(false);
+
     try {
       const response = await fetch(
         `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${username}&api_key=${apiKey}&format=json&limit=1`
@@ -85,6 +94,14 @@ export function useLastFm() {
         const trackName = track.name;
         const artistName = track.artist?.['#text'] || track.artist;
 
+        // Check if track has changed (for smooth transitions)
+        const trackChanged = previousTrackRef.current?.name !== trackName ||
+                            previousTrackRef.current?.artist !== artistName;
+
+        if (trackChanged && currentTrack) {
+          previousTrackRef.current = currentTrack;
+        }
+
         // Fetch iTunes preview URL
         const previewUrl = await getItunesPreview(trackName, artistName);
 
@@ -99,6 +116,9 @@ export function useLastFm() {
           url: track.url,
           previewUrl: previewUrl
         });
+
+        // Data is now complete - ready for resize animation
+        setIsDataComplete(true);
       }
 
       setIsLoading(false);
@@ -107,6 +127,10 @@ export function useLastFm() {
       console.error('Error fetching from Last.fm:', err);
       setError(err.message);
       setIsLoading(false);
+      // Keep data complete if we had previous data (don't break existing display)
+      if (currentTrack) {
+        setIsDataComplete(true);
+      }
     }
   };
 
@@ -221,6 +245,7 @@ export function useLastFm() {
     isLoading,
     error,
     isPlaying,
+    isDataComplete,
     playPreview,
     stopPreview,
     togglePreview,
