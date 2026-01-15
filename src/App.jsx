@@ -338,14 +338,14 @@ function App() {
     // Discrete size steps based on character count
     // Short (≤6 chars): 172px - for very short titles like "是你"
     // Medium (7-14 chars): 205px - for typical song names
-    // Long (>14 chars): 256px - for longer titles with balanced spacing
+    // Long (>14 chars): 230px - for longer titles with balanced spacing
     let newWidth = 205;
     if (charCount <= 6) {
       newWidth = 172;
     } else if (charCount <= 14) {
       newWidth = 205;
     } else {
-      newWidth = 256;
+      newWidth = 230;
     }
 
     // Update the ref for next time
