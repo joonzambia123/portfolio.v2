@@ -53,6 +53,7 @@ function App() {
     bottomComponent: false
   });
   const [showJiggle, setShowJiggle] = useState(false);
+  const [hasDiscoveredContent, setHasDiscoveredContent] = useState(false); // Once true, jiggle never triggers again
   const [isHovered, setIsHovered] = useState(false);
   const [isMusicHovered, setIsMusicHovered] = useState(false);
   const [isModalExiting, setIsModalExiting] = useState(false);
@@ -851,7 +852,7 @@ function App() {
     }, startDelay + stagger * 4 + 50);
   }, [isLoading]);
 
-  // Trigger subtle jiggle animation: initial after 8s, then every 5s. Pause on hover, then resume 15s after leaving.
+  // Trigger subtle jiggle animation: initial after 8s, then every 5s. Stops permanently once user hovers.
   const jiggleIntervalRef = useRef(null);
   const jigglePauseTimeoutRef = useRef(null);
   const jiggleTimeoutRef = useRef(null);
@@ -878,15 +879,21 @@ function App() {
       }
     };
 
+    // If user has already discovered the content, never show jiggle again
+    if (hasDiscoveredContent) {
+      clearAllJiggleTimers();
+      setShowJiggle(false);
+      return;
+    }
+
     const startJiggle = () => {
-      // Always check the ref for current hover state - double check before starting
-      if (isHoveredRef.current) {
+      // Don't jiggle if discovered or currently hovered
+      if (isHoveredRef.current || hasDiscoveredContent) {
         setShowJiggle(false);
         return;
       }
       setShowJiggle(true);
       jiggleTimeoutRef.current = setTimeout(() => {
-        // Check again before ending - if hovered, don't set to false (already false)
         if (!isHoveredRef.current) {
           setShowJiggle(false);
         }
@@ -899,39 +906,21 @@ function App() {
         clearInterval(jiggleIntervalRef.current);
       }
       jiggleIntervalRef.current = setInterval(() => {
-        // Always check the ref for current hover state
-        if (!isHoveredRef.current) {
+        if (!isHoveredRef.current && !hasDiscoveredContent) {
           startJiggle();
         }
       }, 5000);
     };
 
     if (isHovered) {
-      // Stop everything immediately - ensure jiggle stops right away
-      // Clear state first, then timers to prevent any race conditions
+      // User has discovered the content - permanently stop jiggle
+      setHasDiscoveredContent(true);
       setShowJiggle(false);
-      // Clear all timers immediately
-      if (jiggleTimeoutRef.current) {
-        clearTimeout(jiggleTimeoutRef.current);
-        jiggleTimeoutRef.current = null;
-      }
-      if (jiggleIntervalRef.current) {
-        clearInterval(jiggleIntervalRef.current);
-        jiggleIntervalRef.current = null;
-      }
-      if (jigglePauseTimeoutRef.current) {
-        clearTimeout(jigglePauseTimeoutRef.current);
-        jigglePauseTimeoutRef.current = null;
-      }
-      if (jiggleInitialRef.current) {
-        clearTimeout(jiggleInitialRef.current);
-        jiggleInitialRef.current = null;
-      }
-    } else {
-      // Start jiggle cycle after delay
+      clearAllJiggleTimers();
+    } else if (!hasDiscoveredContent) {
+      // Only start jiggle cycle if user hasn't discovered content yet
       jigglePauseTimeoutRef.current = setTimeout(() => {
-        // Check ref before starting
-        if (!isHoveredRef.current) {
+        if (!isHoveredRef.current && !hasDiscoveredContent) {
           startJiggle();
           startJiggleCycle();
         }
@@ -941,7 +930,7 @@ function App() {
     return () => {
       clearAllJiggleTimers();
     };
-  }, [isHovered]);
+  }, [isHovered, hasDiscoveredContent]);
 
   // Update clock time based on CMS city setting
   useEffect(() => {
