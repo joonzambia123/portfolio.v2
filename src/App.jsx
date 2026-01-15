@@ -182,9 +182,15 @@ function App() {
         return splitParts.map((splitPart, j) => {
           if (regex.test(splitPart)) {
             return (
-              <span key={`${i}-${j}`} className="easter-egg-second-breakfast">
+              <a
+                key={`${i}-${j}`}
+                href="https://www.youtube.com/watch?v=gA8LV37QwxA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="easter-egg-second-breakfast"
+              >
                 {splitPart}
-              </span>
+              </a>
             );
           }
           return splitPart;
