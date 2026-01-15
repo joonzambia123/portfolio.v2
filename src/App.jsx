@@ -1749,7 +1749,7 @@ function App() {
           >
             <button
               ref={musicButtonRef}
-              className="music-player-button h-[48px] w-full flex items-center gap-[10px] pl-[6px] pr-[10px] cursor-pointer group/vinyl"
+              className="music-player-button h-[48px] w-full flex items-center gap-[10px] pl-[6px] pr-[16px] cursor-pointer group/vinyl"
               onClick={(e) => {
                 e.preventDefault();
                 playClick();
