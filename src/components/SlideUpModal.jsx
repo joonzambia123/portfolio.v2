@@ -168,8 +168,8 @@ const LinkedInIcon = ({ hovered }) => (
     fill={hovered ? "#6b7280" : "#a3a3a3"}
     style={{ transition: 'fill 300ms ease' }}
     animate={hovered ? {
-      rotate: [0, -5, 4, -3, 2, 0],
-      scale: [1, 1.06, 1.07, 1.05, 1.03, 1]
+      rotate: [0, -8, 6, -4, 3, 0],
+      scale: [1, 1.1, 1.12, 1.08, 1.04, 1]
     } : { rotate: 0, scale: 1 }}
     transition={{
       duration: 0.55,
