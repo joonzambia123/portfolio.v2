@@ -577,7 +577,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
 
   // Get the email description text based on state
   const getEmailDescription = () => {
-    if (copiedEmail) return 'Send me a digital pigeon!';
+    if (copiedEmail) return 'Send me a digital Raven!';
     if (emailHover && !isMobileOrTablet) return 'Copy address';
     return 'changjoonseo126@gmail.com';
   };
