@@ -78,13 +78,7 @@ function App() {
   const lastMediaHashRef = useRef('');
   const lastCopyHashRef = useRef('');
 
-  // Adaptive video quality - use low quality on slow connections
-  // Initialize based on Safari detection (sync) to avoid race condition
-  const [useLowQuality, setUseLowQuality] = useState(() => {
-    // Check Safari immediately on init
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    return isSafari;
-  });
+  // Video quality is now handled by Cloudinary automatically
   
   // City to timezone mapping - automatically determines timezone from city name
   const getTimezoneFromCity = (cityName) => {
@@ -393,56 +387,7 @@ function App() {
     setIsMac(checkIsMac);
   }, []);
 
-  // Detect slow connection and use low-quality videos
-  // Also supports URL params: ?quality=low (force low) or ?quality=high (force high)
-  useEffect(() => {
-    const checkConnection = () => {
-      // Check URL parameter first for testing
-      const urlParams = new URLSearchParams(window.location.search);
-      const qualityParam = urlParams.get('quality');
-
-      if (qualityParam === 'low') {
-        setUseLowQuality(true);
-        console.log('[Video Quality] Forced LOW via URL param');
-        return;
-      }
-      if (qualityParam === 'high') {
-        setUseLowQuality(false);
-        console.log('[Video Quality] Forced HIGH via URL param');
-        return;
-      }
-
-      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      // Use low quality if:
-      // 1. Slow connection (2g, slow-2g, or saveData enabled)
-      // 2. Safari browser (Safari struggles with video regardless of desktop/mobile)
-      // 3. Connection downlink is less than 1.5 Mbps
-      if (connection) {
-        const isSlowConnection =
-          connection.effectiveType === '2g' ||
-          connection.effectiveType === 'slow-2g' ||
-          connection.saveData === true ||
-          (connection.downlink && connection.downlink < 1.5);
-
-        const shouldUseLow = isSlowConnection || isSafari;
-        setUseLowQuality(shouldUseLow);
-        console.log(`[Video Quality] ${shouldUseLow ? 'LOW' : 'HIGH'} - Connection: ${connection.effectiveType}, Downlink: ${connection.downlink}Mbps, Safari: ${isSafari}, Mobile: ${isMobile}`);
-
-        // Listen for connection changes
-        connection.addEventListener('change', checkConnection);
-        return () => connection.removeEventListener('change', checkConnection);
-      } else {
-        // Fallback: use low quality on Safari without Network Info API
-        setUseLowQuality(isSafari);
-        console.log(`[Video Quality] ${isSafari ? 'LOW' : 'HIGH'} (no Network API) - Safari: ${isSafari}, Mobile: ${isMobile}`);
-      }
-    };
-
-    checkConnection();
-  }, []);
+  // Video quality is now handled automatically by Cloudinary's f_auto,q_auto transformations
 
   // Keyboard shortcuts: Cmd+K / Ctrl+K and Escape to close modal
   useEffect(() => {
@@ -505,33 +450,39 @@ function App() {
   const pendingDirectionRef = useRef(null);
   const targetVideoIndexRef = useRef(0); // Track ultimate target when clicking fast
 
-  // Helper to encode video src for Safari compatibility (handles spaces in filenames)
-  // Also converts to low-quality path when useLowQuality is true
-  const encodeVideoSrc = (src, forceLowQuality = useLowQuality) => {
+  // Helper to get video src - handles both Cloudinary URLs and local paths
+  const encodeVideoSrc = (src) => {
     if (!src) return src;
 
-    // Convert to low-quality path if needed
-    // Original: /Bandung fix.mp4 -> Low: /videos/low/Bandung fix.mp4
-    let videoPath = src;
-    if (forceLowQuality && !src.includes('/videos/low/')) {
-      // Extract filename from path (handles both /filename.mp4 and filename.mp4)
-      const filename = src.startsWith('/') ? src.slice(1) : src;
-      videoPath = `/videos/low/${filename}`;
+    // If it's a Cloudinary URL, return as-is (already optimized)
+    if (src.includes('cloudinary.com')) {
+      return src;
     }
 
-    // Encode the path but keep the leading slash
-    const parts = videoPath.split('/');
+    // Local path - encode spaces
+    const parts = src.split('/');
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
 
-  // Helper to get poster image path for a video
+  // Helper to get poster image - uses Cloudinary thumbnail or local poster
   const getPosterSrc = (src) => {
     if (!src) return '';
-    // Extract filename and replace extension
+
+    // If it's a Cloudinary URL, generate thumbnail URL
+    if (src.includes('cloudinary.com')) {
+      // Convert video URL to image thumbnail
+      // From: /video/upload/f_auto,q_auto/name
+      // To: /video/upload/f_jpg,q_auto,so_0/name.jpg
+      return src
+        .replace('/video/upload/', '/video/upload/f_jpg,q_auto,so_0/')
+        .replace('f_auto,q_auto/', '')
+        + '.jpg';
+    }
+
+    // Local path - use local poster
     const filename = src.startsWith('/') ? src.slice(1) : src;
     const posterName = filename.replace('.mp4', '.jpg');
     const posterPath = `/posters/${posterName}`;
-    // Encode spaces in filename
     const parts = posterPath.split('/');
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
@@ -741,8 +692,6 @@ function App() {
 
       // CRITICAL: Call load() after setting source on Safari to ensure it loads the new video
       nextRef.current.load();
-
-      console.log(`[Safari Video] Loading: ${nextVideoSrc}`);
 
       // If video is cached, try to play immediately without loading indicator
       if (isVideoCached || isVideoReady) {
