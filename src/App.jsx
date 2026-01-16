@@ -77,6 +77,9 @@ function App() {
   const [websiteCopy, setWebsiteCopy] = useState({});
   const lastMediaHashRef = useRef('');
   const lastCopyHashRef = useRef('');
+
+  // Adaptive video quality - use low quality on slow connections
+  const [useLowQuality, setUseLowQuality] = useState(false);
   
   // City to timezone mapping - automatically determines timezone from city name
   const getTimezoneFromCity = (cityName) => {
@@ -385,6 +388,38 @@ function App() {
     setIsMac(checkIsMac);
   }, []);
 
+  // Detect slow connection and use low-quality videos
+  useEffect(() => {
+    const checkConnection = () => {
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // Use low quality if:
+      // 1. Slow connection (2g, slow-2g, or saveData enabled)
+      // 2. Mobile device on Safari (Safari mobile can struggle with large videos)
+      // 3. Connection downlink is less than 1.5 Mbps
+      if (connection) {
+        const isSlowConnection =
+          connection.effectiveType === '2g' ||
+          connection.effectiveType === 'slow-2g' ||
+          connection.saveData === true ||
+          (connection.downlink && connection.downlink < 1.5);
+
+        setUseLowQuality(isSlowConnection || (isSafari && isMobile));
+
+        // Listen for connection changes
+        connection.addEventListener('change', checkConnection);
+        return () => connection.removeEventListener('change', checkConnection);
+      } else {
+        // Fallback: use low quality on mobile Safari without Network Info API
+        setUseLowQuality(isSafari && isMobile);
+      }
+    };
+
+    checkConnection();
+  }, []);
+
   // Keyboard shortcuts: Cmd+K / Ctrl+K and Escape to close modal
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -447,10 +482,21 @@ function App() {
   const targetVideoIndexRef = useRef(0); // Track ultimate target when clicking fast
 
   // Helper to encode video src for Safari compatibility (handles spaces in filenames)
-  const encodeVideoSrc = (src) => {
+  // Also converts to low-quality path when useLowQuality is true
+  const encodeVideoSrc = (src, forceLowQuality = useLowQuality) => {
     if (!src) return src;
+
+    // Convert to low-quality path if needed
+    // Original: /Bandung fix.mp4 -> Low: /videos/low/Bandung fix.mp4
+    let videoPath = src;
+    if (forceLowQuality && !src.includes('/videos/low/')) {
+      // Extract filename from path (handles both /filename.mp4 and filename.mp4)
+      const filename = src.startsWith('/') ? src.slice(1) : src;
+      videoPath = `/videos/low/${filename}`;
+    }
+
     // Encode the path but keep the leading slash
-    const parts = src.split('/');
+    const parts = videoPath.split('/');
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
 
