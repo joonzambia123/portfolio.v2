@@ -117,8 +117,8 @@ const InstagramIcon = ({ hovered }) => (
       style={{ transition: 'stroke 300ms ease' }}
       initial={{ r: 4 }}
       animate={hovered ? {
-        r: [4, 2.8, 5, 4],
-        strokeWidth: [1.5, 2.2, 1.5, 1.5]
+        r: [4, 3.2, 4.5, 4],
+        strokeWidth: [1.5, 2, 1.5, 1.5]
       } : { r: 4, strokeWidth: 1.5 }}
       transition={{
         duration: 0.6,
