@@ -538,11 +538,14 @@ export const ShortcutsModalContent = ({ isMac }) => (
 export const ContactModalContent = ({ darkMode = false }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [emailHover, setEmailHover] = useState(false);
+  const [showCopyPill, setShowCopyPill] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [smoothPos, setSmoothPos] = useState({ x: 0, y: 0 });
   const emailRowRef = useRef(null);
   const animationRef = useRef(null);
+  const copyPillTimerRef = useRef(null);
+  const pillDismissedRef = useRef(false); // Track if pill was dismissed this hover session
   const { playClick } = useSounds();
 
   // Check if device is mobile/tablet
@@ -550,6 +553,14 @@ export const ContactModalContent = ({ darkMode = false }) => {
 
   const handleCopyEmail = async () => {
     playClick();
+
+    // Hide the copy pill immediately on click and mark as dismissed
+    setShowCopyPill(false);
+    pillDismissedRef.current = true;
+    if (copyPillTimerRef.current) {
+      clearTimeout(copyPillTimerRef.current);
+      copyPillTimerRef.current = null;
+    }
 
     // On mobile/tablet, open email app instead of copying
     if (isMobileOrTablet) {
@@ -564,6 +575,42 @@ export const ContactModalContent = ({ darkMode = false }) => {
       setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
       console.error('Failed to copy email:', err);
+    }
+  };
+
+  // Handle email row mouse enter - show pill and start auto-hide timer
+  const handleEmailMouseEnter = () => {
+    setEmailHover(true);
+    setHoveredRow('email');
+
+    // Only show pill if it wasn't already dismissed this hover session
+    if (!pillDismissedRef.current) {
+      setShowCopyPill(true);
+
+      // Clear any existing timer
+      if (copyPillTimerRef.current) {
+        clearTimeout(copyPillTimerRef.current);
+      }
+
+      // Auto-hide after 2.5 seconds
+      copyPillTimerRef.current = setTimeout(() => {
+        setShowCopyPill(false);
+        pillDismissedRef.current = true;
+        copyPillTimerRef.current = null;
+      }, 2500);
+    }
+  };
+
+  // Handle email row mouse leave - reset for next hover
+  const handleEmailMouseLeave = () => {
+    setEmailHover(false);
+    setHoveredRow(null);
+    setShowCopyPill(false);
+    pillDismissedRef.current = false; // Reset so pill shows again on next hover
+
+    if (copyPillTimerRef.current) {
+      clearTimeout(copyPillTimerRef.current);
+      copyPillTimerRef.current = null;
     }
   };
 
@@ -644,8 +691,8 @@ export const ContactModalContent = ({ darkMode = false }) => {
               <button
                 ref={emailRowRef}
                 onClick={item.onClick}
-                onMouseEnter={() => { setEmailHover(true); setHoveredRow(item.id); }}
-                onMouseLeave={() => { setEmailHover(false); setHoveredRow(null); }}
+                onMouseEnter={handleEmailMouseEnter}
+                onMouseLeave={handleEmailMouseLeave}
                 onMouseMove={handleEmailMouseMove}
                 className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer text-left relative"
               >
@@ -655,8 +702,8 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   style={{
                     left: smoothPos.x,
                     top: smoothPos.y,
-                    transform: `translate(-50%, -130%) scale(${emailHover ? 1 : 0.9})`,
-                    opacity: emailHover ? 1 : 0,
+                    transform: `translate(-50%, -130%) scale(${showCopyPill ? 1 : 0.9})`,
+                    opacity: showCopyPill ? 1 : 0,
                     transition: 'opacity 150ms ease, transform 150ms ease'
                   }}
                 >
