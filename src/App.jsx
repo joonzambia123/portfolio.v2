@@ -79,7 +79,12 @@ function App() {
   const lastCopyHashRef = useRef('');
 
   // Adaptive video quality - use low quality on slow connections
-  const [useLowQuality, setUseLowQuality] = useState(false);
+  // Initialize based on Safari detection (sync) to avoid race condition
+  const [useLowQuality, setUseLowQuality] = useState(() => {
+    // Check Safari immediately on init
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    return isSafari;
+  });
   
   // City to timezone mapping - automatically determines timezone from city name
   const getTimezoneFromCity = (cityName) => {
@@ -519,6 +524,18 @@ function App() {
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
 
+  // Helper to get poster image path for a video
+  const getPosterSrc = (src) => {
+    if (!src) return '';
+    // Extract filename and replace extension
+    const filename = src.startsWith('/') ? src.slice(1) : src;
+    const posterName = filename.replace('.mp4', '.jpg');
+    const posterPath = `/posters/${posterName}`;
+    // Encode spaces in filename
+    const parts = posterPath.split('/');
+    return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
+  };
+
   // Safari: Aggressively preload a video into the buffer pool with LRU eviction
   const preloadVideoToPool = (src) => {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -640,7 +657,7 @@ function App() {
           pendingDirectionRef.current = null;
           changeVideo(dir);
         }
-      }, isSafari ? 100 : 50);
+      }, isSafari ? 80 : 50);
       return;
     }
     
@@ -715,12 +732,17 @@ function App() {
       // Also set video src directly as fallback for Safari
       nextRef.current.src = nextVideoSrc;
 
+      // Set poster for immediate visual while video loads
+      nextRef.current.poster = getPosterSrc(videoData[nextIndex].src);
+
       // Ensure muted for autoplay
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
 
       // CRITICAL: Call load() after setting source on Safari to ensure it loads the new video
       nextRef.current.load();
+
+      console.log(`[Safari Video] Loading: ${nextVideoSrc}`);
 
       // If video is cached, try to play immediately without loading indicator
       if (isVideoCached || isVideoReady) {
@@ -751,7 +773,7 @@ function App() {
 
       nextRef.current.addEventListener('canplay', onCanPlay);
 
-      // Fallback timeout for Safari
+      // Fallback timeout for Safari - reduced for faster transitions
       setTimeout(() => {
         if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
           nextRef.current.removeEventListener('canplay', onCanPlay);
@@ -759,7 +781,7 @@ function App() {
           nextRef.current.play().catch(() => {});
           completeSwitch();
         }
-      }, 400);
+      }, 200);
 
       return;
     }
@@ -1626,8 +1648,10 @@ function App() {
                 style={{
                   zIndex: activeVideo === 1 ? 20 : 10,
                   transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)'
+                  transform: 'translateZ(0)',
+                  backgroundColor: '#e8e8e8'
                 }}
+                poster={safeVideoData[0] ? getPosterSrc(safeVideoData[0].src) : ''}
                 autoPlay
                 muted
                 playsInline
@@ -1645,8 +1669,10 @@ function App() {
                 style={{
                   zIndex: activeVideo === 2 ? 20 : 10,
                   transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)'
+                  transform: 'translateZ(0)',
+                  backgroundColor: '#e8e8e8'
                 }}
+                poster={safeVideoData[1] ? getPosterSrc(safeVideoData[1].src) : ''}
                 muted
                 playsInline
                 preload="auto"
