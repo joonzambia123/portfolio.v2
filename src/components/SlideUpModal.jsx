@@ -718,7 +718,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   </span>
                   <span
                     className="font-graphik text-[14px] leading-[20px]"
-                    style={{ color: copiedEmail ? '#60a5fa' : '#B7B7B9' }}
+                    style={{ color: copiedEmail ? '#369EEF' : '#B7B7B9' }}
                   >
                     {item.description}
                   </span>
