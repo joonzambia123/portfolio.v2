@@ -55,6 +55,10 @@ function App() {
   const [showJiggle, setShowJiggle] = useState(false);
   const [hasDiscoveredContent, setHasDiscoveredContent] = useState(false); // Once true, jiggle never triggers again
   const [isHovered, setIsHovered] = useState(false);
+  const [mobileMetadataExpanded, setMobileMetadataExpanded] = useState(false); // Mobile: toggle metadata box on tap
+
+  // Check if device is mobile/tablet
+  const isMobileOrTablet = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const [isMusicHovered, setIsMusicHovered] = useState(false);
   const [isModalExiting, setIsModalExiting] = useState(false);
   const [isShortcutsHovered, setIsShortcutsHovered] = useState(false);
@@ -1516,16 +1520,28 @@ function App() {
 
           {/* Right Column - Video Card */}
             <div
-              className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'}`}
+              className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
               onMouseEnter={() => {
+                if (isMobileOrTablet) return; // No hover on mobile
                 // Set ref FIRST to prevent race condition with jiggle interval
                 isHoveredRef.current = true;
                 setShowJiggle(false);
                 setIsHovered(true);
               }}
               onMouseLeave={() => {
+                if (isMobileOrTablet) return; // No hover on mobile
                 setIsHovered(false);
                 isHoveredRef.current = false;
+              }}
+              onClick={() => {
+                // Mobile/tablet: toggle metadata box on tap
+                if (isMobileOrTablet) {
+                  setMobileMetadataExpanded(prev => !prev);
+                  setShowJiggle(false);
+                  if (!hasDiscoveredContent) {
+                    setHasDiscoveredContent(true);
+                  }
+                }
               }}
             >
               {/* Loading indicator during video transitions */}
@@ -1554,7 +1570,8 @@ function App() {
                     if (idx === 0) videoRef1.current = el;
                     if (idx === 1) videoRef2.current = el;
                   }}
-                  className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
+                  className={`absolute inset-0 w-full h-full object-cover brightness-[1.10] ${!isMobileOrTablet ? 'group-hover:brightness-[1.20]' : ''}`}
+                  style={isMobileOrTablet && mobileMetadataExpanded ? { filter: 'brightness(1.20)' } : undefined}
                   style={{
                     zIndex: idx === videoIndex ? 20 : 10,
                     opacity: idx === videoIndex ? 1 : 0,
@@ -1585,8 +1602,11 @@ function App() {
                 setIsHovered(true);
               }}
             >
-              <div className={`bg-[#222122] h-[40px] rounded-[14px] w-full black-box-slide group-hover:h-[130px] overflow-hidden relative outline outline-1 outline-white/5 ${showJiggle ? 'black-box-jiggle' : ''}`}>
-                <div className="absolute left-[12px] right-[12px] top-[12px] flex items-center justify-between transition-all duration-300 ease-in-out group-hover:items-start group-hover:justify-between min-w-0 max-w-full z-10">
+              <div
+                className={`bg-[#222122] h-[40px] rounded-[14px] w-full black-box-slide overflow-hidden relative outline outline-1 outline-white/5 ${showJiggle ? 'black-box-jiggle' : ''} ${!isMobileOrTablet ? 'group-hover:h-[130px]' : ''}`}
+                style={isMobileOrTablet ? { height: mobileMetadataExpanded ? '130px' : '40px' } : undefined}
+              >
+                <div className={`absolute left-[12px] right-[12px] top-[12px] flex items-center justify-between transition-all duration-300 ease-in-out min-w-0 max-w-full z-10 ${!isMobileOrTablet ? 'group-hover:items-start group-hover:justify-between' : ''} ${isMobileOrTablet && mobileMetadataExpanded ? 'items-start justify-between' : ''}`}>
                   {safeVideoData[videoIndex] && (
                     <>
                       <p key={videoIndex} className="black-box-text font-graphik leading-[normal] text-[#e6eaee] text-[14px] whitespace-nowrap shrink-0" style={{ color: 'rgba(230, 234, 238, 1)' }}>
