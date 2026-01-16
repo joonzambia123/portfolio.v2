@@ -434,32 +434,11 @@ function App() {
     
     const video = e.target;
     
-    // If hovered, the loop attribute should handle restarting automatically
-    // But if loop didn't work for some reason, manually restart
-    if (isHoveredRef.current) {
-      // When hovered, loop should be true, so video should restart automatically
-      // But as a safety measure, if loop is false, manually restart
-      if (video && !video.loop) {
-        video.currentTime = 0;
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // If play fails and we're no longer hovered, advance
-            if (!isHoveredRef.current) {
-              changeVideo('next');
-            }
-          });
-        }
-      }
-      // If loop is true, the video will restart automatically, so we do nothing
-    } else {
-      // When NOT hovered, ensure loop is false and advance to next video
-      if (video) {
-        video.loop = false; // Explicitly disable loop
-      }
-      // Advance to next video
-      changeVideo('next');
+    // Always advance to next video when current one ends
+    if (video) {
+      video.loop = false;
     }
+    changeVideo('next');
   };
 
   // Track transition state for cancellation
@@ -1273,16 +1252,15 @@ function App() {
     setupVideoElement(videoRef2.current);
   }, [isLoading]);
 
-  // Update loop attribute based on hover state (backup to JSX prop)
+  // Ensure videos never loop - always advance to next
   useEffect(() => {
-    // Ensure loop is set correctly via refs as backup (JSX prop should handle it, but this ensures it)
     if (videoRef1.current) {
-      videoRef1.current.loop = isHovered;
+      videoRef1.current.loop = false;
     }
     if (videoRef2.current) {
-      videoRef2.current.loop = isHovered;
+      videoRef2.current.loop = false;
     }
-  }, [isHovered]);
+  }, []);
 
   // Preload next video in the inactive element for seamless transitions
   useEffect(() => {
@@ -1590,7 +1568,7 @@ function App() {
                 playsInline
                 preload="auto"
                 controls={false}
-                loop={isHovered}
+                loop={false}
                 onEnded={handleVideoEnded}
               >
                 {safeVideoData[0] && <source src={encodeVideoSrc(safeVideoData[0].src)} type="video/mp4" />}
@@ -1608,7 +1586,7 @@ function App() {
                 playsInline
                 preload="auto"
                 controls={false}
-                loop={isHovered}
+                loop={false}
                 onEnded={handleVideoEnded}
               >
                 {safeVideoData[1] && <source src={encodeVideoSrc(safeVideoData[1].src)} type="video/mp4" />}
