@@ -686,6 +686,9 @@ function App() {
       // Set poster for immediate visual while video loads
       nextRef.current.poster = getPosterSrc(videoData[nextIndex].src);
 
+      // Debug: Log video source to verify Cloudinary
+      console.log('[Safari] Loading video:', nextVideoSrc.includes('cloudinary') ? 'Cloudinary ✓' : 'Local ✗', nextVideoSrc);
+
       // Ensure muted for autoplay
       nextRef.current.muted = true;
       nextRef.current.currentTime = 0;
@@ -1012,7 +1015,8 @@ function App() {
     if (videoData.length === 0) return;
     
     const firstVideoSrc = encodeVideoSrc(videoData[0].src);
-    
+    console.log('[Initial] First video source:', firstVideoSrc.includes('cloudinary') ? 'Cloudinary ✓' : 'Local ✗', firstVideoSrc);
+
     // Create a hidden video element to preload the first video
     const preloadVideo = document.createElement('video');
     preloadVideo.preload = 'auto';
