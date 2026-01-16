@@ -1638,7 +1638,10 @@ function App() {
                     </>
                   )}
                 </div>
-                <div className="absolute left-[12px] right-[12px] bottom-[15px] flex items-end justify-between metadata-fade z-10">
+                <div
+                  className="absolute left-[12px] right-[12px] bottom-[15px] flex items-end justify-between metadata-fade z-10"
+                  style={isMobileOrTablet ? { opacity: mobileMetadataExpanded ? 1 : 0, transition: 'opacity 200ms ease' } : undefined}
+                >
                   <div className="flex flex-col gap-[8px]">
                     {safeVideoData[videoIndex] && (
                       <>
