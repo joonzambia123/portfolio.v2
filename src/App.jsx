@@ -451,11 +451,32 @@ function App() {
   const targetVideoIndexRef = useRef(0); // Track ultimate target when clicking fast
 
   // Helper to get video src - handles both Cloudinary URLs and local paths
-  const encodeVideoSrc = (src) => {
+  // Applies browser-specific optimizations for Cloudinary URLs
+  const encodeVideoSrc = (src, options = {}) => {
     if (!src) return src;
 
-    // If it's a Cloudinary URL, return as-is (already optimized)
+    // If it's a Cloudinary URL, optimize transformations
     if (src.includes('cloudinary.com')) {
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+      // Parse existing URL to modify transformations
+      const urlParts = src.match(/\/video\/upload\/([^/]+)\/(.+)/);
+      if (urlParts) {
+        const [, existingTransforms, path] = urlParts;
+
+        // Build optimized transformations
+        // - q_auto:good - automatic quality optimization
+        // - vc_h264 - H.264 codec (best Safari support)
+        // - f_mp4 - MP4 format (universal support)
+        // - ac_none - remove audio (videos are muted, saves bandwidth)
+        // - so_0 - start offset 0 (ensures consistent starting point)
+        // For Safari: add fl_progressive for smoother streaming
+        const baseTransforms = 'q_auto:good,vc_h264,f_mp4,ac_none,so_0';
+        const safariTransforms = isSafari ? `${baseTransforms},fl_progressive:steep` : baseTransforms;
+
+        return `https://res.cloudinary.com/dxsdxpm9m/video/upload/${safariTransforms}/${path}`;
+      }
+
       return src;
     }
 
@@ -605,39 +626,30 @@ function App() {
     // Get next video element
     const nextVideo = videoElementsRef.current[nextIndex];
 
-    // Safari: Show loading indicator if video not ready
-    if (isSafari && nextVideo && nextVideo.readyState < 3) {
-      setVideoLoading(true);
-
-      const onCanPlay = () => {
-        setVideoLoading(false);
-        nextVideo.removeEventListener('canplay', onCanPlay);
-        nextVideo.currentTime = 0;
-        nextVideo.play().catch(() => {});
-      };
-
-      nextVideo.addEventListener('canplay', onCanPlay);
-
-      // Update index immediately for visual transition
-      setVideoIndex(nextIndex);
-
-      // Fallback timeout
-      setTimeout(() => {
-        if (videoLoading) {
-          setVideoLoading(false);
-          nextVideo.removeEventListener('canplay', onCanPlay);
-          nextVideo.currentTime = 0;
-          nextVideo.play().catch(() => {});
-        }
-      }, 500);
-
-      return;
-    }
-
-    // Chrome/Firefox or Safari with ready video: instant switch
+    // Switch immediately - don't wait for anything
     setVideoIndex(nextIndex);
 
     if (nextVideo) {
+      // Safari: Show brief loading indicator only if video is completely unloaded
+      // readyState 0 = HAVE_NOTHING (no data at all)
+      if (isSafari && nextVideo.readyState === 0) {
+        setVideoLoading(true);
+
+        const onLoadedData = () => {
+          setVideoLoading(false);
+          nextVideo.removeEventListener('loadeddata', onLoadedData);
+        };
+
+        nextVideo.addEventListener('loadeddata', onLoadedData);
+
+        // Quick fallback - don't block for too long
+        setTimeout(() => {
+          setVideoLoading(false);
+          nextVideo.removeEventListener('loadeddata', onLoadedData);
+        }, 150);
+      }
+
+      // Always reset and play immediately
       nextVideo.currentTime = 0;
       nextVideo.play().catch(() => {});
     }
@@ -1081,35 +1093,60 @@ function App() {
     };
   }, [isLoading, videoData, musicLoading]);
 
-  // Ensure Safari-specific attributes are set on video elements
+  // Ensure browser-specific attributes are set on ALL video elements
   // Runs when loader finishes and videos are in DOM
   useEffect(() => {
     if (isLoading) return; // Wait for loader to finish
-    
+
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    const setupVideoElement = (videoEl) => {
+    const isChrome = /chrome/i.test(navigator.userAgent) && !/edge|edg/i.test(navigator.userAgent);
+
+    const setupVideoElement = (videoEl, index) => {
       if (!videoEl) return;
-      
+
       // Standard attributes for all browsers
       videoEl.setAttribute('playsinline', 'true');
       videoEl.setAttribute('webkit-playsinline', 'true');
       videoEl.muted = true;
-      
-      // Safari-specific optimizations
+      videoEl.defaultMuted = true;
+
+      // Disable picture-in-picture and remote playback for cleaner experience
+      videoEl.disablePictureInPicture = true;
+      videoEl.disableRemotePlayback = true;
+
+      // Force hardware acceleration for all browsers
+      videoEl.style.transform = 'translateZ(0)';
+      videoEl.style.willChange = 'transform, opacity';
+
       if (isSafari) {
+        // Safari-specific optimizations
         videoEl.setAttribute('x-webkit-airplay', 'allow');
-        // Force hardware acceleration
-        videoEl.style.transform = 'translateZ(0)';
         videoEl.style.webkitTransform = 'translateZ(0)';
-        // Set preload to auto for Safari
+        // All videos should preload in Safari for instant switching
+        videoEl.preload = 'auto';
+        // Reduce buffering aggressiveness slightly for non-current videos
+        if (index !== videoIndex) {
+          videoEl.setAttribute('autobuffer', 'true');
+        }
+      } else if (isChrome) {
+        // Chrome-specific optimizations
+        // Current and adjacent videos get full preload
+        const isAdjacent = Math.abs(index - videoIndex) <= 1 ||
+                           (videoIndex === 0 && index === videoData.length - 1) ||
+                           (videoIndex === videoData.length - 1 && index === 0);
+
+        videoEl.preload = isAdjacent ? 'auto' : 'metadata';
+      } else {
+        // Firefox and other browsers
         videoEl.preload = 'auto';
       }
     };
-    
-    setupVideoElement(videoRef1.current);
-    setupVideoElement(videoRef2.current);
-  }, [isLoading]);
+
+    // Setup ALL video elements
+    videoElementsRef.current.forEach((videoEl, index) => {
+      setupVideoElement(videoEl, index);
+    });
+  }, [isLoading, videoIndex, videoData.length]);
 
   // Ensure videos never loop - always advance to next
   useEffect(() => {
@@ -1121,12 +1158,13 @@ function App() {
     }
   }, []);
 
-  // Preload next video in the inactive element for seamless transitions
+  // Preload adjacent videos for seamless transitions
   useEffect(() => {
     // Don't run during loading or transitions
     if (isLoading || isTransitioningRef.current || videoData.length === 0) return;
 
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isChrome = /chrome/i.test(navigator.userAgent) && !/edge|edg/i.test(navigator.userAgent);
     const nextIndex = (videoIndex + 1) % videoData.length;
     const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
     const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
@@ -1140,28 +1178,59 @@ function App() {
       video1IndexRef.current = nextIndex;
     }
 
-    // Safari: Proactively preload both adjacent videos into the buffer pool
+    // Safari: Proactively preload adjacent videos into the buffer pool
     if (isSafari) {
+      // Preload next and prev immediately
       if (videoData[nextIndex]) {
         preloadVideoToPool(videoData[nextIndex].src);
       }
       if (videoData[prevIndex]) {
         preloadVideoToPool(videoData[prevIndex].src);
       }
+
+      // Also trigger video elements to start buffering
+      [nextIndex, prevIndex].forEach(idx => {
+        const videoEl = videoElementsRef.current[idx];
+        if (videoEl && videoEl.readyState < 3) {
+          videoEl.preload = 'auto';
+          videoEl.load();
+        }
+      });
+    }
+
+    // Chrome: Smart preloading - adjacent videos get full preload, others get metadata only
+    if (isChrome) {
+      videoData.forEach((video, idx) => {
+        const videoEl = videoElementsRef.current[idx];
+        if (!videoEl) return;
+
+        const isAdjacent = idx === nextIndex || idx === prevIndex;
+        const isCurrent = idx === videoIndex;
+
+        if (isCurrent || isAdjacent) {
+          videoEl.preload = 'auto';
+          if (isAdjacent && videoEl.readyState < 2) {
+            videoEl.load();
+          }
+        } else {
+          // Non-adjacent videos: just keep metadata
+          videoEl.preload = 'metadata';
+        }
+      });
     }
 
     // All browsers: Trigger background fetch for adjacent videos if not cached
-    // This ensures smooth navigation even when jumping around
+    // This ensures the video data is in browser cache
     [nextIndex, prevIndex].forEach(idx => {
       if (videoData[idx] && !videoCacheRef.current.has(videoData[idx].src)) {
         const encodedSrc = encodeVideoSrc(videoData[idx].src);
-        fetch(encodedSrc).then(res => res.ok && res.blob()).then(() => {
+        fetch(encodedSrc, { priority: 'high' }).then(res => res.ok && res.blob()).then(() => {
           videoCacheRef.current.add(videoData[idx].src);
         }).catch(() => {});
       }
     });
 
-    // Preload next video in the inactive element
+    // Preload next video in the inactive element (legacy support)
     if (inactiveRef.current && videoData[nextIndex]) {
       const sourceElement = inactiveRef.current.querySelector('source');
       if (sourceElement) {
@@ -1185,20 +1254,20 @@ function App() {
   useEffect(() => {
     // Wait for loader to finish and video data to be available
     if (isLoading || videoData.length === 0) return;
-    
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
     // Wait a frame for the DOM to update after conditional render change
     requestAnimationFrame(() => {
       // Reset indices
       video1IndexRef.current = 0;
       video2IndexRef.current = 1;
-      
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      
+
       // Play video 1 - it should already be preloaded and ready
       if (videoRef1.current) {
         videoRef1.current.muted = true;
         videoRef1.current.currentTime = 0;
-        
+
         const playPromise = videoRef1.current.play();
         if (playPromise !== undefined) {
           playPromise.catch(() => {
@@ -1211,10 +1280,30 @@ function App() {
           });
         }
       }
-      
+
       // Pause video 2 initially - it shouldn't autoplay
       if (videoRef2.current) {
         videoRef2.current.pause();
+      }
+
+      // Safari: Aggressively preload ALL other videos immediately after first video starts
+      // This ensures instant switching when user clicks arrows
+      if (isSafari) {
+        videoData.forEach((video, idx) => {
+          if (idx === 0) return; // Skip first video, it's already playing
+
+          // Stagger preloads slightly to avoid overwhelming Safari
+          setTimeout(() => {
+            preloadVideoToPool(video.src);
+
+            // Also trigger the video element to start buffering
+            const videoEl = videoElementsRef.current[idx];
+            if (videoEl) {
+              videoEl.preload = 'auto';
+              videoEl.load();
+            }
+          }, idx * 200); // 200ms stagger between each video
+        });
       }
     });
   }, [isLoading, videoData]);
@@ -1436,7 +1525,7 @@ function App() {
                   style={{
                     zIndex: idx === videoIndex ? 20 : 10,
                     opacity: idx === videoIndex ? 1 : 0,
-                    transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
+                    transition: 'filter 250ms ease-in-out',
                     transform: 'translateZ(0)'
                   }}
                   poster={getPosterSrc(video.src)}
