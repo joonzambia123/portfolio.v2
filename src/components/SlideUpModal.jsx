@@ -536,7 +536,6 @@ export const ShortcutsModalContent = ({ isMac }) => (
 );
 
 export const ContactModalContent = ({ darkMode = false }) => {
-  const [copiedEmail, setCopiedEmail] = useState(false);
   const [emailHover, setEmailHover] = useState(false);
   const [showCopyPill, setShowCopyPill] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
@@ -569,8 +568,6 @@ export const ContactModalContent = ({ darkMode = false }) => {
     // On desktop, copy to clipboard
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
-      setCopiedEmail(true);
-      setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
       console.error('Failed to copy email:', err);
     }
@@ -587,11 +584,11 @@ export const ContactModalContent = ({ darkMode = false }) => {
       clearTimeout(copyPillTimerRef.current);
     }
 
-    // Auto-hide after 2 seconds
+    // Auto-hide after 1.8 seconds
     copyPillTimerRef.current = setTimeout(() => {
       setShowCopyPill(false);
       copyPillTimerRef.current = null;
-    }, 2000);
+    }, 1800);
   };
 
   // Handle email row mouse leave - hide pill and clear timer
@@ -645,7 +642,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
     {
       id: 'email',
       title: 'Email',
-      description: copiedEmail ? 'Copied address!' : 'changjoonseo126@gmail.com',
+      description: 'changjoonseo126@gmail.com',
       Icon: MailIcon,
       onClick: handleCopyEmail,
     },
@@ -699,20 +696,12 @@ export const ContactModalContent = ({ darkMode = false }) => {
                     transition: 'opacity 150ms ease, transform 150ms ease'
                   }}
                 >
-                  <div className={`copy-tooltip-pill px-[10px] py-[5px] rounded-[8px] whitespace-nowrap flex items-center gap-[5px] ${copiedEmail ? 'copied' : ''}`}>
-                    {copiedEmail ? (
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    ) : (
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                      </svg>
-                    )}
-                    <span className="font-graphik text-[12px]">
-                      {copiedEmail ? 'Copied' : 'Copy'}
-                    </span>
+                  <div className="copy-tooltip-pill px-[10px] py-[5px] rounded-[8px] whitespace-nowrap flex items-center gap-[5px]">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span className="font-graphik text-[12px]">Copy</span>
                   </div>
                 </div>
                 {/* Icon box */}
