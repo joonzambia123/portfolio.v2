@@ -538,14 +538,7 @@ export const ShortcutsModalContent = ({ isMac }) => (
 export const ContactModalContent = ({ darkMode = false }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [emailHover, setEmailHover] = useState(false);
-  const [showCopyPill, setShowCopyPill] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [smoothPos, setSmoothPos] = useState({ x: 0, y: 0 });
-  const emailRowRef = useRef(null);
-  const animationRef = useRef(null);
-  const copyPillTimerRef = useRef(null);
-  const hasSuccessfullyCopiedRef = useRef(false); // Track if user has copied email this session
   const { playClick } = useSounds();
 
   // Check if device is mobile/tablet
@@ -554,111 +547,52 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const handleCopyEmail = async () => {
     playClick();
 
-    // On mobile/tablet, just open email app (no copy pill, no copied state)
+    // On mobile/tablet, just open email app
     if (isMobileOrTablet) {
       window.location.href = 'mailto:changjoonseo126@gmail.com';
       return;
-    }
-
-    // Hide the copy pill immediately on click
-    setShowCopyPill(false);
-    if (copyPillTimerRef.current) {
-      clearTimeout(copyPillTimerRef.current);
-      copyPillTimerRef.current = null;
     }
 
     // On desktop, copy to clipboard
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
       setCopiedEmail(true);
-      hasSuccessfullyCopiedRef.current = true; // Don't show pill again after successful copy
       setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
       console.error('Failed to copy email:', err);
     }
   };
 
-  // Handle email row mouse enter - show pill and start auto-hide timer
   const handleEmailMouseEnter = () => {
-    setEmailHover(true);
+    if (!isMobileOrTablet) {
+      setEmailHover(true);
+    }
     setHoveredRow('email');
-
-    // No hover pill on mobile/tablet (it opens email app directly)
-    if (isMobileOrTablet) {
-      return;
-    }
-
-    // Don't show pill if user has already copied the email
-    if (hasSuccessfullyCopiedRef.current) {
-      return;
-    }
-
-    setShowCopyPill(true);
-
-    // Clear any existing timer
-    if (copyPillTimerRef.current) {
-      clearTimeout(copyPillTimerRef.current);
-    }
-
-    // Auto-hide after 1.8 seconds
-    copyPillTimerRef.current = setTimeout(() => {
-      setShowCopyPill(false);
-      copyPillTimerRef.current = null;
-    }, 1800);
   };
 
-  // Handle email row mouse leave - hide pill and clear timer
   const handleEmailMouseLeave = () => {
     setEmailHover(false);
     setHoveredRow(null);
-    setShowCopyPill(false);
-
-    if (copyPillTimerRef.current) {
-      clearTimeout(copyPillTimerRef.current);
-      copyPillTimerRef.current = null;
-    }
   };
 
-  const handleEmailMouseMove = (e) => {
-    if (emailRowRef.current) {
-      const rect = emailRowRef.current.getBoundingClientRect();
-      setMousePos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
-    }
+  // Get the email description text based on state
+  const getEmailDescription = () => {
+    if (copiedEmail) return 'Copied address!';
+    if (emailHover && !isMobileOrTablet) return 'Copy address';
+    return 'changjoonseo126@gmail.com';
   };
 
-  // Smooth mouse following with easing - only run when hovering over email
-  useEffect(() => {
-    if (!emailHover) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      return;
-    }
-
-    const animate = () => {
-      setSmoothPos(prev => ({
-        x: prev.x + (mousePos.x - prev.x) * 0.15,
-        y: prev.y + (mousePos.y - prev.y) * 0.15
-      }));
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    animationRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [mousePos, emailHover]);
+  // Get the email description color based on state
+  const getEmailDescriptionColor = () => {
+    if (copiedEmail) return '#369EEF';
+    if (emailHover && !isMobileOrTablet) return '#6b7280';
+    return '#B7B7B9';
+  };
 
   const contactItems = [
     {
       id: 'email',
       title: 'Email',
-      description: copiedEmail ? 'Copied address!' : 'changjoonseo126@gmail.com',
       Icon: MailIcon,
       onClick: handleCopyEmail,
     },
@@ -694,46 +628,25 @@ export const ContactModalContent = ({ darkMode = false }) => {
             {/* Contact row */}
             {item.onClick ? (
               <button
-                ref={emailRowRef}
                 onClick={item.onClick}
                 onMouseEnter={handleEmailMouseEnter}
                 onMouseLeave={handleEmailMouseLeave}
-                onMouseMove={handleEmailMouseMove}
                 className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer text-left relative"
               >
-                {/* Mouse-tracking tooltip pill */}
-                <div
-                  className="pointer-events-none absolute z-10"
-                  style={{
-                    left: smoothPos.x,
-                    top: smoothPos.y,
-                    transform: `translate(-50%, -130%) scale(${showCopyPill ? 1 : 0.9})`,
-                    opacity: showCopyPill ? 1 : 0,
-                    transition: 'opacity 150ms ease, transform 150ms ease'
-                  }}
-                >
-                  <div className="copy-tooltip-pill px-[10px] py-[5px] rounded-[8px] whitespace-nowrap flex items-center gap-[5px]">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2"/>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                    <span className="font-graphik text-[12px]">Copy</span>
-                  </div>
-                </div>
                 {/* Icon box */}
                 <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
                   <item.Icon hovered={hoveredRow === item.id} />
                 </div>
                 {/* Text content */}
-                <div className="flex flex-col">
+                <div className="flex flex-col overflow-hidden">
                   <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
                     {item.title}
                   </span>
                   <span
-                    className="font-graphik text-[14px] leading-[20px]"
-                    style={{ color: copiedEmail ? '#369EEF' : '#B7B7B9' }}
+                    className="font-graphik text-[14px] leading-[20px] transition-all duration-200 ease-out"
+                    style={{ color: getEmailDescriptionColor() }}
                   >
-                    {item.description}
+                    {getEmailDescription()}
                   </span>
                 </div>
               </button>
