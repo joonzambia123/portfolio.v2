@@ -554,17 +554,17 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const handleCopyEmail = async () => {
     playClick();
 
+    // On mobile/tablet, just open email app (no copy pill, no copied state)
+    if (isMobileOrTablet) {
+      window.location.href = 'mailto:changjoonseo126@gmail.com';
+      return;
+    }
+
     // Hide the copy pill immediately on click
     setShowCopyPill(false);
     if (copyPillTimerRef.current) {
       clearTimeout(copyPillTimerRef.current);
       copyPillTimerRef.current = null;
-    }
-
-    // On mobile/tablet, open email app instead of copying
-    if (isMobileOrTablet) {
-      window.location.href = 'mailto:changjoonseo126@gmail.com';
-      return;
     }
 
     // On desktop, copy to clipboard
@@ -582,6 +582,11 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const handleEmailMouseEnter = () => {
     setEmailHover(true);
     setHoveredRow('email');
+
+    // No hover pill on mobile/tablet (it opens email app directly)
+    if (isMobileOrTablet) {
+      return;
+    }
 
     // Don't show pill if user has already copied the email
     if (hasSuccessfullyCopiedRef.current) {
