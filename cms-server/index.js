@@ -108,10 +108,15 @@ app.post('/api/deploy', async (req, res) => {
   try {
     const projectRoot = path.join(__dirname, '..');
     const message = req.body.message || 'CMS update';
-    
-    // Stage all changes in cms-data
-    execSync('git add cms-data/', { cwd: projectRoot, stdio: 'pipe' });
-    
+    const includeAll = req.body.includeAll !== false; // Default to true
+
+    // Stage changes - either all files or just cms-data
+    if (includeAll) {
+      execSync('git add -A', { cwd: projectRoot, stdio: 'pipe' });
+    } else {
+      execSync('git add cms-data/', { cwd: projectRoot, stdio: 'pipe' });
+    }
+
     // Check if there are changes to commit
     try {
       execSync('git diff --cached --quiet', { cwd: projectRoot, stdio: 'pipe' });
@@ -121,14 +126,24 @@ app.post('/api/deploy', async (req, res) => {
     } catch {
       // There are changes to commit (git diff returns non-zero)
     }
-    
+
+    // Get list of files being committed for the response
+    const stagedFiles = execSync('git diff --cached --name-only', {
+      cwd: projectRoot,
+      encoding: 'utf-8'
+    }).trim().split('\n').filter(Boolean);
+
     // Commit
     execSync(`git commit -m "${message}"`, { cwd: projectRoot, stdio: 'pipe' });
-    
+
     // Push
     execSync('git push', { cwd: projectRoot, stdio: 'pipe' });
-    
-    res.json({ success: true, message: 'Deployed successfully!' });
+
+    res.json({
+      success: true,
+      message: 'Deployed successfully!',
+      filesDeployed: stagedFiles
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -138,12 +153,32 @@ app.post('/api/deploy', async (req, res) => {
 app.get('/api/git-status', async (req, res) => {
   try {
     const projectRoot = path.join(__dirname, '..');
-    const status = execSync('git status --porcelain cms-data/', { 
-      cwd: projectRoot, 
-      encoding: 'utf-8' 
+
+    // Get CMS data changes
+    const cmsStatus = execSync('git status --porcelain cms-data/', {
+      cwd: projectRoot,
+      encoding: 'utf-8'
+    }).trim();
+
+    // Get ALL changes (including source code)
+    const allStatus = execSync('git status --porcelain', {
+      cwd: projectRoot,
+      encoding: 'utf-8'
+    }).trim();
+
+    // Parse changes into categories
+    const allFiles = allStatus.split('\n').filter(Boolean);
+    const cmsFiles = allFiles.filter(f => f.includes('cms-data/'));
+    const sourceFiles = allFiles.filter(f => !f.includes('cms-data/') && !f.includes('node_modules/'));
+
+    res.json({
+      hasChanges: allStatus.length > 0,
+      hasCmsChanges: cmsStatus.length > 0,
+      hasSourceChanges: sourceFiles.length > 0,
+      cmsFiles: cmsFiles.map(f => f.trim()),
+      sourceFiles: sourceFiles.map(f => f.trim()),
+      status: allStatus
     });
-    const hasChanges = status.trim().length > 0;
-    res.json({ hasChanges, status: status.trim() });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

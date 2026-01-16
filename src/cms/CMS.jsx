@@ -13,7 +13,13 @@ export default function CMS() {
   const [saveStatus, setSaveStatus] = useState('');
   const [deployStatus, setDeployStatus] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
-  const [gitHasChanges, setGitHasChanges] = useState(false);
+  const [gitStatus, setGitStatus] = useState({
+    hasChanges: false,
+    hasCmsChanges: false,
+    hasSourceChanges: false,
+    sourceFiles: [],
+    cmsFiles: []
+  });
 
   // Load collections and schemas on mount
   useEffect(() => {
@@ -66,8 +72,8 @@ export default function CMS() {
   async function checkGitStatus() {
     try {
       const res = await fetch(`${API_BASE}/git-status`);
-      const { hasChanges } = await res.json();
-      setGitHasChanges(hasChanges);
+      const data = await res.json();
+      setGitStatus(data);
     } catch (error) {
       console.error('Failed to check git status:', error);
     }
@@ -98,12 +104,21 @@ export default function CMS() {
       const res = await fetch(`${API_BASE}/deploy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `CMS: Update ${activeCollection}` }),
+        body: JSON.stringify({
+          message: `CMS: Update ${activeCollection}`,
+          includeAll: true // Deploy all changes including source code
+        }),
       });
       const result = await res.json();
       if (result.success) {
         setDeployStatus('deployed');
-        setGitHasChanges(false);
+        setGitStatus({
+          hasChanges: false,
+          hasCmsChanges: false,
+          hasSourceChanges: false,
+          sourceFiles: [],
+          cmsFiles: []
+        });
       } else {
         setDeployStatus('error');
       }
@@ -205,22 +220,28 @@ export default function CMS() {
                   <span className="cms-unsaved-indicator">Unsaved changes</span>
                 )}
                 {saveStatus === 'saved' && (
-                  <span className="cms-save-indicator">Saved ✓</span>
+                  <span className="cms-save-indicator">Saved</span>
                 )}
-                <button 
+                {gitStatus.hasSourceChanges && (
+                  <span className="cms-source-indicator" title={gitStatus.sourceFiles.join('\n')}>
+                    + {gitStatus.sourceFiles.length} code {gitStatus.sourceFiles.length === 1 ? 'file' : 'files'}
+                  </span>
+                )}
+                <button
                   className="cms-btn cms-btn-secondary"
                   onClick={handleSave}
                   disabled={!hasUnsavedChanges || saveStatus === 'saving'}
                 >
                   {saveStatus === 'saving' ? 'Saving...' : 'Save'}
                 </button>
-                <button 
+                <button
                   className="cms-btn cms-btn-primary"
                   onClick={handleDeploy}
-                  disabled={deployStatus === 'deploying' || (!gitHasChanges && !hasUnsavedChanges)}
+                  disabled={deployStatus === 'deploying' || (!gitStatus.hasChanges && !hasUnsavedChanges)}
                 >
-                  {deployStatus === 'deploying' ? 'Deploying...' : 
-                   deployStatus === 'deployed' ? 'Deployed ✓' : 'Deploy'}
+                  {deployStatus === 'deploying' ? 'Deploying...' :
+                   deployStatus === 'deployed' ? 'Deployed' :
+                   gitStatus.hasSourceChanges ? 'Deploy All' : 'Deploy'}
                 </button>
               </div>
             </header>
@@ -381,6 +402,15 @@ export default function CMS() {
         .cms-save-indicator {
           font-size: 13px;
           color: #0f7b6c;
+        }
+
+        .cms-source-indicator {
+          font-size: 12px;
+          color: #9333ea;
+          background: #f3e8ff;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: help;
         }
 
         .cms-btn {
