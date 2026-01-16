@@ -471,12 +471,17 @@ function App() {
     // If it's a Cloudinary URL, generate thumbnail URL
     if (src.includes('cloudinary.com')) {
       // Convert video URL to image thumbnail
-      // From: /video/upload/f_auto,q_auto/name
-      // To: /video/upload/f_jpg,q_auto,so_0/name.jpg
+      // Replace video transformations with image thumbnail transformations
+      // Extract the base URL and filename
+      const match = src.match(/\/video\/upload\/([^/]+)\/(.+)\.(mp4|webm|mov)/i);
+      if (match) {
+        const filename = match[2];
+        return `https://res.cloudinary.com/dxsdxpm9m/video/upload/f_jpg,q_auto,so_0/${filename}.jpg`;
+      }
+      // Fallback for URLs without extension
       return src
-        .replace('/video/upload/', '/video/upload/f_jpg,q_auto,so_0/')
-        .replace('f_auto,q_auto/', '')
-        + '.jpg';
+        .replace(/\/video\/upload\/[^/]+\//, '/video/upload/f_jpg,q_auto,so_0/')
+        .replace(/\.(mp4|webm|mov)$/i, '.jpg');
     }
 
     // Local path - use local poster

@@ -3,7 +3,7 @@
     {
       "id": 4,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto/Bandung_fix",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/q_auto:good,vc_h264,f_mp4,so_0/Bandung_fix.mp4",
       "location": "Bandung, Indonesia",
       "coordinates": "6.79770°S, 107.57870°E",
       "coordinatesUrl": "https://www.google.com/maps?q=-6.79770,107.57870",
@@ -17,7 +17,7 @@
     {
       "id": 1,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto/San_francisco_fix",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/q_auto:good,vc_h264,f_mp4,so_0/San_francisco_fix.mp4",
       "location": "San Francisco, CA",
       "coordinates": "37.82975°N, 122.40606°W",
       "coordinatesUrl": "https://www.google.com/maps?q=37.82975,-122.40606",
@@ -31,7 +31,7 @@
     {
       "id": 2,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto/Corrour_fix",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/q_auto:good,vc_h264,f_mp4,so_0/Corrour_fix.mp4",
       "location": "Corrour, Scotland",
       "coordinates": "56.76040°N, 4.69090°W",
       "coordinatesUrl": "https://www.google.com/maps?q=56.76040,-4.69090",
@@ -45,7 +45,7 @@
     {
       "id": 3,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto/Saigon_fix",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/q_auto:good,vc_h264,f_mp4,so_0/Saigon_fix.mp4",
       "location": "Saigon, Vietnam",
       "coordinates": "10.77700°N, 106.69860°E",
       "coordinatesUrl": "https://www.google.com/maps?q=10.77700,106.69860",
@@ -59,7 +59,7 @@
     {
       "id": 5,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto/University_town_fix",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/q_auto:good,vc_h264,f_mp4,so_0/University_town_fix.mp4",
       "location": "UTown, Singapore",
       "coordinates": "37.82975°N, 122.40606°W",
       "coordinatesUrl": "",
@@ -73,7 +73,7 @@
     {
       "id": 6,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto/Fukuoka_fix",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/q_auto:good,vc_h264,f_mp4,so_0/Fukuoka_fix.mp4",
       "location": "Fukuoka, Japan",
       "coordinates": "56.76040°N, 4.69090°W",
       "coordinatesUrl": "",
@@ -87,7 +87,7 @@
     {
       "id": 7,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto/Caol_fix",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/q_auto:good,vc_h264,f_mp4,so_0/Caol_fix.mp4",
       "location": "Caol, Scotland",
       "coordinates": "37.82975°N, 122.40606°W",
       "coordinatesUrl": "",
