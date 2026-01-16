@@ -545,7 +545,6 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const emailRowRef = useRef(null);
   const animationRef = useRef(null);
   const copyPillTimerRef = useRef(null);
-  const pillDismissedRef = useRef(false); // Track if pill was dismissed this hover session
   const { playClick } = useSounds();
 
   // Check if device is mobile/tablet
@@ -554,9 +553,8 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const handleCopyEmail = async () => {
     playClick();
 
-    // Hide the copy pill immediately on click and mark as dismissed
+    // Hide the copy pill immediately on click
     setShowCopyPill(false);
-    pillDismissedRef.current = true;
     if (copyPillTimerRef.current) {
       clearTimeout(copyPillTimerRef.current);
       copyPillTimerRef.current = null;
@@ -582,31 +580,25 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const handleEmailMouseEnter = () => {
     setEmailHover(true);
     setHoveredRow('email');
+    setShowCopyPill(true);
 
-    // Only show pill if it wasn't already dismissed this hover session
-    if (!pillDismissedRef.current) {
-      setShowCopyPill(true);
-
-      // Clear any existing timer
-      if (copyPillTimerRef.current) {
-        clearTimeout(copyPillTimerRef.current);
-      }
-
-      // Auto-hide after 2.5 seconds
-      copyPillTimerRef.current = setTimeout(() => {
-        setShowCopyPill(false);
-        pillDismissedRef.current = true;
-        copyPillTimerRef.current = null;
-      }, 2500);
+    // Clear any existing timer
+    if (copyPillTimerRef.current) {
+      clearTimeout(copyPillTimerRef.current);
     }
+
+    // Auto-hide after 2 seconds
+    copyPillTimerRef.current = setTimeout(() => {
+      setShowCopyPill(false);
+      copyPillTimerRef.current = null;
+    }, 2000);
   };
 
-  // Handle email row mouse leave - reset for next hover
+  // Handle email row mouse leave - hide pill and clear timer
   const handleEmailMouseLeave = () => {
     setEmailHover(false);
     setHoveredRow(null);
     setShowCopyPill(false);
-    pillDismissedRef.current = false; // Reset so pill shows again on next hover
 
     if (copyPillTimerRef.current) {
       clearTimeout(copyPillTimerRef.current);
