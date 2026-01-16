@@ -567,7 +567,7 @@ function App() {
       ? (baseIndex + 1) % videoData.length
       : (baseIndex - 1 + videoData.length) % videoData.length;
 
-    // Safari: Also preload the opposite direction for smoother back-and-forth navigation
+    // Safari: Preload to the buffer pool
     if (isSafari) {
       const oppositeIndex = direction === 'next'
         ? (baseIndex - 1 + videoData.length) % videoData.length
@@ -581,25 +581,10 @@ function App() {
       }
     }
 
-    // Determine which video element to use for preloading
-    const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
-
-    if (inactiveRef.current) {
-      const sourceElement = inactiveRef.current.querySelector('source');
-      if (sourceElement && videoData[targetIndex]) {
-        const targetVideoSrc = encodeVideoSrc(videoData[targetIndex].src);
-        const currentSrc = decodeURIComponent(sourceElement.src || '');
-        const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
-        const targetFileName = decodeURIComponent(targetVideoSrc).split('/').pop()?.split('?')[0] || '';
-
-        // Only preload if it's a different video
-        if (currentFileName !== targetFileName) {
-          sourceElement.src = targetVideoSrc;
-          inactiveRef.current.load();
-          // Set preload to auto for aggressive preloading on hover
-          inactiveRef.current.preload = 'auto';
-        }
-      }
+    // Trigger preload on the actual video element (don't change source, React manages that)
+    const targetVideoEl = videoElementsRef.current[targetIndex];
+    if (targetVideoEl) {
+      targetVideoEl.preload = 'auto';
     }
   };
 
@@ -1167,16 +1152,6 @@ function App() {
     const isChrome = /chrome/i.test(navigator.userAgent) && !/edge|edg/i.test(navigator.userAgent);
     const nextIndex = (videoIndex + 1) % videoData.length;
     const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
-    const inactiveRef = activeVideo === 1 ? videoRef2 : videoRef1;
-
-    // Update the index refs to match current state
-    if (activeVideo === 1) {
-      video1IndexRef.current = videoIndex;
-      video2IndexRef.current = nextIndex;
-    } else {
-      video2IndexRef.current = videoIndex;
-      video1IndexRef.current = nextIndex;
-    }
 
     // Safari: Proactively preload adjacent videos into the buffer pool
     if (isSafari) {
@@ -1188,12 +1163,12 @@ function App() {
         preloadVideoToPool(videoData[prevIndex].src);
       }
 
-      // Also trigger video elements to start buffering
+      // Also trigger video elements to start buffering (without changing source)
       [nextIndex, prevIndex].forEach(idx => {
         const videoEl = videoElementsRef.current[idx];
         if (videoEl && videoEl.readyState < 3) {
           videoEl.preload = 'auto';
-          videoEl.load();
+          // Don't call load() - it can reset the video. Just set preload.
         }
       });
     }
@@ -1209,9 +1184,6 @@ function App() {
 
         if (isCurrent || isAdjacent) {
           videoEl.preload = 'auto';
-          if (isAdjacent && videoEl.readyState < 2) {
-            videoEl.load();
-          }
         } else {
           // Non-adjacent videos: just keep metadata
           videoEl.preload = 'metadata';
@@ -1224,31 +1196,12 @@ function App() {
     [nextIndex, prevIndex].forEach(idx => {
       if (videoData[idx] && !videoCacheRef.current.has(videoData[idx].src)) {
         const encodedSrc = encodeVideoSrc(videoData[idx].src);
-        fetch(encodedSrc, { priority: 'high' }).then(res => res.ok && res.blob()).then(() => {
+        fetch(encodedSrc).then(res => res.ok && res.blob()).then(() => {
           videoCacheRef.current.add(videoData[idx].src);
         }).catch(() => {});
       }
     });
-
-    // Preload next video in the inactive element (legacy support)
-    if (inactiveRef.current && videoData[nextIndex]) {
-      const sourceElement = inactiveRef.current.querySelector('source');
-      if (sourceElement) {
-        const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
-        const currentSrc = decodeURIComponent(sourceElement.src || '');
-        const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
-        const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
-
-        // Only update if source is different
-        if (currentFileName !== nextFileName) {
-          sourceElement.src = nextVideoSrc;
-          inactiveRef.current.load();
-        }
-
-        inactiveRef.current.preload = 'auto';
-      }
-    }
-  }, [isLoading, videoIndex, activeVideo, videoData]);
+  }, [isLoading, videoIndex, videoData]);
 
   // Ensure videos play on mount - runs when loader finishes AND videoData is ready
   useEffect(() => {
