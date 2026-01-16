@@ -2,17 +2,224 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { useSounds } from '../hooks/useSounds';
 
+// Contact modal icons - defined outside component to prevent recreation on each render
+
+// Email: Gentle jiggle with notification badge popup
+const MailIcon = ({ hovered }) => (
+  <motion.svg
+    width="19"
+    height="19"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ overflow: 'visible' }}
+  >
+    {/* Envelope group - jiggles */}
+    <motion.g
+      animate={hovered ? {
+        rotate: [0, -3, 2.5, -2, 1.5, -1, 0],
+        y: [0, -0.5, 0.3, -0.2, 0]
+      } : { rotate: 0, y: 0 }}
+      transition={{
+        duration: 0.5,
+        ease: "easeInOut"
+      }}
+      style={{ transformOrigin: '12px 12px' }}
+    >
+      {/* Envelope body - ORIGINAL */}
+      <rect
+        x="3" y="5" width="18" height="14" rx="2"
+        stroke={hovered ? "#6b7280" : "#a3a3a3"}
+        style={{ transition: 'stroke 300ms ease' }}
+      />
+      {/* Envelope flap - ORIGINAL */}
+      <path
+        d="M3 7l9 6 9-6"
+        stroke={hovered ? "#6b7280" : "#a3a3a3"}
+        fill="none"
+        style={{ transition: 'stroke 300ms ease' }}
+      />
+    </motion.g>
+
+    {/* Notification badge - pops up on hover */}
+    <motion.g
+      animate={hovered ? {
+        scale: [0, 1.15, 1],
+        opacity: [0, 1, 1]
+      } : { scale: 0, opacity: 0 }}
+      transition={{
+        duration: 0.3,
+        ease: [0.34, 1.5, 0.64, 1],
+        delay: 0.1
+      }}
+      style={{ transformOrigin: '21px 3px' }}
+    >
+      {/* Badge shadow for depth */}
+      <circle
+        cx="21"
+        cy="3.5"
+        r="6"
+        fill="rgba(0,0,0,0.1)"
+      />
+      {/* Red notification circle */}
+      <circle
+        cx="21"
+        cy="3"
+        r="6"
+        fill="#ef4444"
+      />
+      {/* Subtle inner highlight for skeuomorphic style */}
+      <circle
+        cx="21"
+        cy="2"
+        r="4"
+        fill="rgba(255,255,255,0.15)"
+      />
+      {/* White "1" */}
+      <text
+        x="21"
+        y="5.5"
+        textAnchor="middle"
+        fontSize="8"
+        fontWeight="600"
+        fill="white"
+        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+      >
+        1
+      </text>
+    </motion.g>
+  </motion.svg>
+);
+
+// Instagram: Camera focus animation
+const InstagramIcon = ({ hovered }) => (
+  <motion.svg
+    width="19"
+    height="19"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Camera body */}
+    <rect
+      x="2" y="2" width="20" height="20" rx="5"
+      stroke={hovered ? "#6b7280" : "#a3a3a3"}
+      style={{ transition: 'stroke 300ms ease' }}
+    />
+    {/* Lens - focus animation, returns to default */}
+    <motion.circle
+      cx="12" cy="12"
+      stroke={hovered ? "#6b7280" : "#a3a3a3"}
+      style={{ transition: 'stroke 300ms ease' }}
+      initial={{ r: 4 }}
+      animate={hovered ? {
+        r: [4, 3.2, 4.5, 4],
+        strokeWidth: [1.5, 2, 1.5, 1.5]
+      } : { r: 4, strokeWidth: 1.5 }}
+      transition={{
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
+    />
+    {/* Inner lens - appears then fades back out */}
+    <motion.circle
+      cx="12" cy="12"
+      fill={hovered ? "#6b7280" : "transparent"}
+      stroke="none"
+      animate={hovered ? {
+        r: [0, 2.2, 0],
+        opacity: [0, 0.45, 0]
+      } : { r: 0, opacity: 0 }}
+      transition={{
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
+    />
+    {/* Flash dot - pulses and returns */}
+    <motion.circle
+      cx="17.5" cy="6.5"
+      fill={hovered ? "#6b7280" : "#a3a3a3"}
+      stroke="none"
+      style={{ transition: 'fill 300ms ease' }}
+      initial={{ r: 1.5 }}
+      animate={hovered ? {
+        r: [1.5, 2.2, 1.5],
+        opacity: [1, 0.5, 1]
+      } : { r: 1.5, opacity: 1 }}
+      transition={{
+        duration: 0.4,
+        ease: "easeOut",
+        delay: 0.1
+      }}
+    />
+  </motion.svg>
+);
+
+// LinkedIn: Bouncy wave animation
+const LinkedInIcon = ({ hovered }) => (
+  <motion.svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill={hovered ? "#6b7280" : "#a3a3a3"}
+    style={{ transition: 'fill 300ms ease' }}
+    animate={hovered ? {
+      rotate: [0, -5, 4, -3, 2, 0],
+      scale: [1, 1.06, 1.07, 1.05, 1.03, 1]
+    } : { rotate: 0, scale: 1 }}
+    transition={{
+      duration: 0.55,
+      ease: [0.36, 0.07, 0.19, 0.97]
+    }}
+  >
+    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+  </motion.svg>
+);
+
+// Twitter/X: Spin animation
+const TwitterIcon = ({ hovered }) => (
+  <motion.svg
+    width="17"
+    height="17"
+    viewBox="0 0 24 24"
+    fill={hovered ? "#6b7280" : "#a3a3a3"}
+    style={{ transition: 'fill 300ms ease' }}
+    animate={hovered ? {
+      rotate: [0, 360],
+      scale: [1, 0.95, 1.02, 1]
+    } : { rotate: 0, scale: 1 }}
+    transition={{
+      duration: 0.7,
+      ease: [0.4, 0, 0.2, 1]
+    }}
+  >
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </motion.svg>
+);
+
 const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, children }) => {
   const [position, setPosition] = useState({ left: 0 });
   const popoverRef = useRef(null);
 
   // Calculate position based on anchor button
   useEffect(() => {
-    if (isOpen && anchorRef?.current) {
-      const rect = anchorRef.current.getBoundingClientRect();
-      const buttonCenterX = rect.left + rect.width / 2;
-      setPosition({ left: buttonCenterX });
-    }
+    const updatePosition = () => {
+      if (isOpen && anchorRef?.current) {
+        const rect = anchorRef.current.getBoundingClientRect();
+        const buttonCenterX = rect.left + rect.width / 2;
+        setPosition({ left: buttonCenterX });
+      }
+    };
+
+    updatePosition();
+
+    // Update position on window resize
+    window.addEventListener('resize', updatePosition);
+    return () => window.removeEventListener('resize', updatePosition);
   }, [isOpen, anchorRef, type]);
 
   // Click outside to close
@@ -338,8 +545,19 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const animationRef = useRef(null);
   const { playClick } = useSounds();
 
+  // Check if device is mobile/tablet
+  const isMobileOrTablet = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   const handleCopyEmail = async () => {
     playClick();
+
+    // On mobile/tablet, open email app instead of copying
+    if (isMobileOrTablet) {
+      window.location.href = 'mailto:changjoonseo126@gmail.com';
+      return;
+    }
+
+    // On desktop, copy to clipboard
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
       setCopiedEmail(true);
@@ -359,8 +577,16 @@ export const ContactModalContent = ({ darkMode = false }) => {
     }
   };
 
-  // Smooth mouse following with easing
+  // Smooth mouse following with easing - only run when hovering over email
   useEffect(() => {
+    if (!emailHover) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      return;
+    }
+
     const animate = () => {
       setSmoothPos(prev => ({
         x: prev.x + (mousePos.x - prev.x) * 0.15,
@@ -369,74 +595,18 @@ export const ContactModalContent = ({ darkMode = false }) => {
       animationRef.current = requestAnimationFrame(animate);
     };
     animationRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationRef.current);
-  }, [mousePos]);
-
-  // Icons for each contact method - subtle outline style with gentle hover tint
-  const MailIcon = ({ hovered }) => (
-    <svg
-      width="19"
-      height="19"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={hovered ? "#6b7280" : "#a3a3a3"}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ transition: 'stroke 300ms ease' }}
-    >
-      <rect x="3" y="5" width="18" height="14" rx="2"/>
-      <path d="M3 7l9 6 9-6"/>
-    </svg>
-  );
-
-  const InstagramIcon = ({ hovered }) => (
-    <svg
-      width="19"
-      height="19"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={hovered ? "#6b7280" : "#a3a3a3"}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ transition: 'stroke 300ms ease' }}
-    >
-      <rect x="2" y="2" width="20" height="20" rx="5"/>
-      <circle cx="12" cy="12" r="4"/>
-      <circle cx="17.5" cy="6.5" r="1.5" fill={hovered ? "#6b7280" : "#a3a3a3"} stroke="none" style={{ transition: 'fill 300ms ease' }}/>
-    </svg>
-  );
-
-  const LinkedInIcon = ({ hovered }) => (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill={hovered ? "#6b7280" : "#a3a3a3"}
-      style={{ transition: 'fill 300ms ease' }}
-    >
-      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
-    </svg>
-  );
-
-  const TwitterIcon = ({ hovered }) => (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill={hovered ? "#6b7280" : "#a3a3a3"}
-      style={{ transition: 'fill 300ms ease' }}
-    >
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-    </svg>
-  );
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [mousePos, emailHover]);
 
   const contactItems = [
     {
       id: 'email',
       title: 'Email',
-      description: copiedEmail ? 'Copied!' : 'changjoonseo126@gmail.com',
+      description: copiedEmail ? 'Copied address!' : 'changjoonseo126@gmail.com',
       Icon: MailIcon,
       onClick: handleCopyEmail,
     },
@@ -445,24 +615,21 @@ export const ContactModalContent = ({ darkMode = false }) => {
       title: 'Instagram',
       description: '@joonseochang',
       Icon: InstagramIcon,
-      href: 'https://instagram.com/joonseochang',
-      appLink: 'instagram://user?username=joonseochang',
+      href: isMobileOrTablet ? 'instagram://user?username=joonseochang' : 'https://instagram.com/joonseochang',
     },
     {
       id: 'linkedin',
       title: 'LinkedIn',
       description: '/in/joonseo-chang',
       Icon: LinkedInIcon,
-      href: 'https://linkedin.com/in/joonseo-chang',
-      appLink: 'linkedin://in/joonseo-chang',
+      href: isMobileOrTablet ? 'linkedin://in/joonseo-chang' : 'https://linkedin.com/in/joonseo-chang',
     },
     {
       id: 'twitter',
       title: 'Twitter',
       description: '@joonseochang',
       Icon: TwitterIcon,
-      href: 'https://twitter.com/joonseochang',
-      appLink: 'twitter://user?screen_name=joonseochang',
+      href: isMobileOrTablet ? 'twitter://user?screen_name=joonseochang' : 'https://twitter.com/joonseochang',
     },
   ];
 
@@ -510,7 +677,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   </div>
                 </div>
                 {/* Icon box */}
-                <div className="contact-icon-box w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0">
+                <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
                   <item.Icon hovered={hoveredRow === item.id} />
                 </div>
                 {/* Text content */}
@@ -526,25 +693,15 @@ export const ContactModalContent = ({ darkMode = false }) => {
             ) : (
               <a
                 href={item.href}
-                target="_blank"
+                target={isMobileOrTablet ? "_self" : "_blank"}
                 rel="noopener noreferrer"
-                onClick={(e) => {
-                  playClick();
-                  // Try app link on mobile if available
-                  if (item.appLink && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
-                    e.preventDefault();
-                    window.location.href = item.appLink;
-                    setTimeout(() => {
-                      window.location.href = item.href;
-                    }, 500);
-                  }
-                }}
+                onClick={() => playClick()}
                 onMouseEnter={() => setHoveredRow(item.id)}
                 onMouseLeave={() => setHoveredRow(null)}
                 className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer"
               >
                 {/* Icon box */}
-                <div className="contact-icon-box w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0">
+                <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
                   <item.Icon hovered={hoveredRow === item.id} />
                 </div>
                 {/* Text content */}

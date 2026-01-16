@@ -1158,6 +1158,9 @@ background-color: #E8F6FF;
   border-color: #E0E3EA;
 }
 
+/* Contact icon micro animations - handled by Framer Motion in SlideUpModal.jsx */
+/* CSS animations removed to avoid conflicts with Framer Motion */
+
 .contact-row:active .contact-icon-box {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.06),
