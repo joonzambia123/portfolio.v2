@@ -78,7 +78,10 @@ function App() {
   const lastMediaHashRef = useRef('');
   const lastCopyHashRef = useRef('');
 
-  // Video quality is now handled by Cloudinary automatically
+  // Adaptive video quality - uses HQ when available and network is good
+  const [useHQVideo, setUseHQVideo] = useState(false);
+  const networkQualityRef = useRef('unknown'); // 'fast', 'slow', 'unknown'
+  const hqVideoFailedRef = useRef(new Set()); // Track which HQ videos failed to load smoothly
   
   // City to timezone mapping - automatically determines timezone from city name
   const getTimezoneFromCity = (cityName) => {
@@ -387,7 +390,79 @@ function App() {
     setIsMac(checkIsMac);
   }, []);
 
-  // Video quality is now handled automatically by Cloudinary's f_auto,q_auto transformations
+  // Detect network quality and decide whether to use HQ videos
+  useEffect(() => {
+    const detectNetworkQuality = () => {
+      // Use Network Information API if available
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+      if (connection) {
+        const { effectiveType, downlink, saveData } = connection;
+
+        // Don't use HQ if user has data saver enabled
+        if (saveData) {
+          networkQualityRef.current = 'slow';
+          setUseHQVideo(false);
+          return;
+        }
+
+        // Check effective connection type
+        // 4g = fast, 3g = medium, 2g/slow-2g = slow
+        if (effectiveType === '4g' && downlink >= 5) {
+          networkQualityRef.current = 'fast';
+          setUseHQVideo(true);
+        } else if (effectiveType === '4g' || effectiveType === '3g') {
+          networkQualityRef.current = 'medium';
+          // Use HQ on desktop with decent 3g/4g, fallback on mobile
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          setUseHQVideo(!isMobile && downlink >= 2);
+        } else {
+          networkQualityRef.current = 'slow';
+          setUseHQVideo(false);
+        }
+
+        // Listen for network changes
+        connection.addEventListener('change', detectNetworkQuality);
+      } else {
+        // No Network Information API - assume good connection on desktop
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        networkQualityRef.current = isMobile ? 'unknown' : 'fast';
+        setUseHQVideo(!isMobile);
+      }
+    };
+
+    detectNetworkQuality();
+
+    return () => {
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (connection) {
+        connection.removeEventListener('change', detectNetworkQuality);
+      }
+    };
+  }, []);
+
+  // Get the appropriate video source based on quality settings
+  const getVideoSrc = (video) => {
+    if (!video) return '';
+
+    // If HQ source exists and we should use HQ, use it
+    if (useHQVideo && video.srcHQ && !hqVideoFailedRef.current.has(video.id)) {
+      return video.srcHQ;
+    }
+
+    // Otherwise use fallback (Cloudinary)
+    return video.src;
+  };
+
+  // Handle HQ video load failure - fallback to standard quality
+  const handleVideoError = (videoId, videoElement) => {
+    if (useHQVideo && !hqVideoFailedRef.current.has(videoId)) {
+      console.log(`HQ video ${videoId} failed to load, falling back to standard quality`);
+      hqVideoFailedRef.current.add(videoId);
+      // Force re-render to use fallback source
+      setVideoData(prev => [...prev]);
+    }
+  };
 
   // Keyboard shortcuts: Cmd+K / Ctrl+K and Escape to close modal
   useEffect(() => {
@@ -574,10 +649,10 @@ function App() {
         : (baseIndex + 1) % videoData.length;
 
       if (videoData[oppositeIndex]) {
-        preloadVideoToPool(videoData[oppositeIndex].src);
+        preloadVideoToPool(getVideoSrc(videoData[oppositeIndex]));
       }
       if (videoData[targetIndex]) {
-        preloadVideoToPool(videoData[targetIndex].src);
+        preloadVideoToPool(getVideoSrc(videoData[targetIndex]));
       }
     }
 
@@ -829,9 +904,9 @@ function App() {
   // This runs during the loader to guarantee the first video is ready
   useEffect(() => {
     if (videoData.length === 0) return;
-    
-    const firstVideoSrc = encodeVideoSrc(videoData[0].src);
-    console.log('[Initial] First video source:', firstVideoSrc.includes('cloudinary') ? 'Cloudinary ✓' : 'Local ✗', firstVideoSrc);
+
+    const firstVideoSrc = encodeVideoSrc(getVideoSrc(videoData[0]));
+    console.log('[Initial] First video source:', firstVideoSrc.includes('cloudinary') ? 'Cloudinary (fallback)' : 'HQ ✓', firstVideoSrc);
 
     // Create a hidden video element to preload the first video
     const preloadVideo = document.createElement('video');
@@ -859,8 +934,8 @@ function App() {
       preloadVideo.removeEventListener('canplaythrough', onCanPlayThrough);
       clearTimeout(fallbackTimer);
     };
-  }, [videoData]);
-  
+  }, [videoData, useHQVideo]);
+
   // Aggressive video preloading: Fully download and cache all videos with concurrency control
   useEffect(() => {
     if (videoData.length === 0) return;
@@ -874,15 +949,16 @@ function App() {
     const preloadVideo = async (video) => {
       if (isCancelled) return;
       try {
-        const encodedSrc = encodeVideoSrc(video.src);
+        const videoSrc = getVideoSrc(video);
+        const encodedSrc = encodeVideoSrc(videoSrc);
         const response = await fetch(encodedSrc);
         if (response.ok && !isCancelled) {
           await response.blob();
-          videoCacheRef.current.add(video.src);
+          videoCacheRef.current.add(videoSrc);
 
           // Safari: Also add to buffer pool for instant playback
           if (isSafari) {
-            preloadVideoToPool(video.src);
+            preloadVideoToPool(videoSrc);
           }
         }
       } catch (e) {
@@ -894,7 +970,8 @@ function App() {
     const processQueue = async () => {
       while (preloadQueue.length > 0 && activePreloads < MAX_CONCURRENT_PRELOADS && !isCancelled) {
         const video = preloadQueue.shift();
-        if (video && !videoCacheRef.current.has(video.src)) {
+        const videoSrc = getVideoSrc(video);
+        if (video && !videoCacheRef.current.has(videoSrc)) {
           activePreloads++;
           preloadVideo(video).finally(() => {
             activePreloads--;
@@ -945,7 +1022,7 @@ function App() {
     return () => {
       isCancelled = true;
     };
-  }, [videoData]);
+  }, [videoData, useHQVideo]);
 
   // Loader animation: Cycle through coordinates (only after fonts are loaded)
   useEffect(() => {
@@ -1157,10 +1234,10 @@ function App() {
     if (isSafari) {
       // Preload next and prev immediately
       if (videoData[nextIndex]) {
-        preloadVideoToPool(videoData[nextIndex].src);
+        preloadVideoToPool(getVideoSrc(videoData[nextIndex]));
       }
       if (videoData[prevIndex]) {
-        preloadVideoToPool(videoData[prevIndex].src);
+        preloadVideoToPool(getVideoSrc(videoData[prevIndex]));
       }
 
       // Also trigger video elements to start buffering (without changing source)
@@ -1194,14 +1271,17 @@ function App() {
     // All browsers: Trigger background fetch for adjacent videos if not cached
     // This ensures the video data is in browser cache
     [nextIndex, prevIndex].forEach(idx => {
-      if (videoData[idx] && !videoCacheRef.current.has(videoData[idx].src)) {
-        const encodedSrc = encodeVideoSrc(videoData[idx].src);
-        fetch(encodedSrc).then(res => res.ok && res.blob()).then(() => {
-          videoCacheRef.current.add(videoData[idx].src);
-        }).catch(() => {});
+      if (videoData[idx]) {
+        const videoSrc = getVideoSrc(videoData[idx]);
+        if (!videoCacheRef.current.has(videoSrc)) {
+          const encodedSrc = encodeVideoSrc(videoSrc);
+          fetch(encodedSrc).then(res => res.ok && res.blob()).then(() => {
+            videoCacheRef.current.add(videoSrc);
+          }).catch(() => {});
+        }
       }
     });
-  }, [isLoading, videoIndex, videoData]);
+  }, [isLoading, videoIndex, videoData, useHQVideo]);
 
   // Ensure videos play on mount - runs when loader finishes AND videoData is ready
   useEffect(() => {
@@ -1247,7 +1327,7 @@ function App() {
 
           // Stagger preloads slightly to avoid overwhelming Safari
           setTimeout(() => {
-            preloadVideoToPool(video.src);
+            preloadVideoToPool(getVideoSrc(video));
 
             // Also trigger the video element to start buffering
             const videoEl = videoElementsRef.current[idx];
@@ -1481,7 +1561,7 @@ function App() {
                     transition: 'filter 250ms ease-in-out',
                     transform: 'translateZ(0)'
                   }}
-                  poster={getPosterSrc(video.src)}
+                  poster={getPosterSrc(getVideoSrc(video))}
                   autoPlay={idx === videoIndex}
                   muted
                   playsInline
@@ -1489,8 +1569,9 @@ function App() {
                   controls={false}
                   loop={false}
                   onEnded={handleVideoEnded}
+                  onError={(e) => handleVideoError(video.id, e.target)}
                 >
-                  <source src={encodeVideoSrc(video.src)} type="video/mp4" />
+                  <source src={encodeVideoSrc(getVideoSrc(video))} type="video/mp4" />
                 </video>
               ))}
             </div>
