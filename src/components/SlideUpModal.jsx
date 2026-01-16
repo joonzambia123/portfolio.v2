@@ -577,7 +577,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
 
   // Get the email description text based on state
   const getEmailDescription = () => {
-    if (copiedEmail) return 'Copied address!';
+    if (copiedEmail) return 'Send me a digital pigeon!';
     if (emailHover && !isMobileOrTablet) return 'Copy address';
     return 'changjoonseo126@gmail.com';
   };
@@ -585,7 +585,6 @@ export const ContactModalContent = ({ darkMode = false }) => {
   // Get the email description color based on state
   const getEmailDescriptionColor = () => {
     if (copiedEmail) return '#369EEF';
-    if (emailHover && !isMobileOrTablet) return '#6b7280';
     return '#B7B7B9';
   };
 
