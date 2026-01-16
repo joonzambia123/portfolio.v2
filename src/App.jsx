@@ -389,8 +389,24 @@ function App() {
   }, []);
 
   // Detect slow connection and use low-quality videos
+  // Also supports URL params: ?quality=low (force low) or ?quality=high (force high)
   useEffect(() => {
     const checkConnection = () => {
+      // Check URL parameter first for testing
+      const urlParams = new URLSearchParams(window.location.search);
+      const qualityParam = urlParams.get('quality');
+
+      if (qualityParam === 'low') {
+        setUseLowQuality(true);
+        console.log('[Video Quality] Forced LOW via URL param');
+        return;
+      }
+      if (qualityParam === 'high') {
+        setUseLowQuality(false);
+        console.log('[Video Quality] Forced HIGH via URL param');
+        return;
+      }
+
       const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -406,14 +422,18 @@ function App() {
           connection.saveData === true ||
           (connection.downlink && connection.downlink < 1.5);
 
-        setUseLowQuality(isSlowConnection || (isSafari && isMobile));
+        const shouldUseLow = isSlowConnection || (isSafari && isMobile);
+        setUseLowQuality(shouldUseLow);
+        console.log(`[Video Quality] ${shouldUseLow ? 'LOW' : 'HIGH'} - Connection: ${connection.effectiveType}, Downlink: ${connection.downlink}Mbps, Safari: ${isSafari}, Mobile: ${isMobile}`);
 
         // Listen for connection changes
         connection.addEventListener('change', checkConnection);
         return () => connection.removeEventListener('change', checkConnection);
       } else {
         // Fallback: use low quality on mobile Safari without Network Info API
-        setUseLowQuality(isSafari && isMobile);
+        const shouldUseLow = isSafari && isMobile;
+        setUseLowQuality(shouldUseLow);
+        console.log(`[Video Quality] ${shouldUseLow ? 'LOW' : 'HIGH'} (no Network API) - Safari: ${isSafari}, Mobile: ${isMobile}`);
       }
     };
 
@@ -1599,7 +1619,7 @@ function App() {
                   <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
                 </div>
               )}
-            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0">
+            <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-[#f5f5f5]">
               {/* Video 1 */}
               <video
                 ref={videoRef1}
