@@ -1590,6 +1590,16 @@ function App() {
                 </div>
               )}
             <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-[#f5f5f5]">
+              {/* Poster background - shows while video loads */}
+              {safeVideoData[videoIndex] && (
+                <div
+                  className="absolute inset-0 z-5 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${getPosterSrc(safeVideoData[videoIndex].src)})`,
+                    filter: 'brightness(1.10)'
+                  }}
+                />
+              )}
               {/* Video 1 */}
               <video
                 ref={videoRef1}
@@ -1597,8 +1607,7 @@ function App() {
                 style={{
                   zIndex: activeVideo === 1 ? 20 : 10,
                   transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)',
-                  backgroundColor: '#e8e8e8'
+                  transform: 'translateZ(0)'
                 }}
                 poster={safeVideoData[0] ? getPosterSrc(safeVideoData[0].src) : ''}
                 autoPlay
@@ -1618,8 +1627,7 @@ function App() {
                 style={{
                   zIndex: activeVideo === 2 ? 20 : 10,
                   transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)',
-                  backgroundColor: '#e8e8e8'
+                  transform: 'translateZ(0)'
                 }}
                 poster={safeVideoData[1] ? getPosterSrc(safeVideoData[1].src) : ''}
                 muted
