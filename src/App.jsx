@@ -582,253 +582,67 @@ function App() {
     }
   };
 
+  // Reference to all video elements for play/pause control
+  const videoElementsRef = useRef([]);
+
   const changeVideo = (direction) => {
     // Don't change if no video data
     if (videoData.length === 0) return;
-    
+
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    // Cancel any pending transition immediately
-    transitionIdRef.current++;
-    const thisTransitionId = transitionIdRef.current;
-    
-    // Calculate target based on current target (for rapid clicking)
-    const baseIndex = isTransitioningRef.current ? targetVideoIndexRef.current : videoIndex;
-    const nextIndex = direction === 'next' 
-      ? (baseIndex + 1) % videoData.length 
-      : (baseIndex - 1 + videoData.length) % videoData.length;
-    
-    // Update target immediately
-    targetVideoIndexRef.current = nextIndex;
-    
-    // If already transitioning, queue this and let current finish or get cancelled
-    if (isTransitioningRef.current) {
-      pendingDirectionRef.current = direction;
-      // Force reset after a short delay to handle rapid clicks
-      setTimeout(() => {
-        if (transitionIdRef.current === thisTransitionId && pendingDirectionRef.current) {
-          isTransitioningRef.current = false;
-          setIsTransitioning(false);
-          const dir = pendingDirectionRef.current;
-          pendingDirectionRef.current = null;
-          changeVideo(dir);
-        }
-      }, isSafari ? 80 : 50);
-      return;
+
+    // Calculate next index
+    const nextIndex = direction === 'next'
+      ? (videoIndex + 1) % videoData.length
+      : (videoIndex - 1 + videoData.length) % videoData.length;
+
+    // Pause current video
+    const currentVideo = videoElementsRef.current[videoIndex];
+    if (currentVideo) {
+      currentVideo.pause();
     }
-    
-    pendingDirectionRef.current = null;
-    setIsTransitioning(true);
-    isTransitioningRef.current = true;
-    
-    const currentRef = activeVideo === 1 ? videoRef1 : videoRef2;
-    const nextRef = activeVideo === 1 ? videoRef2 : videoRef1;
-    const nextActive = activeVideo === 1 ? 2 : 1;
-    
-    // Update which video is in the next video element
-    if (nextActive === 1) {
-      video1IndexRef.current = nextIndex;
-    } else {
-      video2IndexRef.current = nextIndex;
-    }
-    
-    // Complete the switch
-    const completeSwitch = () => {
-      if (transitionIdRef.current !== thisTransitionId) {
-        if (pendingDirectionRef.current) {
-          const dir = pendingDirectionRef.current;
-          pendingDirectionRef.current = null;
-          isTransitioningRef.current = false;
-          changeVideo(dir);
-        }
-        return;
-      }
-      
-      // Swap z-index - new video is now on top
-      setVideoIndex(nextIndex);
-      setActiveVideo(nextActive);
-      
-      // Pause old video and check for pending
-      setTimeout(() => {
-        if (currentRef.current) {
-          currentRef.current.pause();
-        }
-        
-        setIsTransitioning(false);
-        isTransitioningRef.current = false;
-        
-        // Process any pending direction
-        if (pendingDirectionRef.current) {
-          const dir = pendingDirectionRef.current;
-          pendingDirectionRef.current = null;
-          changeVideo(dir);
-        }
-      }, isSafari ? 50 : 30);
-    };
-    
-    // Safari: Use robust approach with multiple event listeners and buffer checking
-    if (isSafari) {
-      if (!nextRef.current) {
-        setIsTransitioning(false);
-        isTransitioningRef.current = false;
-        return;
-      }
 
-      const sourceElement = nextRef.current.querySelector('source');
-      const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
+    // Get next video element
+    const nextVideo = videoElementsRef.current[nextIndex];
 
-      // Check if video is already cached/ready - only show loading if not
-      const isVideoCached = videoCacheRef.current.has(videoData[nextIndex].src);
-      const isVideoReady = nextRef.current.readyState >= 2;
-
-      // Always set source on Safari - update both source element and video src for reliability
-      if (sourceElement) {
-        sourceElement.src = nextVideoSrc;
-      }
-      // Also set video src directly as fallback for Safari
-      nextRef.current.src = nextVideoSrc;
-
-      // Set poster for immediate visual while video loads
-      nextRef.current.poster = getPosterSrc(videoData[nextIndex].src);
-
-      // Debug: Log video source to verify Cloudinary
-      console.log('[Safari] Loading video:', nextVideoSrc.includes('cloudinary') ? 'Cloudinary ✓' : 'Local ✗', nextVideoSrc);
-
-      // Ensure muted for autoplay
-      nextRef.current.muted = true;
-      nextRef.current.currentTime = 0;
-
-      // CRITICAL: Call load() after setting source on Safari to ensure it loads the new video
-      nextRef.current.load();
-
-      // If video is cached, try to play immediately without loading indicator
-      if (isVideoCached || isVideoReady) {
-        nextRef.current.play().then(() => {
-          completeSwitch();
-        }).catch(() => {
-          completeSwitch();
-        });
-        return;
-      }
-
-      // Only show loading indicator if video is not cached
+    // Safari: Show loading indicator if video not ready
+    if (isSafari && nextVideo && nextVideo.readyState < 3) {
       setVideoLoading(true);
 
-      // Wait for canplay (not canplaythrough - faster switch)
       const onCanPlay = () => {
-        if (transitionIdRef.current !== thisTransitionId) return;
-        nextRef.current.removeEventListener('canplay', onCanPlay);
-
-        nextRef.current.play().then(() => {
-          setVideoLoading(false);
-          completeSwitch();
-        }).catch(() => {
-          setVideoLoading(false);
-          completeSwitch();
-        });
+        setVideoLoading(false);
+        nextVideo.removeEventListener('canplay', onCanPlay);
+        nextVideo.currentTime = 0;
+        nextVideo.play().catch(() => {});
       };
 
-      nextRef.current.addEventListener('canplay', onCanPlay);
+      nextVideo.addEventListener('canplay', onCanPlay);
 
-      // Fallback timeout for Safari - reduced for faster transitions
+      // Update index immediately for visual transition
+      setVideoIndex(nextIndex);
+
+      // Fallback timeout
       setTimeout(() => {
-        if (transitionIdRef.current === thisTransitionId && isTransitioningRef.current) {
-          nextRef.current.removeEventListener('canplay', onCanPlay);
+        if (videoLoading) {
           setVideoLoading(false);
-          nextRef.current.play().catch(() => {});
-          completeSwitch();
+          nextVideo.removeEventListener('canplay', onCanPlay);
+          nextVideo.currentTime = 0;
+          nextVideo.play().catch(() => {});
         }
-      }, 200);
+      }, 500);
 
       return;
     }
 
-    // Chrome/Firefox: Fast path - immediate switch for cached videos
-    requestAnimationFrame(() => {
-      if (transitionIdRef.current !== thisTransitionId) {
-        if (pendingDirectionRef.current) {
-          const dir = pendingDirectionRef.current;
-          pendingDirectionRef.current = null;
-          isTransitioningRef.current = false;
-          changeVideo(dir);
-        }
-        return;
-      }
+    // Chrome/Firefox or Safari with ready video: instant switch
+    setVideoIndex(nextIndex);
 
-      if (!nextRef.current) {
-        setIsTransitioning(false);
-        isTransitioningRef.current = false;
-        return;
-      }
-
-      const sourceElement = nextRef.current.querySelector('source');
-      const nextVideoSrc = encodeVideoSrc(videoData[nextIndex].src);
-      const currentSrc = decodeURIComponent(sourceElement?.src || '');
-      const currentFileName = currentSrc.split('/').pop()?.split('?')[0] || '';
-      const nextFileName = decodeURIComponent(nextVideoSrc).split('/').pop()?.split('?')[0] || '';
-      const needsLoad = currentFileName !== nextFileName;
-
-      // Check if video is cached - no loading indicator needed
-      const isVideoCached = videoCacheRef.current.has(videoData[nextIndex].src);
-
-      const startPlaying = () => {
-        if (transitionIdRef.current !== thisTransitionId) return;
-        if (!nextRef.current) return;
-
-        nextRef.current.currentTime = 0;
-        const playPromise = nextRef.current.play();
-
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            setVideoLoading(false);
-            completeSwitch();
-          }).catch(() => {
-            setVideoLoading(false);
-            completeSwitch();
-          });
-        } else {
-          setVideoLoading(false);
-          completeSwitch();
-        }
-      };
-
-      // If video already has data ready (readyState >= 2), play immediately
-      if (!needsLoad && nextRef.current.readyState >= 2) {
-        startPlaying();
-        return;
-      }
-
-      // If video is cached but needs source update, it should load fast
-      // Only show loading indicator if video is NOT cached
-      if (!isVideoCached) {
-        setVideoLoading(true);
-      }
-
-      let hasStarted = false;
-      const tryStart = () => {
-        if (hasStarted || transitionIdRef.current !== thisTransitionId) return;
-        hasStarted = true;
-        startPlaying();
-      };
-
-      // Wait for canplay (faster than canplaythrough)
-      nextRef.current.addEventListener('canplay', tryStart, { once: true });
-
-      if (needsLoad) {
-        if (sourceElement) {
-          sourceElement.src = nextVideoSrc;
-        }
-        nextRef.current.load();
-      }
-
-      // Short fallback timeout - videos are pre-cached so should be fast
-      setTimeout(() => {
-        if (!hasStarted && transitionIdRef.current === thisTransitionId) {
-          tryStart();
-        }
-      }, 150);
-    });
+    if (nextVideo) {
+      nextVideo.currentTime = 0;
+      nextVideo.play().catch(() => {});
+    }
   };
+
 
   // Detect Safari and add class for underline fallback
   useEffect(() => {
@@ -1609,45 +1423,34 @@ function App() {
                   }}
                 />
               )}
-              {/* Video 1 */}
-              <video
-                ref={videoRef1}
-                className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
-                style={{
-                  zIndex: activeVideo === 1 ? 20 : 10,
-                  transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)'
-                }}
-                poster={safeVideoData[0] ? getPosterSrc(safeVideoData[0].src) : ''}
-                autoPlay
-                muted
-                playsInline
-                preload="auto"
-                controls={false}
-                loop={false}
-                onEnded={handleVideoEnded}
-              >
-                {safeVideoData[0] && <source src={encodeVideoSrc(safeVideoData[0].src)} type="video/mp4" />}
-              </video>
-              {/* Video 2 */}
-              <video
-                ref={videoRef2}
-                className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
-                style={{
-                  zIndex: activeVideo === 2 ? 20 : 10,
-                  transition: 'filter 250ms ease-in-out',
-                  transform: 'translateZ(0)'
-                }}
-                poster={safeVideoData[1] ? getPosterSrc(safeVideoData[1].src) : ''}
-                muted
-                playsInline
-                preload="auto"
-                controls={false}
-                loop={false}
-                onEnded={handleVideoEnded}
-              >
-                {safeVideoData[1] && <source src={encodeVideoSrc(safeVideoData[1].src)} type="video/mp4" />}
-              </video>
+              {/* All videos rendered - just swap z-index for instant switching */}
+              {safeVideoData.map((video, idx) => (
+                <video
+                  key={video.id || idx}
+                  ref={el => {
+                    videoElementsRef.current[idx] = el;
+                    if (idx === 0) videoRef1.current = el;
+                    if (idx === 1) videoRef2.current = el;
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover brightness-[1.10] group-hover:brightness-[1.20]"
+                  style={{
+                    zIndex: idx === videoIndex ? 20 : 10,
+                    opacity: idx === videoIndex ? 1 : 0,
+                    transition: 'filter 250ms ease-in-out, opacity 150ms ease-in-out',
+                    transform: 'translateZ(0)'
+                  }}
+                  poster={getPosterSrc(video.src)}
+                  autoPlay={idx === videoIndex}
+                  muted
+                  playsInline
+                  preload="auto"
+                  controls={false}
+                  loop={false}
+                  onEnded={handleVideoEnded}
+                >
+                  <source src={encodeVideoSrc(video.src)} type="video/mp4" />
+                </video>
+              ))}
             </div>
             <div 
               className="relative z-30 w-full black-box-container" 
