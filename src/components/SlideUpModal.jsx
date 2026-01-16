@@ -536,6 +536,7 @@ export const ShortcutsModalContent = ({ isMac }) => (
 );
 
 export const ContactModalContent = ({ darkMode = false }) => {
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const [emailHover, setEmailHover] = useState(false);
   const [showCopyPill, setShowCopyPill] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
@@ -568,6 +569,8 @@ export const ContactModalContent = ({ darkMode = false }) => {
     // On desktop, copy to clipboard
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
       console.error('Failed to copy email:', err);
     }
@@ -642,7 +645,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
     {
       id: 'email',
       title: 'Email',
-      description: 'changjoonseo126@gmail.com',
+      description: copiedEmail ? 'Copied address!' : 'changjoonseo126@gmail.com',
       Icon: MailIcon,
       onClick: handleCopyEmail,
     },
@@ -713,7 +716,10 @@ export const ContactModalContent = ({ darkMode = false }) => {
                   <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
                     {item.title}
                   </span>
-                  <span className="font-graphik text-[14px] leading-[20px] text-[#B7B7B9]">
+                  <span
+                    className="font-graphik text-[14px] leading-[20px]"
+                    style={{ color: copiedEmail ? '#60a5fa' : '#B7B7B9' }}
+                  >
                     {item.description}
                   </span>
                 </div>
