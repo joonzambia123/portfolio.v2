@@ -1654,9 +1654,9 @@ function App() {
                       </>
                     )}
                   </div>
-                  <div className="flex gap-[6px] items-center">
+                  <div className={`flex items-center ${isMobileOrTablet ? 'gap-[10px]' : 'gap-[6px]'}`}>
                     <button
-                      className="arrow-button h-[29px] w-[30px] flex items-center justify-center cursor-pointer"
+                      className={`arrow-button flex items-center justify-center cursor-pointer ${isMobileOrTablet ? 'h-[38px] w-[40px]' : 'h-[29px] w-[30px]'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         playArrow();
@@ -1666,14 +1666,14 @@ function App() {
                         preloadVideoOnHover('prev');
                       }}
                     >
-                      <svg width="30" height="29" viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
+                      <svg width={isMobileOrTablet ? "40" : "30"} height={isMobileOrTablet ? "38" : "29"} viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" fill="#222122" className="arrow-fill"/>
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" stroke="#4A474A" strokeWidth="1.4" className="arrow-stroke"/>
                         <path d="M16.7706 9.24213C16.9175 9.39721 17 9.60751 17 9.8268C17 10.0461 16.9175 10.2564 16.7706 10.4115L12.8915 14.505L16.7706 18.5985C16.9133 18.7545 16.9923 18.9634 16.9905 19.1802C16.9887 19.397 16.9063 19.6045 16.761 19.7578C16.6157 19.9111 16.4192 19.9981 16.2137 20C16.0082 20.0019 15.8103 19.9185 15.6625 19.7679L11.2294 15.0897C11.0825 14.9346 11 14.7243 11 14.505C11 14.2857 11.0825 14.0754 11.2294 13.9203L15.6625 9.24213C15.8094 9.08709 16.0087 9 16.2165 9C16.4243 9 16.6236 9.08709 16.7706 9.24213Z" fill="#4A474A" className="arrow-path"/>
                       </svg>
                     </button>
                     <button
-                      className="arrow-button h-[29px] w-[30px] flex items-center justify-center cursor-pointer"
+                      className={`arrow-button flex items-center justify-center cursor-pointer ${isMobileOrTablet ? 'h-[38px] w-[40px]' : 'h-[29px] w-[30px]'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         playArrow();
@@ -1683,7 +1683,7 @@ function App() {
                         preloadVideoOnHover('next');
                       }}
                     >
-                      <svg width="30" height="29" viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
+                      <svg width={isMobileOrTablet ? "40" : "30"} height={isMobileOrTablet ? "38" : "29"} viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" fill="#222122" className="arrow-fill"/>
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" stroke="#4A474A" strokeWidth="1.4" className="arrow-stroke"/>
                         <path d="M12.5294 19.7579C12.3825 19.6028 12.3 19.3925 12.3 19.1732C12.3 18.9539 12.3825 18.7436 12.5294 18.5885L16.4085 14.495L12.5294 10.4015C12.3867 10.2455 12.3077 10.0366 12.3095 9.81979C12.3113 9.60296 12.3937 9.39554 12.539 9.24221C12.6843 9.08889 12.8808 9.00192 13.0863 9.00003C13.2918 8.99815 13.4897 9.0815 13.6375 9.23214L18.0706 13.9103C18.2175 14.0654 18.3 14.2757 18.3 14.495C18.3 14.7143 18.2175 14.9246 18.0706 15.0797L13.6375 19.7579C13.4906 19.9129 13.2913 20 13.0835 20C12.8757 20 12.6764 19.9129 12.5294 19.7579Z" fill="#4A474A" className="arrow-path"/>
