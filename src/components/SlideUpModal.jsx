@@ -545,6 +545,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const emailRowRef = useRef(null);
   const animationRef = useRef(null);
   const copyPillTimerRef = useRef(null);
+  const hasSuccessfullyCopiedRef = useRef(false); // Track if user has copied email this session
   const { playClick } = useSounds();
 
   // Check if device is mobile/tablet
@@ -570,6 +571,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
       setCopiedEmail(true);
+      hasSuccessfullyCopiedRef.current = true; // Don't show pill again after successful copy
       setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
       console.error('Failed to copy email:', err);
@@ -580,6 +582,12 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const handleEmailMouseEnter = () => {
     setEmailHover(true);
     setHoveredRow('email');
+
+    // Don't show pill if user has already copied the email
+    if (hasSuccessfullyCopiedRef.current) {
+      return;
+    }
+
     setShowCopyPill(true);
 
     // Clear any existing timer
