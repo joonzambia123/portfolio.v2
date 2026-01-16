@@ -413,7 +413,7 @@ function App() {
 
       // Use low quality if:
       // 1. Slow connection (2g, slow-2g, or saveData enabled)
-      // 2. Mobile device on Safari (Safari mobile can struggle with large videos)
+      // 2. Safari browser (Safari struggles with video regardless of desktop/mobile)
       // 3. Connection downlink is less than 1.5 Mbps
       if (connection) {
         const isSlowConnection =
@@ -422,7 +422,7 @@ function App() {
           connection.saveData === true ||
           (connection.downlink && connection.downlink < 1.5);
 
-        const shouldUseLow = isSlowConnection || (isSafari && isMobile);
+        const shouldUseLow = isSlowConnection || isSafari;
         setUseLowQuality(shouldUseLow);
         console.log(`[Video Quality] ${shouldUseLow ? 'LOW' : 'HIGH'} - Connection: ${connection.effectiveType}, Downlink: ${connection.downlink}Mbps, Safari: ${isSafari}, Mobile: ${isMobile}`);
 
@@ -430,10 +430,9 @@ function App() {
         connection.addEventListener('change', checkConnection);
         return () => connection.removeEventListener('change', checkConnection);
       } else {
-        // Fallback: use low quality on mobile Safari without Network Info API
-        const shouldUseLow = isSafari && isMobile;
-        setUseLowQuality(shouldUseLow);
-        console.log(`[Video Quality] ${shouldUseLow ? 'LOW' : 'HIGH'} (no Network API) - Safari: ${isSafari}, Mobile: ${isMobile}`);
+        // Fallback: use low quality on Safari without Network Info API
+        setUseLowQuality(isSafari);
+        console.log(`[Video Quality] ${isSafari ? 'LOW' : 'HIGH'} (no Network API) - Safari: ${isSafari}, Mobile: ${isMobile}`);
       }
     };
 
