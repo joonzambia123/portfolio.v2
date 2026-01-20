@@ -5,8 +5,9 @@
     "fields": [
       { "key": "id", "label": "ID", "type": "number", "required": true },
       { "key": "type", "label": "Type", "type": "text", "required": true },
-      { "key": "src", "label": "Source (Fallback)", "type": "media", "required": true },
-      { "key": "srcHQ", "label": "Source (HQ)", "type": "media", "required": false },
+      { "key": "src", "label": "Source (Standard)", "type": "media", "required": true },
+      { "key": "srcPremium", "label": "Source (Premium)", "type": "media", "required": false },
+      { "key": "srcUltra", "label": "Source (Ultra)", "type": "media", "required": false },
       { "key": "location", "label": "Location", "type": "text", "required": true },
       { "key": "coordinates", "label": "Coordinates", "type": "text", "required": true },
       { "key": "coordinatesUrl", "label": "Map Link", "type": "link", "required": true },
