@@ -51,4 +51,30 @@ export default defineConfig({
       },
     },
   },
+  // Build optimizations for performance
+  build: {
+    // Target modern browsers for smaller bundle
+    target: 'es2020',
+    // Enable minification
+    minify: 'esbuild',
+    // CSS code splitting
+    cssCodeSplit: true,
+    // Inline small assets to reduce HTTP requests
+    assetsInlineLimit: 4096,
+    // Module preload for faster initial load
+    modulePreload: {
+      polyfill: false, // Modern browsers don't need polyfill
+    },
+    // Chunk splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'framer-motion': ['framer-motion'],
+        },
+      },
+    },
+    // Source maps only in development
+    sourcemap: false,
+  },
 })

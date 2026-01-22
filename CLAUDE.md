@@ -1,13 +1,12 @@
 # Portfolio Project Context
 
 ## GitHub Stats Feature
-- **Netlify Functions**: `netlify/functions/fetch-github-stats.mts` (scheduled every 4h), `get-github-stats.mts` (serves cached data)
+- **Netlify Function**: `netlify/functions/get-github-stats.mts` (fetches directly from GitHub)
 - **React Hook**: `src/hooks/useGitHubStats.js`
 - **Display**: Stats shown in nav bar via `githubStats` in App.jsx (lines ~1935-1937)
-- **Storage**: Netlify Blobs (store: "github-stats", key: "current-stats")
+- **Caching**: Edge cached for 1 hour (Cache-Control header)
 - **Env vars required**: `GITHUB_TOKEN`, `GITHUB_USERNAME` (set in Netlify dashboard, NOT in .env)
-- **Resets**: Every Monday 00:00 UTC (new week)
-- **Schedule**: Fetches from GitHub API every 4 hours
+- **Resets**: Every Monday 00:00 UTC (calculates current week on each request)
 
 ## Environment Variables
 

@@ -380,6 +380,9 @@ export const MusicModalContent = ({ currentTrack }) => {
               src={nowPlaying.albumArt || nowPlaying.albumArtSmall}
               alt={nowPlaying.album || nowPlaying.name}
               className="w-full h-full object-cover"
+              width="64"
+              height="64"
+              loading="lazy"
             />
           ) : (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -417,7 +420,7 @@ export const MusicModalContent = ({ currentTrack }) => {
               {/* Small album art */}
               <div className="w-10 h-10 rounded-[6px] bg-gradient-to-br from-[#e8e8e8] to-[#ddd] flex items-center justify-center overflow-hidden flex-shrink-0">
                 {track.albumArt ? (
-                  <img src={track.albumArt} alt={track.name} className="w-full h-full object-cover"/>
+                  <img src={track.albumArt} alt={track.name} className="w-full h-full object-cover" width="40" height="40" loading="lazy"/>
                 ) : (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M9 18V5l12-2v13" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -559,7 +562,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
       setCopiedEmail(true);
       setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
-      console.error('Failed to copy email:', err);
+      // Debug: console.error('Failed to copy email:', err);
     }
   };
 
@@ -584,7 +587,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
 
   // Get the email description color based on state
   const getEmailDescriptionColor = () => {
-    if (copiedEmail) return '#369EEF';
+    if (copiedEmail) return '#5AABEE';
     return '#B7B7B9';
   };
 

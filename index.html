@@ -2,19 +2,89 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Portfolio 3.0</title>
-    <!-- Preload critical fonts for faster rendering -->
-    <link rel="preload" href="/src/fonts/Calluna-Regular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/src/fonts/GraphikRegular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
+
+    <!-- Primary Meta Tags -->
+    <title>Joonseo Chang - Design Engineer</title>
+    <meta name="title" content="Joonseo Chang - Design Engineer" />
+    <meta name="description" content="Design engineering hobbit translating complex systems into joyful experiences. Building Student Machine Lab, growth engineer at Mobbin, grant recipient from Neo and 1517 Fund." />
+    <meta name="author" content="Joonseo Chang" />
+    <meta name="keywords" content="Joonseo Chang, design engineer, product design, software engineering, Mobbin, Student Machine Lab, UI/UX" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://joonseochang.netlify.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://joonseochang.netlify.app/" />
+    <meta property="og:title" content="Joonseo Chang - Design Engineer" />
+    <meta property="og:description" content="Design engineering hobbit translating complex systems into joyful experiences. Building Student Machine Lab, growth engineer at Mobbin." />
+    <meta property="og:image" content="https://joonseochang.netlify.app/posters/og-image.jpg" />
+    <meta property="og:site_name" content="Joonseo Chang" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://joonseochang.netlify.app/" />
+    <meta property="twitter:title" content="Joonseo Chang - Design Engineer" />
+    <meta property="twitter:description" content="Design engineering hobbit translating complex systems into joyful experiences. Building Student Machine Lab, growth engineer at Mobbin." />
+    <meta property="twitter:image" content="https://joonseochang.netlify.app/posters/og-image.jpg" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="msapplication-TileColor" content="#FFFFFF" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Preload hint for fonts (Vite will inject actual preloads) -->
+    <!-- Font loading optimized via font-display: swap in CSS -->
+
+    <!-- DNS Prefetch and Preconnect for external resources -->
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://ws.audioscrobbler.com">
+    <link rel="dns-prefetch" href="https://itunes.apple.com">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Joonseo Chang",
+      "url": "https://joonseochang.netlify.app",
+      "jobTitle": "Design Engineer",
+      "description": "Design engineering hobbit translating complex systems into joyful experiences.",
+      "sameAs": [
+        "https://www.instagram.com/joon.zambia/",
+        "https://x.com/joonzambia",
+        "https://www.linkedin.com/in/joonseo-chang-1b1b3b1b3/"
+      ],
+      "worksFor": [
+        {
+          "@type": "Organization",
+          "name": "Mobbin",
+          "url": "https://mobbin.com"
+        },
+        {
+          "@type": "Organization",
+          "name": "Student Machine Lab",
+          "url": "https://studentmachines.com"
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="padding: 20px; text-align: center;">
+        <h1>Joonseo Chang - Design Engineer</h1>
+        <p>Design engineering hobbit translating complex systems into joyful experiences.</p>
+        <p>Building Student Machine Lab, growth engineer at Mobbin, grant recipient from Neo and 1517 Fund.</p>
+        <p>Please enable JavaScript to view this website.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

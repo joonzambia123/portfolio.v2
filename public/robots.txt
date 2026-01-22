@@ -1,0 +1,6 @@
+# robots.txt for joonseochang.netlify.app
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://joonseochang.netlify.app/sitemap.xml
