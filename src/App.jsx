@@ -1,12 +1,146 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
 import { useLastFm } from './hooks/useLastFm'
+import { useGitHubStats } from './hooks/useGitHubStats'
 import { useSounds } from './hooks/useSounds'
-import SlideUpModal, {
-  MusicModalContent,
-  ActivityModalContent,
-  ShortcutsModalContent,
-  ContactModalContent
-} from './components/SlideUpModal'
+import { Agentation } from 'agentation'
+
+// Lazy load modal components to defer Framer Motion loading
+const SlideUpModal = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.default })))
+const MusicModalContent = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.MusicModalContent })))
+const ActivityModalContent = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.ActivityModalContent })))
+const ShortcutsModalContent = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.ShortcutsModalContent })))
+const ContactModalContent = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.ContactModalContent })))
+
+// Preload modal components on hover for instant open
+const preloadModalComponents = () => {
+  import('./components/SlideUpModal');
+};
+
+// Marquee text component - circular scroll (one loop) with subtle fade hint
+// delay prop adds additional wait time before first scroll (for staggering multiple marquees)
+const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
+  const containerRef = useRef(null);
+  const textRef = useRef(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [textWidth, setTextWidth] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const animationRef = useRef(null);
+
+  const GAP = 50; // Gap between text instances
+
+  // Check if text overflows container
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (textRef.current && containerRef.current) {
+        const width = textRef.current.scrollWidth;
+        const containerWidth = containerRef.current.clientWidth;
+        setTextWidth(width);
+        setIsOverflowing(width > containerWidth);
+      }
+    };
+
+    checkOverflow();
+    const timeout = setTimeout(checkOverflow, 100);
+    return () => clearTimeout(timeout);
+  }, [children, maxWidth]);
+
+  // Circular scroll: wait 8s initially (+ delay), scroll, then wait 16s AFTER animation ends, repeat
+  useEffect(() => {
+    if (!isOverflowing || !textWidth) {
+      setScrollOffset(0);
+      return;
+    }
+
+    const loopDistance = textWidth + GAP; // One full loop
+    const scrollDuration = 12000; // 12 seconds for the scroll
+    const initialWait = 8000 + delay; // First scroll after 8 seconds + any additional delay
+    const pauseAfterScroll = 16000 + delay; // Keep same delay offset in subsequent cycles
+    const cycleTime = scrollDuration + pauseAfterScroll; // Total cycle
+
+    let startTime = null;
+
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const totalElapsed = timestamp - startTime;
+
+      // Calculate where we are in the cycle
+      let cycleElapsed;
+      let currentWait;
+
+      if (totalElapsed < initialWait + scrollDuration) {
+        // First cycle
+        cycleElapsed = totalElapsed;
+        currentWait = initialWait;
+      } else {
+        // Subsequent cycles - pause happens AFTER the scroll
+        const afterFirst = totalElapsed - initialWait - scrollDuration;
+        cycleElapsed = afterFirst % cycleTime;
+        currentWait = pauseAfterScroll; // Wait time AFTER scroll completes
+      }
+
+      if (cycleElapsed < currentWait) {
+        // Waiting phase
+        setScrollOffset(0);
+        setIsScrolling(false);
+      } else if (cycleElapsed < currentWait + scrollDuration) {
+        // Scrolling phase
+        setIsScrolling(true);
+        const scrollProgress = (cycleElapsed - currentWait) / scrollDuration;
+        setScrollOffset(-loopDistance * scrollProgress);
+      } else {
+        // Completed loop
+        setScrollOffset(0);
+        setIsScrolling(false);
+      }
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isOverflowing, textWidth, delay]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{
+        ...style,
+        maxWidth,
+        overflow: 'hidden',
+        position: 'relative',
+        // CSS mask - subtle right fade only (no left fade)
+        maskImage: isOverflowing
+          ? 'linear-gradient(to right, black 0%, black 82%, rgba(0,0,0,0.4) 94%, rgba(0,0,0,0) 100%)'
+          : 'none',
+        WebkitMaskImage: isOverflowing
+          ? 'linear-gradient(to right, black 0%, black 82%, rgba(0,0,0,0.4) 94%, rgba(0,0,0,0) 100%)'
+          : 'none'
+      }}
+    >
+      <div
+        style={{
+          display: 'inline-flex',
+          whiteSpace: 'nowrap',
+          transform: `translateX(${scrollOffset}px)`,
+          willChange: isOverflowing ? 'transform' : 'auto'
+        }}
+      >
+        <span ref={textRef}>{children}</span>
+        {/* Duplicate for seamless circular loop */}
+        {isOverflowing && (
+          <span style={{ marginLeft: GAP }}>{children}</span>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // Image URLs from Figma (valid for 7 days)
 const imgRectangle316 = "https://www.figma.com/api/mcp/asset/8d33530d-0256-40f5-be5d-e642c6a86c84";
@@ -24,15 +158,284 @@ function App() {
   const [coordFading, setCoordFading] = useState(false);
   const [loaderMessage, setLoaderMessage] = useState(''); // Encouraging messages after 5 seconds
   const videoCacheRef = useRef(new Set()); // Track which videos are fully cached
+  const adjacentVideosReadyRef = useRef(0); // Track how many adjacent videos are ready during loader
   const safariVideoPoolRef = useRef(new Map()); // Safari: pool of preloaded video elements
   const safariPoolOrderRef = useRef([]); // Track insertion order for LRU eviction
   const MAX_SAFARI_POOL_SIZE = 5; // Limit pool size for memory efficiency with many videos
   const MAX_CONCURRENT_PRELOADS = 3; // Limit concurrent video preloads
   const fontsLoadedRef = useRef(false); // Track if fonts are loaded
+  const [fontsReady, setFontsReady] = useState(false); // State to trigger re-render when fonts load
   const loaderMinTimeRef = useRef(false); // Minimum loader display time
   
+  // Search input state
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
+
+  // Face emoticon animation state
+  const [faceExpression, setFaceExpression] = useState('(=_=)');
+  const [faceTransform, setFaceTransform] = useState({ scaleY: 1, scaleX: 1, translateX: 0, translateY: 0 });
+  const [isMouseNearFace, setIsMouseNearFace] = useState(false);
+  const [isHomeButtonHovered, setIsHomeButtonHovered] = useState(false);
+  const [isFaceHoverExiting, setIsFaceHoverExiting] = useState(false);
+  const faceHoverTimeoutRef = useRef(null);
+  const faceZoneRef = useRef(null);
+  const faceIconRef = useRef(null);
+
+  // Mouse tracking handler for frightened face
+  const handleFaceZoneMouseMove = useCallback((e) => {
+    if (!isMouseNearFace || !faceIconRef.current) return;
+
+    const faceRect = faceIconRef.current.getBoundingClientRect();
+    const faceCenter = {
+      x: faceRect.left + faceRect.width / 2,
+      y: faceRect.top + faceRect.height / 2,
+    };
+
+    // Calculate direction from face to mouse
+    const dx = e.clientX - faceCenter.x;
+    const dy = e.clientY - faceCenter.y;
+
+    // Clamp eye movement to subtle range
+    const eyeX = Math.max(-2, Math.min(2, dx / 50));
+    const eyeY = Math.max(-1, Math.min(1, dy / 80));
+
+    setFaceTransform(prev => ({
+      ...prev,
+      translateX: eyeX,
+      translateY: eyeY,
+    }));
+  }, [isMouseNearFace]);
+
+  // Face animation - blinks, yawns, and looking around
+  useEffect(() => {
+    // Wait until site is fully loaded before starting animations
+    if (isLoading) return;
+
+    // When mouse is near face, show frightened expression and skip normal animations
+    if (isMouseNearFace) {
+      setFaceExpression('(O_O)');
+      return;
+    }
+
+    // Reset to default when mouse leaves
+    setFaceExpression('(=_=)');
+    setFaceTransform({ scaleY: 1, scaleX: 1, translateX: 0, translateY: 0 });
+
+    const expressions = {
+      default: '(=_=)',
+      blink: '(-_-)',
+      content: '(=‿=)',
+    };
+
+    let blinkTimeout;
+    let yawnTimeout;
+    let lookTimeout;
+    let contentTimeout;
+    let isYawning = false;
+    let isLooking = false;
+    let isAnimating = false; // Prevent overlapping animations
+    let lastAnimationEnd = 0; // Track when last animation ended
+    let isFirstYawn = true; // Track if this is the first yawn
+
+    const MIN_GAP = 1500; // Minimum 1.5s between different animations
+
+    const canAnimate = () => {
+      if (isAnimating || isYawning || isLooking) return false;
+      if (Date.now() - lastAnimationEnd < MIN_GAP) return false;
+      return true;
+    };
+
+    const blink = () => {
+      if (!canAnimate()) {
+        blinkTimeout = setTimeout(blink, 1000);
+        return;
+      }
+
+      isAnimating = true;
+
+      // Variety of blink types
+      const blinkType = Math.random();
+
+      if (blinkType < 0.15) {
+        // Slow sleepy blink (15% chance)
+        setFaceTransform(prev => ({ ...prev, scaleY: 0.97 }));
+        setFaceExpression(expressions.blink);
+        setTimeout(() => {
+          setFaceTransform(prev => ({ ...prev, scaleY: 1 }));
+          setFaceExpression(expressions.default);
+          isAnimating = false;
+          lastAnimationEnd = Date.now();
+        }, 300);
+      } else if (blinkType < 0.25) {
+        // Double blink (10% chance)
+        setFaceTransform(prev => ({ ...prev, scaleY: 0.96 }));
+        setFaceExpression(expressions.blink);
+        setTimeout(() => {
+          setFaceTransform(prev => ({ ...prev, scaleY: 1 }));
+          setFaceExpression(expressions.default);
+        }, 100);
+        setTimeout(() => {
+          setFaceTransform(prev => ({ ...prev, scaleY: 0.96 }));
+          setFaceExpression(expressions.blink);
+        }, 250);
+        setTimeout(() => {
+          setFaceTransform(prev => ({ ...prev, scaleY: 1 }));
+          setFaceExpression(expressions.default);
+          isAnimating = false;
+          lastAnimationEnd = Date.now();
+        }, 350);
+      } else {
+        // Regular blink (75% chance)
+        setFaceTransform(prev => ({ ...prev, scaleY: 0.96 }));
+        setFaceExpression(expressions.blink);
+        setTimeout(() => {
+          setFaceTransform(prev => ({ ...prev, scaleY: 1 }));
+          setFaceExpression(expressions.default);
+          isAnimating = false;
+          lastAnimationEnd = Date.now();
+        }, 120);
+      }
+
+      // Next blink in 3-6 seconds
+      blinkTimeout = setTimeout(blink, 3000 + Math.random() * 3000);
+    };
+
+    // Separate content smile - rare and independent
+    const showContent = () => {
+      if (!canAnimate()) {
+        contentTimeout = setTimeout(showContent, 5000);
+        return;
+      }
+
+      isAnimating = true;
+      setFaceExpression(expressions.content);
+      setTimeout(() => {
+        setFaceExpression(expressions.default);
+        isAnimating = false;
+        lastAnimationEnd = Date.now();
+      }, 1000);
+
+      // Next content in 25-40 seconds (rare)
+      contentTimeout = setTimeout(showContent, 25000 + Math.random() * 15000);
+    };
+
+    const yawn = () => {
+      if (isLooking || isAnimating) {
+        yawnTimeout = setTimeout(yawn, 2000);
+        return;
+      }
+      isYawning = true;
+      isAnimating = true;
+      // Start stretching - head rises up, slight stretch
+      setFaceTransform(prev => ({ ...prev, scaleY: 1.02, scaleX: 0.99, translateY: -1 }));
+      setTimeout(() => {
+        setFaceExpression('(=.=)'); // Mouth slightly open
+        setFaceTransform(prev => ({ ...prev, scaleY: 1.03, scaleX: 0.98, translateY: -1.5 }));
+      }, 250);
+      // Mouth opening more - head rises higher
+      setTimeout(() => {
+        setFaceExpression('(=0=)'); // Mouth more open
+        setFaceTransform(prev => ({ ...prev, scaleY: 1.05, scaleX: 0.97, translateY: -2 }));
+      }, 500);
+      // Full yawn - peak rise
+      setTimeout(() => {
+        setFaceExpression('(=O=)'); // Full yawn
+        setFaceTransform(prev => ({ ...prev, scaleY: 1.06, scaleX: 0.96, translateY: -2.5 }));
+      }, 750);
+      // Hold the yawn at peak
+      setTimeout(() => {
+        setFaceTransform(prev => ({ ...prev, scaleY: 1.05, scaleX: 0.97, translateY: -2 }));
+      }, 1100);
+      // Start closing mouth - head lowers
+      setTimeout(() => {
+        setFaceExpression('(=0=)');
+        setFaceTransform(prev => ({ ...prev, scaleY: 1.03, scaleX: 0.98, translateY: -1.5 }));
+      }, 1400);
+      // Mouth almost closed
+      setTimeout(() => {
+        setFaceExpression('(=.=)');
+        setFaceTransform(prev => ({ ...prev, scaleY: 1.01, scaleX: 0.99, translateY: -0.5 }));
+      }, 1650);
+      // Back to sleepy - slight settle
+      setTimeout(() => {
+        setFaceExpression(expressions.default);
+        setFaceTransform(prev => ({ ...prev, scaleY: 0.99, scaleX: 1.01, translateY: 0.5 }));
+      }, 1900);
+      // Settle to normal
+      setTimeout(() => {
+        setFaceTransform(prev => ({ ...prev, scaleY: 1, scaleX: 1, translateY: 0 }));
+        isYawning = false;
+        isAnimating = false;
+        lastAnimationEnd = Date.now();
+      }, 2100);
+      // Next yawn in 20-35 seconds (after first yawn)
+      isFirstYawn = false;
+      yawnTimeout = setTimeout(yawn, 20000 + Math.random() * 15000);
+    };
+
+    const lookAround = () => {
+      if (isYawning || isAnimating) {
+        lookTimeout = setTimeout(lookAround, 2000);
+        return;
+      }
+      isLooking = true;
+      isAnimating = true;
+
+      // Slow, gentle head drift patterns - very subtle movements
+      const patterns = [
+        // Slow drift left, hold, drift back
+        [{ x: -0.8, duration: 1200 }, { x: -0.8, duration: 800 }, { x: 0, duration: 1000 }],
+        // Slow drift right, hold, drift back
+        [{ x: 0.8, duration: 1200 }, { x: 0.8, duration: 800 }, { x: 0, duration: 1000 }],
+        // Gentle sway left to right
+        [{ x: -0.6, duration: 1400 }, { x: 0.6, duration: 1800 }, { x: 0, duration: 1200 }],
+        // Gentle sway right to left
+        [{ x: 0.6, duration: 1400 }, { x: -0.6, duration: 1800 }, { x: 0, duration: 1200 }],
+      ];
+
+      const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+      let delay = 0;
+
+      pattern.forEach((step, index) => {
+        setTimeout(() => {
+          setFaceTransform(prev => ({ ...prev, translateX: step.x }));
+          if (index === pattern.length - 1) {
+            // Last step - mark as done after it settles
+            setTimeout(() => {
+              isLooking = false;
+              isAnimating = false;
+              lastAnimationEnd = Date.now();
+            }, 500);
+          }
+        }, delay);
+        delay += step.duration;
+      });
+
+      // Next look in 8-15 seconds
+      lookTimeout = setTimeout(lookAround, 8000 + Math.random() * 7000);
+    };
+
+    // Start animations with staggered initial delays
+    blinkTimeout = setTimeout(blink, 2000 + Math.random() * 2000);
+    // First yawn at 6 seconds so user sees it early
+    yawnTimeout = setTimeout(yawn, 6000);
+    lookTimeout = setTimeout(lookAround, 10000 + Math.random() * 4000);
+    contentTimeout = setTimeout(showContent, 30000 + Math.random() * 20000);
+
+    return () => {
+      clearTimeout(blinkTimeout);
+      clearTimeout(yawnTimeout);
+      clearTimeout(lookTimeout);
+      clearTimeout(contentTimeout);
+    };
+  }, [isLoading, isMouseNearFace]);
+
   // Last.fm integration
   const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, isDataComplete, playPreview, stopPreview } = useLastFm();
+
+  // GitHub stats integration
+  const { stats: githubStats } = useGitHubStats();
 
   // Sound effects
   const { playClick, playArrow } = useSounds();
@@ -50,7 +453,8 @@ function App() {
     h1: false,
     bodyParagraphs: false,
     videoFrame: false,
-    bottomComponent: false
+    bottomComponent: false,
+    navBar: false
   });
   const [showJiggle, setShowJiggle] = useState(false);
   const [hasDiscoveredContent, setHasDiscoveredContent] = useState(false); // Once true, jiggle never triggers again
@@ -82,10 +486,10 @@ function App() {
   const lastMediaHashRef = useRef('');
   const lastCopyHashRef = useRef('');
 
-  // Adaptive video quality - uses HQ when available and network is good
-  const [useHQVideo, setUseHQVideo] = useState(false);
-  const networkQualityRef = useRef('unknown'); // 'fast', 'slow', 'unknown'
-  const hqVideoFailedRef = useRef(new Set()); // Track which HQ videos failed to load smoothly
+  // Adaptive video quality - 3 tiers: 'standard', 'premium', 'ultra'
+  const [videoQuality, setVideoQuality] = useState('standard');
+  const networkQualityRef = useRef('unknown'); // 'ultra', 'premium', 'standard', 'unknown'
+  const videoFailedTiersRef = useRef(new Map()); // Track which tiers failed for each video id
   
   // City to timezone mapping - automatically determines timezone from city name
   const getTimezoneFromCity = (cityName) => {
@@ -249,7 +653,7 @@ function App() {
             setVideoData(mediaJson.value.data || []);
           }
         } else {
-          console.warn('Failed to fetch media data:', mediaJson.reason);
+          // Debug: console.warn('Failed to fetch media data:', mediaJson.reason);
         }
         
         // Handle website copy
@@ -264,7 +668,7 @@ function App() {
             setWebsiteCopy(copyObj);
           }
         } else {
-          console.warn('Failed to fetch website copy:', copyJson.reason);
+          // Debug: console.warn('Failed to fetch website copy:', copyJson.reason);
         }
         
         // If both failed, try static imports as fallback
@@ -281,11 +685,11 @@ function App() {
             });
             setWebsiteCopy(copyObj);
           } catch (fallbackError) {
-            console.error('Fallback import also failed:', fallbackError);
+            // Debug: console.error('Fallback import also failed:', fallbackError);
           }
         }
       } catch (error) {
-        console.error('Failed to fetch CMS data:', error);
+        // Debug: console.error('Failed to fetch CMS data:', error);
         // Try static imports as last resort
         try {
           const [mediaModule, copyModule] = await Promise.all([
@@ -299,7 +703,7 @@ function App() {
           });
           setWebsiteCopy(copyObj);
         } catch (fallbackError) {
-          console.error('All CMS data loading methods failed:', fallbackError);
+          // Debug: console.error('All CMS data loading methods failed:', fallbackError);
         }
       }
     };
@@ -394,44 +798,50 @@ function App() {
     setIsMac(checkIsMac);
   }, []);
 
-  // Detect network quality and decide whether to use HQ videos
+  // Detect network quality and decide video tier: 'standard', 'premium', 'ultra'
   useEffect(() => {
     const detectNetworkQuality = () => {
       // Use Network Information API if available
       const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
       if (connection) {
         const { effectiveType, downlink, saveData } = connection;
 
-        // Don't use HQ if user has data saver enabled
+        // Data saver enabled → Standard tier
         if (saveData) {
-          networkQualityRef.current = 'slow';
-          setUseHQVideo(false);
+          networkQualityRef.current = 'standard';
+          setVideoQuality('standard');
           return;
         }
 
-        // Check effective connection type
-        // 4g = fast, 3g = medium, 2g/slow-2g = slow
-        if (effectiveType === '4g' && downlink >= 5) {
-          networkQualityRef.current = 'fast';
-          setUseHQVideo(true);
-        } else if (effectiveType === '4g' || effectiveType === '3g') {
-          networkQualityRef.current = 'medium';
-          // Use HQ on desktop with decent 3g/4g, fallback on mobile
-          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-          setUseHQVideo(!isMobile && downlink >= 2);
-        } else {
-          networkQualityRef.current = 'slow';
-          setUseHQVideo(false);
+        // Ultra tier: 4g + 15+ Mbps + desktop
+        if (effectiveType === '4g' && downlink >= 15 && !isMobile) {
+          networkQualityRef.current = 'ultra';
+          setVideoQuality('ultra');
+        }
+        // Premium tier: 4g + 5+ Mbps, or 4g desktop with 2+ Mbps
+        else if (effectiveType === '4g' && (downlink >= 5 || (!isMobile && downlink >= 2))) {
+          networkQualityRef.current = 'premium';
+          setVideoQuality('premium');
+        }
+        // Standard tier: 3g, slow 4g, mobile, or 2g
+        else {
+          networkQualityRef.current = 'standard';
+          setVideoQuality('standard');
         }
 
         // Listen for network changes
         connection.addEventListener('change', detectNetworkQuality);
       } else {
-        // No Network Information API - assume good connection on desktop
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        networkQualityRef.current = isMobile ? 'unknown' : 'fast';
-        setUseHQVideo(!isMobile);
+        // No Network Information API - assume premium on desktop, standard on mobile
+        if (isMobile) {
+          networkQualityRef.current = 'standard';
+          setVideoQuality('standard');
+        } else {
+          networkQualityRef.current = 'premium';
+          setVideoQuality('premium');
+        }
       }
     };
 
@@ -445,24 +855,44 @@ function App() {
     };
   }, []);
 
-  // Get the appropriate video source based on quality settings
+  // Get the appropriate video source based on quality tier
   const getVideoSrc = (video) => {
     if (!video) return '';
 
-    // If HQ source exists and we should use HQ, use it
-    if (useHQVideo && video.srcHQ && !hqVideoFailedRef.current.has(video.id)) {
-      return video.srcHQ;
+    // Get failed tiers for this video
+    const failedTiers = videoFailedTiersRef.current.get(video.id) || new Set();
+
+    // Try Ultra tier first if requested and available
+    if (videoQuality === 'ultra' && video.srcUltra && !failedTiers.has('ultra')) {
+      return video.srcUltra;
     }
 
-    // Otherwise use fallback (Cloudinary)
+    // Try Premium tier if requested (or Ultra failed) and available
+    if ((videoQuality === 'ultra' || videoQuality === 'premium') && video.srcPremium && !failedTiers.has('premium')) {
+      return video.srcPremium;
+    }
+
+    // Fallback to Standard tier
     return video.src;
   };
 
-  // Handle HQ video load failure - fallback to standard quality
+  // Handle video load failure - fallback to lower tier
   const handleVideoError = (videoId, videoElement) => {
-    if (useHQVideo && !hqVideoFailedRef.current.has(videoId)) {
-      console.log(`HQ video ${videoId} failed to load, falling back to standard quality`);
-      hqVideoFailedRef.current.add(videoId);
+    const currentSrc = videoElement?.src || '';
+    const failedTiers = videoFailedTiersRef.current.get(videoId) || new Set();
+
+    // Determine which tier failed based on URL
+    let failedTier = 'standard';
+    if (currentSrc.includes('_Ultra')) {
+      failedTier = 'ultra';
+    } else if (currentSrc.includes('_Premium')) {
+      failedTier = 'premium';
+    }
+
+    if (!failedTiers.has(failedTier)) {
+      // Debug: console.log(`Video ${videoId} (${failedTier}) failed to load, falling back to lower tier`);
+      failedTiers.add(failedTier);
+      videoFailedTiersRef.current.set(videoId, failedTiers);
       // Force re-render to use fallback source
       setVideoData(prev => [...prev]);
     }
@@ -576,11 +1006,12 @@ function App() {
       const match = src.match(/\/video\/upload\/([^/]+)\/(.+)\.(mp4|webm|mov)/i);
       if (match) {
         const filename = match[2];
-        return `https://res.cloudinary.com/dxsdxpm9m/video/upload/f_jpg,q_auto,so_0/${filename}.jpg`;
+        // Use f_auto for WebP/AVIF delivery when supported, with quality optimization
+        return `https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto:good,so_0/${filename}.jpg`;
       }
       // Fallback for URLs without extension
       return src
-        .replace(/\/video\/upload\/[^/]+\//, '/video/upload/f_jpg,q_auto,so_0/')
+        .replace(/\/video\/upload\/[^/]+\//, '/video/upload/f_auto,q_auto:good,so_0/')
         .replace(/\.(mp4|webm|mov)$/i, '.jpg');
     }
 
@@ -681,42 +1112,45 @@ function App() {
       ? (videoIndex + 1) % videoData.length
       : (videoIndex - 1 + videoData.length) % videoData.length;
 
-    // Pause current video
+    // Get video elements
     const currentVideo = videoElementsRef.current[videoIndex];
-    if (currentVideo) {
-      currentVideo.pause();
-    }
-
-    // Get next video element
     const nextVideo = videoElementsRef.current[nextIndex];
 
-    // Switch immediately - don't wait for anything
-    setVideoIndex(nextIndex);
-
+    // Prepare next video BEFORE switching - ensure it's ready and visible
     if (nextVideo) {
-      // Safari: Show brief loading indicator only if video is completely unloaded
-      // readyState 0 = HAVE_NOTHING (no data at all)
-      if (isSafari && nextVideo.readyState === 0) {
-        setVideoLoading(true);
+      // Make next video visible (but still behind current due to z-index)
+      nextVideo.style.visibility = 'visible';
+      nextVideo.style.opacity = '1';
 
-        const onLoadedData = () => {
-          setVideoLoading(false);
-          nextVideo.removeEventListener('loadeddata', onLoadedData);
-        };
-
-        nextVideo.addEventListener('loadeddata', onLoadedData);
-
-        // Quick fallback - don't block for too long
-        setTimeout(() => {
-          setVideoLoading(false);
-          nextVideo.removeEventListener('loadeddata', onLoadedData);
-        }, 150);
-      }
-
-      // Always reset and play immediately
+      // Reset and start playing the next video
       nextVideo.currentTime = 0;
-      nextVideo.play().catch(() => {});
+      const playPromise = nextVideo.play();
+
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Retry play on Safari
+          if (isSafari) {
+            setTimeout(() => nextVideo.play().catch(() => {}), 50);
+          }
+        });
+      }
     }
+
+    // Small delay to ensure next video has started playing before we switch
+    // This prevents the "flash" of poster/black frame
+    const switchDelay = isSafari ? 30 : 10;
+
+    setTimeout(() => {
+      // Now update index - this will swap z-index making next video visible
+      setVideoIndex(nextIndex);
+
+      // Hide and pause current video after switch
+      if (currentVideo) {
+        currentVideo.pause();
+        currentVideo.style.visibility = 'hidden';
+        currentVideo.style.opacity = '0';
+      }
+    }, switchDelay);
   };
 
 
@@ -759,9 +1193,9 @@ function App() {
       setLoadedComponents(prev => ({ ...prev, videoFrame: true }));
     }, startDelay + stagger * 3);
     
-    // Bottom component appears last - give more time
+    // Bottom component and navbar appear last - give more time
     setTimeout(() => {
-      setLoadedComponents(prev => ({ ...prev, bottomComponent: true }));
+      setLoadedComponents(prev => ({ ...prev, bottomComponent: true, navBar: true }));
     }, startDelay + stagger * 4 + 50);
   }, [isLoading]);
 
@@ -892,6 +1326,7 @@ function App() {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             fontsLoadedRef.current = true;
+            setFontsReady(true);
           });
         });
       });
@@ -900,60 +1335,104 @@ function App() {
       // Wait a bit for fonts to potentially load
       setTimeout(() => {
         fontsLoadedRef.current = true;
+        setFontsReady(true);
       }, 200);
     }
   }, []);
 
-  // Preload the FIRST video using a hidden video element to ensure it's playable
-  // This runs during the loader to guarantee the first video is ready
-  useEffect(() => {
-    if (videoData.length === 0) return;
-
-    const firstVideoSrc = encodeVideoSrc(getVideoSrc(videoData[0]));
-    console.log('[Initial] First video source:', firstVideoSrc.includes('cloudinary') ? 'Cloudinary (fallback)' : 'HQ ✓', firstVideoSrc);
-
-    // Create a hidden video element to preload the first video
-    const preloadVideo = document.createElement('video');
-    preloadVideo.preload = 'auto';
-    preloadVideo.muted = true;
-    preloadVideo.playsInline = true;
-    preloadVideo.src = firstVideoSrc;
-    
-    const onCanPlayThrough = () => {
-      firstVideoReadyRef.current = true;
-      preloadVideo.removeEventListener('canplaythrough', onCanPlayThrough);
-    };
-    
-    preloadVideo.addEventListener('canplaythrough', onCanPlayThrough);
-    preloadVideo.load();
-    
-    // Fallback: mark as ready after 5 seconds even if canplaythrough doesn't fire
-    const fallbackTimer = setTimeout(() => {
-      if (!firstVideoReadyRef.current) {
-        firstVideoReadyRef.current = true;
-      }
-    }, 5000);
-    
-    return () => {
-      preloadVideo.removeEventListener('canplaythrough', onCanPlayThrough);
-      clearTimeout(fallbackTimer);
-    };
-  }, [videoData, useHQVideo]);
-
-  // Aggressive video preloading: Fully download and cache all videos with concurrency control
+  // Preload FIRST + ADJACENT videos during the loader to enable smooth toggling
+  // This runs during the loader to guarantee the first few videos are ready
   useEffect(() => {
     if (videoData.length === 0) return;
 
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    let activePreloads = 0;
-    const preloadQueue = [];
+    adjacentVideosReadyRef.current = 0;
+
+    // Helper to preload a video and track readiness
+    const preloadVideoElement = (videoSrc, onReady) => {
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.muted = true;
+      video.playsInline = true;
+      video.src = encodeVideoSrc(videoSrc);
+
+      const onCanPlayThrough = () => {
+        video.removeEventListener('canplaythrough', onCanPlayThrough);
+        onReady();
+      };
+
+      video.addEventListener('canplaythrough', onCanPlayThrough);
+      video.load();
+
+      return video;
+    };
+
+    // Preload first video
+    const firstVideoSrc = getVideoSrc(videoData[0]);
+    const firstVideo = preloadVideoElement(firstVideoSrc, () => {
+      firstVideoReadyRef.current = true;
+      videoCacheRef.current.add(firstVideoSrc);
+    });
+
+    // Preload adjacent videos (next and previous) during loader for smooth toggling
+    const adjacentVideos = [];
+
+    if (videoData.length > 1) {
+      // Preload next video
+      const nextIdx = 1;
+      const nextVideoSrc = getVideoSrc(videoData[nextIdx]);
+      const nextVideo = preloadVideoElement(nextVideoSrc, () => {
+        adjacentVideosReadyRef.current += 1;
+        videoCacheRef.current.add(nextVideoSrc);
+        if (isSafari) preloadVideoToPool(nextVideoSrc);
+      });
+      adjacentVideos.push(nextVideo);
+
+      // Preload previous video (last in array)
+      if (videoData.length > 2) {
+        const prevIdx = videoData.length - 1;
+        const prevVideoSrc = getVideoSrc(videoData[prevIdx]);
+        const prevVideo = preloadVideoElement(prevVideoSrc, () => {
+          adjacentVideosReadyRef.current += 1;
+          videoCacheRef.current.add(prevVideoSrc);
+          if (isSafari) preloadVideoToPool(prevVideoSrc);
+        });
+        adjacentVideos.push(prevVideo);
+      }
+    }
+
+    // Fallback: mark as ready after 6 seconds even if canplaythrough doesn't fire
+    const fallbackTimer = setTimeout(() => {
+      if (!firstVideoReadyRef.current) {
+        firstVideoReadyRef.current = true;
+      }
+    }, 6000);
+
+    return () => {
+      firstVideo.removeEventListener('canplaythrough', () => {});
+      adjacentVideos.forEach(v => v.removeEventListener('canplaythrough', () => {}));
+      clearTimeout(fallbackTimer);
+    };
+  }, [videoData, videoQuality]);
+
+  // Background video preloading: Preload remaining videos AFTER loader completes
+  // First 3 videos (current, next, prev) are preloaded during loader
+  useEffect(() => {
+    // Skip if still loading or not enough videos to preload
+    if (isLoading || videoData.length <= 3) return;
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     let isCancelled = false;
 
-    // Preload a single video
+    // Preload a single video via fetch (for browser caching)
     const preloadVideo = async (video) => {
       if (isCancelled) return;
       try {
         const videoSrc = getVideoSrc(video);
+
+        // Check if already cached during loader
+        if (videoCacheRef.current.has(videoSrc)) return;
+
         const encodedSrc = encodeVideoSrc(videoSrc);
         const response = await fetch(encodedSrc);
         if (response.ok && !isCancelled) {
@@ -970,63 +1449,32 @@ function App() {
       }
     };
 
-    // Process queue with concurrency limit
-    const processQueue = async () => {
-      while (preloadQueue.length > 0 && activePreloads < MAX_CONCURRENT_PRELOADS && !isCancelled) {
-        const video = preloadQueue.shift();
-        const videoSrc = getVideoSrc(video);
-        if (video && !videoCacheRef.current.has(videoSrc)) {
-          activePreloads++;
-          preloadVideo(video).finally(() => {
-            activePreloads--;
-            processQueue(); // Process next in queue
-          });
-        }
+    // Start preloading remaining videos 2 seconds after loader ends
+    // Skip index 0 (first), 1 (next), and last (prev) - already preloaded during loader
+    const remainingTimer = setTimeout(() => {
+      if (isCancelled) return;
+
+      // Get indices to preload (skip first, second, and last)
+      const indicesToPreload = [];
+      for (let i = 2; i < videoData.length - 1; i++) {
+        indicesToPreload.push(i);
       }
-    };
 
-    // Prioritize: current video, then adjacent videos, then rest
-    // This ensures smooth navigation even with many videos
-    const prioritizedVideos = [];
-    const currentIdx = 0; // Start with first video
-
-    // Add current video first
-    if (videoData[currentIdx]) prioritizedVideos.push(videoData[currentIdx]);
-
-    // Add next few adjacent videos (high priority)
-    for (let i = 1; i <= Math.min(3, Math.floor(videoData.length / 2)); i++) {
-      const nextIdx = (currentIdx + i) % videoData.length;
-      const prevIdx = (currentIdx - i + videoData.length) % videoData.length;
-      if (videoData[nextIdx] && !prioritizedVideos.includes(videoData[nextIdx])) {
-        prioritizedVideos.push(videoData[nextIdx]);
-      }
-      if (videoData[prevIdx] && !prioritizedVideos.includes(videoData[prevIdx])) {
-        prioritizedVideos.push(videoData[prevIdx]);
-      }
-    }
-
-    // Add remaining videos
-    videoData.forEach(video => {
-      if (!prioritizedVideos.includes(video)) {
-        prioritizedVideos.push(video);
-      }
-    });
-
-    // Add to queue with stagger
-    const staggerDelay = isSafari ? 100 : 50;
-    prioritizedVideos.forEach((video, index) => {
-      setTimeout(() => {
-        if (!isCancelled) {
-          preloadQueue.push(video);
-          processQueue();
-        }
-      }, index * staggerDelay);
-    });
+      // Preload with stagger to avoid network congestion
+      indicesToPreload.forEach((index, i) => {
+        setTimeout(() => {
+          if (!isCancelled) {
+            preloadVideo(videoData[index]);
+          }
+        }, i * 1500); // 1.5 second stagger
+      });
+    }, 2000);
 
     return () => {
       isCancelled = true;
+      clearTimeout(remainingTimer);
     };
-  }, [videoData, useHQVideo]);
+  }, [isLoading, videoData, videoQuality]);
 
   // Loader animation: Cycle through coordinates (only after fonts are loaded)
   useEffect(() => {
@@ -1125,34 +1573,35 @@ function App() {
     };
   }, [isLoading]);
 
-  // Check if loading is complete - wait for ALL videos, fonts, and Last.fm
+  // Check if loading is complete - wait for first + adjacent videos, fonts, and Last.fm
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
-    
+
     // Check periodically if everything is ready:
     // 1. Minimum time has passed (3 seconds for coordinates loop)
-    // 2. ALL videos are cached
-    // 3. Fonts are loaded
-    // 4. Last.fm is done loading
-    // 5. First video is ready to play (not just cached)
+    // 2. First video is ready to play
+    // 3. At least 1 adjacent video is ready (for smooth toggling)
+    // 4. Fonts are loaded
+    // 5. Last.fm is done loading (or timed out)
     const checkLoading = setInterval(() => {
-      const allVideosCached = videoCacheRef.current.size >= videoData.length;
       const fontsReady = fontsLoadedRef.current;
-      const lastFmReady = !musicLoading;
+      const lastFmReady = !musicLoading || isDataComplete;
       const firstVideoReady = firstVideoReadyRef.current;
-      
-      if (loaderMinTimeRef.current && allVideosCached && fontsReady && lastFmReady && firstVideoReady) {
+      // Require at least 1 adjacent video ready, or only 1 video exists
+      const adjacentReady = videoData.length <= 1 || adjacentVideosReadyRef.current >= 1;
+
+      // Exit loader once first video + at least 1 adjacent are ready for smooth toggling
+      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady) {
         setIsLoading(false);
       }
     }, 100);
-    
-    // Maximum loader time (13 seconds) - exit even if not everything is cached
-    // On very slow connections, the page will eventually load
-    // Component animations will still work smoothly, remaining videos will load in background
+
+    // Maximum loader time (10 seconds) - exit even if not everything is ready
+    // Slightly longer to allow adjacent videos to load for smooth toggling
     const maxTimer = setTimeout(() => {
       setIsLoading(false);
-    }, 13000);
-    
+    }, 10000);
+
     return () => {
       clearInterval(checkLoading);
       clearTimeout(maxTimer);
@@ -1285,7 +1734,7 @@ function App() {
         }
       }
     });
-  }, [isLoading, videoIndex, videoData, useHQVideo]);
+  }, [isLoading, videoIndex, videoData, videoQuality]);
 
   // Ensure videos play on mount - runs when loader finishes AND videoData is ready
   useEffect(() => {
@@ -1300,28 +1749,58 @@ function App() {
       video1IndexRef.current = 0;
       video2IndexRef.current = 1;
 
-      // Play video 1 - it should already be preloaded and ready
-      if (videoRef1.current) {
-        videoRef1.current.muted = true;
-        videoRef1.current.currentTime = 0;
+      // Get the first video element
+      const firstVideo = videoElementsRef.current[0] || videoRef1.current;
 
-        const playPromise = videoRef1.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Retry once
-            setTimeout(() => {
-              if (videoRef1.current) {
-                videoRef1.current.play().catch(() => {});
-              }
-            }, 100);
-          });
+      if (firstVideo) {
+        // Ensure first video is visible
+        firstVideo.style.visibility = 'visible';
+        firstVideo.style.opacity = '1';
+        firstVideo.muted = true;
+        firstVideo.currentTime = 0;
+
+        // For Safari: wait for video to be ready before playing
+        const playVideo = () => {
+          const playPromise = firstVideo.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              // Retry with a slight delay
+              setTimeout(() => {
+                if (firstVideo) {
+                  firstVideo.play().catch(() => {});
+                }
+              }, 100);
+            });
+          }
+        };
+
+        // Safari needs to wait for video data to be loaded
+        if (isSafari && firstVideo.readyState < 3) {
+          // readyState 3 = HAVE_FUTURE_DATA (enough to start playing)
+          const onCanPlay = () => {
+            playVideo();
+            firstVideo.removeEventListener('canplay', onCanPlay);
+          };
+          firstVideo.addEventListener('canplay', onCanPlay);
+
+          // Fallback: try playing anyway after a short delay
+          setTimeout(() => {
+            firstVideo.removeEventListener('canplay', onCanPlay);
+            playVideo();
+          }, 200);
+        } else {
+          playVideo();
         }
       }
 
-      // Pause video 2 initially - it shouldn't autoplay
-      if (videoRef2.current) {
-        videoRef2.current.pause();
-      }
+      // Hide all other videos initially
+      videoElementsRef.current.forEach((videoEl, idx) => {
+        if (idx !== 0 && videoEl) {
+          videoEl.style.visibility = 'hidden';
+          videoEl.style.opacity = '0';
+          videoEl.pause();
+        }
+      });
 
       // Safari: Aggressively preload ALL other videos immediately after first video starts
       // This ensures instant switching when user clicks arrows
@@ -1356,13 +1835,21 @@ function App() {
     
     return (
       <div className="bg-[#FCFCFC] min-h-screen w-full flex flex-col items-center justify-center gap-4">
-        <div className={`coord-loader font-graphik text-[16px] text-[#91918e] ${coordFading ? 'coord-fade-out' : 'coord-fade-in'}`}>
-          {coordinates[currentCoordIndex % coordinates.length]}
-        </div>
-        {loaderMessage && (
-          <div className="font-graphik text-[13px] text-[#b5b5b5] animate-pulse">
-            {loaderMessage}
-          </div>
+        {/* Only show text after fonts are loaded to prevent FOUT */}
+        {fontsReady ? (
+          <>
+            <div className={`coord-loader font-graphik text-[16px] text-[#91918e] ${coordFading ? 'coord-fade-out' : 'coord-fade-in'}`}>
+              {coordinates[currentCoordIndex % coordinates.length]}
+            </div>
+            {loaderMessage && (
+              <div className="font-graphik text-[13px] text-[#b5b5b5] animate-pulse">
+                {loaderMessage}
+              </div>
+            )}
+          </>
+        ) : (
+          /* Invisible placeholder to prevent layout shift */
+          <div className="h-[24px]" />
         )}
       </div>
     );
@@ -1373,39 +1860,191 @@ function App() {
   const safeWebsiteCopy = Object.keys(websiteCopy).length > 0 ? websiteCopy : {};
 
   return (
+    <>
     <div className="bg-[#FCFCFC] min-h-screen w-full">
-      {/* Navigation Bar - Hidden for now */}
-      <div className={`fixed top-[50px] left-1/2 transform -translate-x-1/2 h-[50px] w-[580px] z-50 hidden ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}>
-        <div className="flex h-full nav-pill-container rounded-[14px] items-center justify-center px-[20px] gap-[16px]">
-          <button
-            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onClick={playClick}
+      {/* Skip link for keyboard users */}
+      <a
+        href="#main-content"
+        className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:text-[#333] focus:font-graphik focus:text-[14px]"
+      >
+        Skip to main content
+      </a>
+
+      {/* Navigation Bar - Light Mode */}
+      <div className={`fixed top-0 left-0 right-0 z-50 top-nav-container ${loadedComponents.navBar ? 'component-loaded' : 'component-hidden'}`}>
+        <div className="light-nav-bar h-[62px] w-full px-[15px] flex items-center justify-between">
+          {/* Gary Section - Face Icon + Name + Hover Info Box */}
+          <div className="gary-section relative">
+            {/* Mouse proximity detection zone */}
+            <div
+              ref={faceZoneRef}
+              className="face-detection-zone absolute pointer-events-auto z-10"
+              style={{
+                left: '-80px',
+                top: '-80px',
+                width: 'max(450px, 28vw)',
+                height: 'max(350px, 26vh)',
+              }}
+              onMouseEnter={() => setIsMouseNearFace(true)}
+              onMouseLeave={() => setIsMouseNearFace(false)}
+              onMouseMove={handleFaceZoneMouseMove}
+            />
+            {/* Hover wrapper - handles hover for both button and dropdown */}
+            <div
+              className="gary-hover-wrapper relative z-20"
+              onMouseEnter={() => {
+                if (faceHoverTimeoutRef.current) {
+                  clearTimeout(faceHoverTimeoutRef.current);
+                  faceHoverTimeoutRef.current = null;
+                }
+                setIsFaceHoverExiting(false);
+                setIsHomeButtonHovered(true);
+              }}
+              onMouseLeave={() => {
+                setIsFaceHoverExiting(true);
+                faceHoverTimeoutRef.current = setTimeout(() => {
+                  setIsHomeButtonHovered(false);
+                  setIsFaceHoverExiting(false);
+                }, 200);
+              }}
+            >
+              <button
+                className={`home-button flex items-center gap-[10px] px-[4px] py-[4px] rounded-[16px] cursor-pointer ${isHomeButtonHovered ? 'gary-active' : ''}`}
+                onClick={playClick}
+                aria-label="Joonseo Chang - Home"
+              >
+                <div
+                  ref={faceIconRef}
+                  className={`face-icon-container h-[37px] w-[42px] flex items-center justify-center rounded-[12px] ${isMouseNearFace ? 'frightened' : ''}`}
+                >
+                  <div
+                    className="flex items-center justify-center leading-none"
+                    style={{
+                      transform: `translateX(${faceTransform.translateX}px) translateY(${faceTransform.translateY}px) scaleX(${faceTransform.scaleX}) scaleY(${faceTransform.scaleY})`,
+                      transition: isMouseNearFace ? 'none' : 'transform 800ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  >
+                    <span className="font-graphik text-[12px] text-[#8f8f8f] leading-none">
+                      {faceExpression}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-start gap-[3px] pr-[8px]">
+                  <span className="nav-name font-graphik text-[14px] text-[#5b5b5e] leading-none transition-colors duration-[250ms]">Joonseo Chang</span>
+                  <span className="font-graphik text-[14px] leading-none">
+                    <span className="activity-added text-[#c3c3c3] transition-colors duration-[250ms]">+{(githubStats?.added || 0).toLocaleString()}</span>
+                    <span className="text-[#c3c3c3]"> </span>
+                    <span className="activity-removed text-[#c3c3c3] transition-colors duration-[250ms]">-{(githubStats?.deleted || 0).toLocaleString()}</span>
+                  </span>
+                </div>
+              </button>
+
+              {/* Gary section hover info box - appears when hovering on home button */}
+              {(isHomeButtonHovered || isFaceHoverExiting) && (
+                <div
+                  className={`face-hover-box absolute z-[100] ${isFaceHoverExiting ? 'exiting' : ''}`}
+                  onAnimationEnd={() => {
+                    if (isFaceHoverExiting) {
+                      setIsFaceHoverExiting(false);
+                    }
+                  }}
+                >
+                  <div className="face-hover-box-inner rounded-[12px] px-[10px] py-[10px]">
+                    <div className="flex items-center gap-[7px]">
+                      <p className="font-graphik text-[14px] leading-normal whitespace-nowrap">
+                        <span className="text-[#969494]">Last commit: </span>
+                        <span className="text-[#e6eaee]">8 hours ago</span>
+                      </p>
+                      <svg width="13" height="7" viewBox="0 0 13 7" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                        <path d="M1 1L6.5 5.5L12 1" stroke="#969494" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Center - Navigation Links */}
+          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[20px]" aria-label="Main navigation">
+            <button
+              className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
+              onClick={playClick}
+            >
+              About
+            </button>
+            <button
+              className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
+              onClick={playClick}
+            >
+              Projects
+            </button>
+            <button
+              className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
+              onClick={playClick}
+            >
+              Gallery
+            </button>
+            <button
+              className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
+              onClick={playClick}
+            >
+              Notes
+            </button>
+            <button
+              className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
+              onClick={playClick}
+            >
+              Extra
+            </button>
+          </nav>
+
+          {/* Right - Search Input */}
+          <div
+            className={`nav-search-button relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between cursor-pointer group transition-all duration-[250ms] ease-[cubic-bezier(0.34,1.2,0.64,1)] ${searchFocused ? 'w-[280px] bg-white border-[#d8d8d8] shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_0.5px_0_rgba(255,255,255,0.6)]' : 'w-[197px] bg-[#f7f7f7] border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.5),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.03),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.02)] hover:-translate-y-[0.5px]'}`}
+            onClick={() => {
+              if (!searchFocused) {
+                playClick();
+                setSearchFocused(true);
+                setTimeout(() => searchInputRef.current?.focus(), 10);
+              }
+            }}
+            role="search"
+            aria-label="Search - Ask me anything"
           >
-            <p className="font-graphik text-[14px] text-[#5b5b5e]">Home</p>
-          </button>
-          <button
-            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onClick={playClick}
-          >
-            <p className="font-graphik text-[14px] text-[#5b5b5e]">About</p>
-          </button>
-          <button
-            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onClick={playClick}
-          >
-            <p className="font-graphik text-[14px] text-[#5b5b5e]">Work</p>
-          </button>
-          <button
-            className="nav-button h-[32px] rounded-[8px] px-[16px] flex items-center justify-center cursor-pointer"
-            onClick={playClick}
-          >
-            <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
-          </button>
+            {searchFocused ? (
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onBlur={() => {
+                  if (!searchQuery) setSearchFocused(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setSearchQuery('');
+                    setSearchFocused(false);
+                  }
+                }}
+                placeholder="Ask me anything..."
+                className="flex-1 bg-transparent font-graphik text-[14px] text-[#333] placeholder-[#8f8f8f] outline-none"
+                autoFocus
+              />
+            ) : (
+              <span className="font-graphik text-[14px] text-[#8f8f8f] group-hover:text-[#666] whitespace-nowrap transition-colors duration-[180ms]">Ask me anything...</span>
+            )}
+            <span className={`bg-[#eeeeee] border border-[#e0e0e0] shadow-[0_0.5px_1px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.4),inset_0_-0.5px_0_rgba(0,0,0,0.02)] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center transition-all duration-[180ms] flex-shrink-0 ${searchFocused ? '' : 'group-hover:bg-[#e9e9e9] group-hover:border-[#d8d8d8]'}`}>
+              <span className={`font-graphik text-[12px] text-[#888] transition-colors duration-[180ms] ${searchFocused ? '' : 'group-hover:text-[#666]'}`}>⌘J</span>
+            </span>
+          </div>
         </div>
+        {/* Bottom border line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#EAEAEA]"></div>
       </div>
 
       {/* Main Content */}
-      <div className="w-full pt-[170px] pb-[150px] flex justify-center">
+      <main id="main-content" className="w-full min-h-screen flex items-center justify-center py-[120px] mt-[-10px]">
         <div className="flex gap-[50px] items-start text-left main-content-wrapper">
           {/* Left Column - Text Content */}
           <div className="flex flex-col w-[375px]">
@@ -1561,36 +2200,40 @@ function App() {
                   }}
                 />
               )}
-              {/* All videos rendered - just swap z-index for instant switching */}
-              {safeVideoData.map((video, idx) => (
-                <video
-                  key={video.id || idx}
-                  ref={el => {
-                    videoElementsRef.current[idx] = el;
-                    if (idx === 0) videoRef1.current = el;
-                    if (idx === 1) videoRef2.current = el;
-                  }}
-                  className={`absolute inset-0 w-full h-full object-cover brightness-[1.10] ${!isMobileOrTablet ? 'group-hover:brightness-[1.20]' : ''}`}
-                  style={isMobileOrTablet && mobileMetadataExpanded ? { filter: 'brightness(1.20)' } : undefined}
-                  style={{
-                    zIndex: idx === videoIndex ? 20 : 10,
-                    opacity: idx === videoIndex ? 1 : 0,
-                    transition: 'filter 250ms ease-in-out',
-                    transform: 'translateZ(0)'
-                  }}
-                  poster={getPosterSrc(getVideoSrc(video))}
-                  autoPlay={idx === videoIndex}
-                  muted
-                  playsInline
-                  preload="auto"
-                  controls={false}
-                  loop={false}
-                  onEnded={handleVideoEnded}
-                  onError={(e) => handleVideoError(video.id, e.target)}
-                >
-                  <source src={encodeVideoSrc(getVideoSrc(video))} type="video/mp4" />
-                </video>
-              ))}
+              {/* All videos rendered - active video on top, others hidden */}
+              {safeVideoData.map((video, idx) => {
+                const isActive = idx === videoIndex;
+                return (
+                  <video
+                    key={video.id || idx}
+                    ref={el => {
+                      videoElementsRef.current[idx] = el;
+                      if (idx === 0) videoRef1.current = el;
+                      if (idx === 1) videoRef2.current = el;
+                    }}
+                    className={`absolute inset-0 w-full h-full object-cover brightness-[1.10] ${!isMobileOrTablet ? 'group-hover:brightness-[1.20]' : ''}`}
+                    style={{
+                      zIndex: isActive ? 20 : 10,
+                      opacity: isActive ? 1 : 0,
+                      visibility: isActive ? 'visible' : 'hidden',
+                      transition: 'filter 250ms ease-in-out',
+                      transform: 'translateZ(0)',
+                      willChange: isActive ? 'auto' : 'opacity',
+                      ...(isMobileOrTablet && mobileMetadataExpanded && { filter: 'brightness(1.20)' })
+                    }}
+                    poster={getPosterSrc(getVideoSrc(video))}
+                    muted
+                    playsInline
+                    preload={isActive ? "auto" : "metadata"}
+                    controls={false}
+                    loop={false}
+                    onEnded={handleVideoEnded}
+                    onError={(e) => handleVideoError(video.id, e.target)}
+                  >
+                    <source src={encodeVideoSrc(getVideoSrc(video))} type="video/mp4" />
+                  </video>
+                );
+              })}
             </div>
             <div 
               className="relative z-30 w-full black-box-container" 
@@ -1665,8 +2308,9 @@ function App() {
                       onMouseEnter={() => {
                         preloadVideoOnHover('prev');
                       }}
+                      aria-label="Previous photo"
                     >
-                      <svg width={isMobileOrTablet ? "40" : "30"} height={isMobileOrTablet ? "38" : "29"} viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
+                      <svg width={isMobileOrTablet ? "40" : "30"} height={isMobileOrTablet ? "38" : "29"} viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg" aria-hidden="true">
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" fill="#222122" className="arrow-fill"/>
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" stroke="#4A474A" strokeWidth="1.4" className="arrow-stroke"/>
                         <path d="M16.7706 9.24213C16.9175 9.39721 17 9.60751 17 9.8268C17 10.0461 16.9175 10.2564 16.7706 10.4115L12.8915 14.505L16.7706 18.5985C16.9133 18.7545 16.9923 18.9634 16.9905 19.1802C16.9887 19.397 16.9063 19.6045 16.761 19.7578C16.6157 19.9111 16.4192 19.9981 16.2137 20C16.0082 20.0019 15.8103 19.9185 15.6625 19.7679L11.2294 15.0897C11.0825 14.9346 11 14.7243 11 14.505C11 14.2857 11.0825 14.0754 11.2294 13.9203L15.6625 9.24213C15.8094 9.08709 16.0087 9 16.2165 9C16.4243 9 16.6236 9.08709 16.7706 9.24213Z" fill="#4A474A" className="arrow-path"/>
@@ -1682,8 +2326,9 @@ function App() {
                       onMouseEnter={() => {
                         preloadVideoOnHover('next');
                       }}
+                      aria-label="Next photo"
                     >
-                      <svg width={isMobileOrTablet ? "40" : "30"} height={isMobileOrTablet ? "38" : "29"} viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg">
+                      <svg width={isMobileOrTablet ? "40" : "30"} height={isMobileOrTablet ? "38" : "29"} viewBox="0 0 30 29" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-svg" aria-hidden="true">
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" fill="#222122" className="arrow-fill"/>
                         <rect x="0.7" y="0.7" width="28.6" height="27.6" rx="4.3" stroke="#4A474A" strokeWidth="1.4" className="arrow-stroke"/>
                         <path d="M12.5294 19.7579C12.3825 19.6028 12.3 19.3925 12.3 19.1732C12.3 18.9539 12.3825 18.7436 12.5294 18.5885L16.4085 14.495L12.5294 10.4015C12.3867 10.2455 12.3077 10.0366 12.3095 9.81979C12.3113 9.60296 12.3937 9.39554 12.539 9.24221C12.6843 9.08889 12.8808 9.00192 13.0863 9.00003C13.2918 8.99815 13.4897 9.0815 13.6375 9.23214L18.0706 13.9103C18.2175 14.0654 18.3 14.2757 18.3 14.495C18.3 14.7143 18.2175 14.9246 18.0706 15.0797L13.6375 19.7579C13.4906 19.9129 13.2913 20 13.0835 20C12.8757 20 12.6764 19.9129 12.5294 19.7579Z" fill="#4A474A" className="arrow-path"/>
@@ -1695,7 +2340,7 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Bottom Component - Born Slippy, Activity, Shortcuts, Contact */}
       <div
@@ -1731,8 +2376,8 @@ function App() {
                 ) : (
                   <>
                     <span className="font-graphik text-[14px] leading-[20px] whitespace-nowrap">
-                      <span className="text-[#e6eaee]">Last seen:</span>
-                      <span className="text-[#969494]"> {currentTrack.playedAt ? getTimeAgo(currentTrack.playedAt) : 'recently'}</span>
+                      <span className="text-[#969494]">Last seen:</span>
+                      <span className="text-[#e6eaee]"> {currentTrack.playedAt ? getTimeAgo(currentTrack.playedAt) : 'recently'}</span>
                     </span>
                   </>
                 )}
@@ -1759,6 +2404,7 @@ function App() {
                 }
               }}
               onMouseEnter={() => {
+                preloadModalComponents();
                 if (modalTimeoutRef.current) {
                   clearTimeout(modalTimeoutRef.current);
                   modalTimeoutRef.current = null;
@@ -1799,10 +2445,13 @@ function App() {
                 {/* Center label with album art - more prominent */}
                 <div className="relative w-[24px] h-[24px] rounded-full flex items-center justify-center overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.5)] z-10 ring-1 ring-black/20">
                   {currentTrack?.albumArtSmall ? (
-                    <img 
-                      src={currentTrack.albumArtSmall} 
+                    <img
+                      src={currentTrack.albumArtSmall}
                       alt={currentTrack.album}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      width="24"
+                      height="24"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center">
@@ -1817,13 +2466,20 @@ function App() {
                 <div className="absolute w-[2px] h-[2px] rounded-full bg-[#0a0a0a] z-20"></div>
               </div>
             </div>
-            <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[4px] items-start min-w-0 flex-shrink">
-              <p className="text-[#333] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 100px)' }}>
+            <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[1px] items-start min-w-0 flex-shrink">
+              <MarqueeText
+                className="text-[#333] leading-[1.2]"
+                maxWidth="calc(var(--music-pill-width, 205px) - 100px)"
+              >
                 {currentTrack?.name || (musicLoading ? 'Loading...' : 'No recent track')}
-              </p>
-              <p className="text-[#c3c3c3] leading-none truncate" style={{ maxWidth: 'calc(var(--music-pill-width, 205px) - 100px)' }}>
+              </MarqueeText>
+              <MarqueeText
+                className="text-[#c3c3c3] leading-[1.2]"
+                maxWidth="calc(var(--music-pill-width, 205px) - 100px)"
+                delay={3000}
+              >
                 {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
-              </p>
+              </MarqueeText>
             </div>
           </button>
           </div>
@@ -1854,6 +2510,7 @@ function App() {
               <button
                 ref={activityButtonRef}
                 className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer"
+                onMouseEnter={preloadModalComponents}
                 onClick={() => {
                   playClick();
                   if (activeModal === 'activity') {
@@ -1871,6 +2528,7 @@ function App() {
                 ref={shortcutsButtonRef}
                 className={`bottom-button h-[37px] rounded-r-[8px] w-[92px] flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''}`}
                 onMouseEnter={() => {
+                  preloadModalComponents();
                   if (shortcutsModalTimeoutRef.current) {
                     clearTimeout(shortcutsModalTimeoutRef.current);
                     shortcutsModalTimeoutRef.current = null;
@@ -1895,6 +2553,7 @@ function App() {
             <button
               ref={contactButtonRef}
               className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center cursor-pointer"
+              onMouseEnter={preloadModalComponents}
               onClick={() => {
                 playClick();
                 if (activeModal === 'contact') {
@@ -1912,19 +2571,25 @@ function App() {
         </div>
       </div>
 
-      {/* Slide Up Modal */}
-      <SlideUpModal
-        isOpen={activeModal !== null}
-        onClose={() => setActiveModal(null)}
-        type={activeModal}
-        anchorRef={activeAnchorRef}
-      >
-        {activeModal === 'music' && <MusicModalContent currentTrack={currentTrack} />}
-        {activeModal === 'activity' && <ActivityModalContent />}
-        {activeModal === 'shortcuts' && <ShortcutsModalContent isMac={isMac} />}
-        {activeModal === 'contact' && <ContactModalContent />}
-      </SlideUpModal>
+      {/* Slide Up Modal - Lazy loaded with Framer Motion */}
+      <Suspense fallback={null}>
+        <SlideUpModal
+          isOpen={activeModal !== null}
+          onClose={() => setActiveModal(null)}
+          type={activeModal || 'contact'}
+          anchorRef={activeAnchorRef}
+        >
+          <Suspense fallback={<div className="p-4 text-center text-gray-400" role="status" aria-live="polite">Loading...</div>}>
+            {activeModal === 'music' && <MusicModalContent currentTrack={currentTrack} />}
+            {activeModal === 'activity' && <ActivityModalContent />}
+            {activeModal === 'shortcuts' && <ShortcutsModalContent isMac={isMac} />}
+            {activeModal === 'contact' && <ContactModalContent />}
+          </Suspense>
+        </SlideUpModal>
+      </Suspense>
     </div>
+    {import.meta.env.DEV && <Agentation />}
+    </>
   )
 }
 

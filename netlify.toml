@@ -2,7 +2,61 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Security headers for all pages
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Long cache for hashed assets (JS, CSS, fonts) - 1 year
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache for font files
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.otf"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache for images and videos - 1 week
+[[headers]]
+  for = "/Videos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/posters/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Short cache for HTML - 1 hour (to get updates quickly)
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+# Cache for CMS data - 5 minutes (for dynamic content)
+[[headers]]
+  for = "/cms-data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
