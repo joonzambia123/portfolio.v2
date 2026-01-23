@@ -66,6 +66,10 @@ export default async function handler() {
       return new Date(e.created_at) >= weekStart;
     });
 
+    // Get last commit time from the most recent push event (any time, not just this week)
+    const allPushEvents = events.filter((e) => e.type === "PushEvent");
+    const lastCommitAt = allPushEvents.length > 0 ? allPushEvents[0].created_at : null;
+
     let added = 0;
     let deleted = 0;
     let pushCount = 0;
@@ -112,7 +116,8 @@ export default async function handler() {
         added,
         deleted,
         weekStart: weekStart.toISOString(),
-        pushCount
+        pushCount,
+        lastCommitAt
       }),
       {
         status: 200,

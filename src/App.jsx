@@ -1953,10 +1953,10 @@ function App() {
                     <div className="flex items-center gap-[7px]">
                       <p className="font-graphik text-[14px] leading-normal whitespace-nowrap">
                         <span className="text-[#969494]">Last commit: </span>
-                        <span className="text-[#e6eaee]">8 hours ago</span>
+                        <span className="text-[#e6eaee]">{githubStats?.lastCommitAt ? getTimeAgo(githubStats.lastCommitAt) : 'recently'}</span>
                       </p>
-                      <svg width="13" height="7" viewBox="0 0 13 7" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                        <path d="M1 1L6.5 5.5L12 1" stroke="#969494" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg width="12" height="7" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                        <path d="M1 1L6 5.5L11 1" stroke="#969494" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
                   </div>

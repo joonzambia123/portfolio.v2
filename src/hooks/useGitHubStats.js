@@ -27,6 +27,7 @@ export function useGitHubStats() {
         commitCount: data.commitCount || 0,
         weekStart: data.weekStart,
         lastUpdated: data.lastUpdated,
+        lastCommitAt: data.lastCommitAt,
       });
 
       setError(null);
