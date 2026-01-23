@@ -178,6 +178,7 @@ function App() {
   const [isMouseNearFace, setIsMouseNearFace] = useState(false);
   const [isHomeButtonHovered, setIsHomeButtonHovered] = useState(false);
   const [isFaceHoverExiting, setIsFaceHoverExiting] = useState(false);
+  const [isCommitExpanded, setIsCommitExpanded] = useState(false);
   const faceHoverTimeoutRef = useRef(null);
   const faceZoneRef = useRef(null);
   const faceIconRef = useRef(null);
@@ -1949,16 +1950,34 @@ function App() {
                     }
                   }}
                 >
-                  <div className="face-hover-box-inner rounded-[12px] px-[10px] py-[10px]">
-                    <div className="flex items-center gap-[7px]">
+                  <div className="face-hover-box-inner rounded-[12px] p-[4px]">
+                    <button
+                      className="commit-toggle-btn flex items-center gap-[4px] cursor-pointer rounded-[8px] px-[6px] py-[6px] transition-all duration-150"
+                      onClick={() => setIsCommitExpanded(!isCommitExpanded)}
+                    >
                       <p className="font-graphik text-[14px] leading-normal whitespace-nowrap">
                         <span className="text-[#969494]">Last commit: </span>
                         <span className="text-[#e6eaee]">{githubStats?.lastCommitAt ? getTimeAgo(githubStats.lastCommitAt) : 'recently'}</span>
                       </p>
-                      <svg width="12" height="7" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                        <path d="M1 1L6 5.5L11 1" stroke="#969494" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg
+                        width="12"
+                        height="7"
+                        viewBox="0 0 12 7"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="commit-arrow shrink-0 transition-transform duration-200"
+                        style={{ transform: isCommitExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        <path
+                          d="M1 1L6 5.5L11 1"
+                          className="transition-[stroke] duration-200"
+                          stroke={isCommitExpanded ? '#e6eaee' : '#969494'}
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
-                    </div>
+                    </button>
                   </div>
                 </div>
               )}
