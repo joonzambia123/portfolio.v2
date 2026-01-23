@@ -1,20 +1,51 @@
-interface GitHubEvent {
-  type: string;
-  created_at: string;
-  payload: {
-    head?: string;
-    before?: string;
-  };
-  repo: {
-    name: string;
-  };
+interface ContributionDay {
+  contributionCount: number;
+  date: string;
 }
 
-interface CompareData {
-  files?: Array<{
+interface ContributionWeek {
+  contributionDays: ContributionDay[];
+}
+
+interface GraphQLResponse {
+  data?: {
+    user?: {
+      contributionsCollection: {
+        totalCommitContributions: number;
+        restrictedContributionsCount: number;
+        contributionCalendar: {
+          weeks: ContributionWeek[];
+        };
+        commitContributionsByRepository: Array<{
+          repository: {
+            nameWithOwner: string;
+            isPrivate: boolean;
+          };
+          contributions: {
+            totalCount: number;
+            nodes: Array<{
+              occurredAt: string;
+              commitCount: number;
+            }>;
+          };
+        }>;
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+}
+
+interface RepoCommit {
+  sha: string;
+  commit: {
+    author: {
+      date: string;
+    };
+  };
+  stats?: {
     additions: number;
     deletions: number;
-  }>;
+  };
 }
 
 // Get Monday of current week (UTC)
@@ -34,59 +65,99 @@ export default async function handler() {
 
   if (!githubToken || !githubUsername) {
     return new Response(
-      JSON.stringify({ added: 0, deleted: 0, error: "Missing config" }),
+      JSON.stringify({ added: 0, deleted: 0, commits: 0, error: "Missing config" }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   }
 
   try {
     const weekStart = getWeekStart();
+    const now = new Date();
 
-    // Fetch user's events
-    const eventsRes = await fetch(
-      `https://api.github.com/users/${githubUsername}/events?per_page=100`,
-      {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-          Accept: "application/vnd.github+json",
-          "User-Agent": "Portfolio-Stats",
-        },
+    // Use GraphQL API to get contribution data (includes private contributions)
+    const graphqlQuery = `
+      query($username: String!, $from: DateTime!, $to: DateTime!) {
+        user(login: $username) {
+          contributionsCollection(from: $from, to: $to) {
+            totalCommitContributions
+            restrictedContributionsCount
+            commitContributionsByRepository(maxRepositories: 100) {
+              repository {
+                nameWithOwner
+                isPrivate
+              }
+              contributions(first: 100) {
+                totalCount
+                nodes {
+                  occurredAt
+                  commitCount
+                }
+              }
+            }
+          }
+        }
       }
-    );
+    `;
 
-    if (!eventsRes.ok) {
-      throw new Error(`Events API: ${eventsRes.status}`);
-    }
-
-    const events: GitHubEvent[] = await eventsRes.json();
-
-    // Filter push events from this week
-    const pushEvents = events.filter((e) => {
-      if (e.type !== "PushEvent") return false;
-      return new Date(e.created_at) >= weekStart;
+    const graphqlRes = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+        "Content-Type": "application/json",
+        "User-Agent": "Portfolio-Stats",
+      },
+      body: JSON.stringify({
+        query: graphqlQuery,
+        variables: {
+          username: githubUsername,
+          from: weekStart.toISOString(),
+          to: now.toISOString(),
+        },
+      }),
     });
 
-    // Get last commit time from the most recent push event (any time, not just this week)
-    const allPushEvents = events.filter((e) => e.type === "PushEvent");
-    const lastCommitAt = allPushEvents.length > 0 ? allPushEvents[0].created_at : null;
+    if (!graphqlRes.ok) {
+      throw new Error(`GraphQL API: ${graphqlRes.status}`);
+    }
+
+    const graphqlData: GraphQLResponse = await graphqlRes.json();
+
+    if (graphqlData.errors) {
+      throw new Error(graphqlData.errors[0].message);
+    }
+
+    const contributionsCollection = graphqlData.data?.user?.contributionsCollection;
+
+    if (!contributionsCollection) {
+      throw new Error("No contribution data found");
+    }
+
+    // Total commits this week (includes private)
+    const totalCommits = contributionsCollection.totalCommitContributions;
+    const privateCommits = contributionsCollection.restrictedContributionsCount;
+
+    // Get repos contributed to this week
+    const reposContributed = contributionsCollection.commitContributionsByRepository;
 
     let added = 0;
     let deleted = 0;
-    let pushCount = 0;
+    let lastCommitAt: string | null = null;
 
-    // Use Compare API to get stats for each push
-    for (const event of pushEvents) {
-      const before = event.payload.before;
-      const head = event.payload.head;
+    // For each repo, fetch commit stats using REST API
+    for (const repoContrib of reposContributed) {
+      const repoName = repoContrib.repository.nameWithOwner;
 
-      if (!before || !head) continue;
+      // Get the most recent contribution date for lastCommitAt
+      for (const node of repoContrib.contributions.nodes) {
+        if (!lastCommitAt || node.occurredAt > lastCommitAt) {
+          lastCommitAt = node.occurredAt;
+        }
+      }
 
-      // Skip if before is all zeros (first commit)
-      if (before === "0000000000000000000000000000000000000000") continue;
-
+      // Fetch commits from this repo for this week to get line stats
       try {
-        const compareRes = await fetch(
-          `https://api.github.com/repos/${event.repo.name}/compare/${before}...${head}`,
+        const commitsRes = await fetch(
+          `https://api.github.com/repos/${repoName}/commits?since=${weekStart.toISOString()}&author=${githubUsername}&per_page=100`,
           {
             headers: {
               Authorization: `Bearer ${githubToken}`,
@@ -96,18 +167,37 @@ export default async function handler() {
           }
         );
 
-        if (compareRes.ok) {
-          const data: CompareData = await compareRes.json();
-          if (data.files) {
-            for (const file of data.files) {
-              added += file.additions || 0;
-              deleted += file.deletions || 0;
+        if (commitsRes.ok) {
+          const commits: RepoCommit[] = await commitsRes.json();
+
+          // Fetch stats for each commit
+          for (const commit of commits) {
+            try {
+              const commitDetailRes = await fetch(
+                `https://api.github.com/repos/${repoName}/commits/${commit.sha}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${githubToken}`,
+                    Accept: "application/vnd.github+json",
+                    "User-Agent": "Portfolio-Stats",
+                  },
+                }
+              );
+
+              if (commitDetailRes.ok) {
+                const commitDetail: RepoCommit = await commitDetailRes.json();
+                if (commitDetail.stats) {
+                  added += commitDetail.stats.additions || 0;
+                  deleted += commitDetail.stats.deletions || 0;
+                }
+              }
+            } catch {
+              // Skip failed commit fetches
             }
-            pushCount++;
           }
         }
       } catch {
-        // Skip failed comparisons
+        // Skip repos we can't access
       }
     }
 
@@ -115,21 +205,23 @@ export default async function handler() {
       JSON.stringify({
         added,
         deleted,
+        commits: totalCommits,
+        privateCommits,
         weekStart: weekStart.toISOString(),
-        pushCount,
-        lastCommitAt
+        repoCount: reposContributed.length,
+        lastCommitAt,
       }),
       {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=1800, stale-while-revalidate=3600"
+          "Cache-Control": "public, max-age=1800, stale-while-revalidate=3600",
         },
       }
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ added: 0, deleted: 0, error: String(error) }),
+      JSON.stringify({ added: 0, deleted: 0, commits: 0, error: String(error) }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   }

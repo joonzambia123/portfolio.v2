@@ -1880,10 +1880,10 @@ function App() {
               ref={faceZoneRef}
               className="face-detection-zone absolute pointer-events-auto z-10"
               style={{
-                left: '-80px',
-                top: '-80px',
-                width: 'max(450px, 28vw)',
-                height: 'max(350px, 26vh)',
+                left: '-60px',
+                top: '-60px',
+                width: 'max(350px, 22vw)',
+                height: 'max(280px, 20vh)',
               }}
               onMouseEnter={() => setIsMouseNearFace(true)}
               onMouseLeave={() => setIsMouseNearFace(false)}

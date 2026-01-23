@@ -24,9 +24,10 @@ export function useGitHubStats() {
       setStats({
         added: data.added || 0,
         deleted: data.deleted || 0,
-        commitCount: data.commitCount || 0,
+        commits: data.commits || 0,
+        privateCommits: data.privateCommits || 0,
+        repoCount: data.repoCount || 0,
         weekStart: data.weekStart,
-        lastUpdated: data.lastUpdated,
         lastCommitAt: data.lastCommitAt,
       });
 
