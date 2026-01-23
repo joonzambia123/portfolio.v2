@@ -3,11 +3,51 @@ import { useRef, useCallback, useEffect } from 'react'
 /**
  * Custom hook for generating warm, retro synth sound effects
  * Uses Web Audio API to create cozy, lo-fi synthesized sounds
+ * Includes haptic feedback for mobile devices
  */
 export function useSounds() {
   const audioContextRef = useRef(null)
   const isEnabledRef = useRef(true)
   const isInitializedRef = useRef(false)
+
+  // Haptic feedback helper - works on Android, experimental on iOS
+  const vibrate = useCallback((duration) => {
+    // Android: Use Vibration API
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(duration)
+        return
+      } catch (e) {
+        // Fall through to iOS attempt
+      }
+    }
+
+    // iOS: Experimental Taptic Engine trigger via sub-audio frequency burst
+    // This may or may not work depending on device/iOS version
+    try {
+      const ctx = audioContextRef.current
+      if (ctx && ctx.state === 'running') {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        // Sub-audio frequency that may trigger Taptic Engine
+        osc.frequency.value = 1
+        osc.type = 'square'
+
+        // Very quiet so it's not audible
+        gain.gain.value = 0.01
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        const now = ctx.currentTime
+        osc.start(now)
+        osc.stop(now + 0.003) // 3ms burst
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  }, [])
 
   // Initialize audio context on first user interaction
   const initAudio = useCallback(() => {
@@ -196,8 +236,12 @@ export function useSounds() {
 
   /**
    * Click sound - pleasant, satisfying pop with musical quality
+   * Includes subtle haptic feedback on mobile
    */
   const playClick = useCallback(() => {
+    // Subtle haptic feedback for mobile (10ms pulse)
+    vibrate(10)
+
     // Base tone - warm mid frequency with upward sweep for "pop" feeling
     createSweepTone({
       startFreq: 440, // A4
@@ -235,12 +279,16 @@ export function useSounds() {
       filterFreq: 800,
       filterQ: 1.0,
     })
-  }, [createSweepTone, createSynthTone])
+  }, [createSweepTone, createSynthTone, vibrate])
 
   /**
    * Arrow navigation - clean directional sweep
+   * Includes light haptic feedback on mobile
    */
   const playArrow = useCallback(() => {
+    // Light haptic feedback for mobile (8ms pulse)
+    vibrate(8)
+
     createSweepTone({
       startFreq: 392.00, // G4
       endFreq: 493.88, // B4
@@ -252,7 +300,7 @@ export function useSounds() {
       filterFreq: 3500,
       filterQ: 0.25,
     })
-  }, [createSweepTone])
+  }, [createSweepTone, vibrate])
 
   /**
    * Link hover - disabled (no-op)
