@@ -43,8 +43,8 @@ export function useGitHubStats() {
   useEffect(() => {
     fetchStats();
 
-    // Refresh every 15 minutes (aligned with edge cache)
-    const interval = setInterval(fetchStats, 15 * 60 * 1000);
+    // Refresh every 2 minutes (aligned with edge cache)
+    const interval = setInterval(fetchStats, 2 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
