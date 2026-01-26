@@ -2172,7 +2172,7 @@ function App() {
                   className="absolute inset-0 z-5 bg-cover bg-center"
                   style={{
                     backgroundImage: `url(${getPosterSrc(safeVideoData[videoIndex].src)})`,
-                    filter: 'brightness(1.10)'
+                    filter: safeVideoData[videoIndex].noExposureBoost ? 'none' : 'brightness(1.10)'
                   }}
                 />
               )}
@@ -2187,7 +2187,7 @@ function App() {
                       if (idx === 0) videoRef1.current = el;
                       if (idx === 1) videoRef2.current = el;
                     }}
-                    className={`absolute inset-0 w-full h-full object-cover brightness-[1.10] ${!isMobileOrTablet ? 'group-hover:brightness-[1.20]' : ''}`}
+                    className={`absolute inset-0 w-full h-full object-cover ${video.noExposureBoost ? '' : 'brightness-[1.10]'} ${!isMobileOrTablet ? 'group-hover:brightness-[1.20]' : ''}`}
                     style={{
                       zIndex: isActive ? 20 : 10,
                       opacity: isActive ? 1 : 0,
