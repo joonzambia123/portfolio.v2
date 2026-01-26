@@ -81,22 +81,6 @@
       "fileSize": ""
     },
     {
-      "id": 5,
-      "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588400/portfolio_videos/UTown_Standard.mp4",
-      "srcPremium": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588438/portfolio_videos/UTown_Premium.mp4",
-      "srcUltra": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588520/portfolio_videos/UTown_Ultra.mp4",
-      "location": "UTown, Singapore",
-      "coordinates": "37.82975°N, 122.40606°W",
-      "coordinatesUrl": "",
-      "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ2.8",
-      "shutter": "1/60s",
-      "iso": "400",
-      "alt": "Students hanging out at University Town, Singapore",
-      "fileSize": ""
-    },
-    {
       "id": 9,
       "type": "video",
       "src": "/videos/compressed/medium/Edinburgh_Medium.mp4",
@@ -112,6 +96,22 @@
       "alt": "Edinburgh, Scotland",
       "fileSize": "",
       "noExposureBoost": true
+    },
+    {
+      "id": 5,
+      "type": "video",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588400/portfolio_videos/UTown_Standard.mp4",
+      "srcPremium": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588438/portfolio_videos/UTown_Premium.mp4",
+      "srcUltra": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588520/portfolio_videos/UTown_Ultra.mp4",
+      "location": "UTown, Singapore",
+      "coordinates": "37.82975°N, 122.40606°W",
+      "coordinatesUrl": "",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "400",
+      "alt": "Students hanging out at University Town, Singapore",
+      "fileSize": ""
     },
     {
       "id": 7,
