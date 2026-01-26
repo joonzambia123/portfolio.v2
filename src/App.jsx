@@ -2195,7 +2195,7 @@ function App() {
                       transition: 'filter 250ms ease-in-out',
                       objectFit: 'cover',
                       willChange: isActive ? 'auto' : 'opacity',
-                      ...(isMobileOrTablet && mobileMetadataExpanded && { filter: video.noExposureBoost ? 'brightness(1.05)' : 'brightness(1.20)' })
+                      ...(isMobileOrTablet && mobileMetadataExpanded && { filter: video.noExposureBoost ? 'brightness(1.03)' : 'brightness(1.20)' })
                     }}
                     poster={getPosterSrc(getVideoSrc(video))}
                     muted

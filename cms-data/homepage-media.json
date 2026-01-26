@@ -49,6 +49,23 @@
       "fileSize": ""
     },
     {
+      "id": 12,
+      "type": "video",
+      "src": "/videos/compressed/medium/Gangwon_Medium.mp4",
+      "srcPremium": "/videos/compressed/premium/Gangwon_Premium.mp4",
+      "srcUltra": "/videos/compressed/ultra/Gangwon_Ultra.mp4",
+      "location": "Gangwon, Korea",
+      "coordinates": "37.8228°N, 128.1555°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=37.8228,128.1555",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "400",
+      "alt": "Gangwon, Korea",
+      "fileSize": "",
+      "noExposureBoost": true
+    },
+    {
       "id": 6,
       "type": "video",
       "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588405/portfolio_videos/Fukuoka_Standard.mp4",
@@ -128,23 +145,6 @@
       "shutter": "1/60s",
       "iso": "400",
       "alt": "Istanbul, Turkey",
-      "fileSize": "",
-      "noExposureBoost": true
-    },
-    {
-      "id": 12,
-      "type": "video",
-      "src": "/videos/compressed/medium/Gangwon_Medium.mp4",
-      "srcPremium": "/videos/compressed/premium/Gangwon_Premium.mp4",
-      "srcUltra": "/videos/compressed/ultra/Gangwon_Ultra.mp4",
-      "location": "Gangwon, Korea",
-      "coordinates": "37.8228°N, 128.1555°E",
-      "coordinatesUrl": "https://www.google.com/maps?q=37.8228,128.1555",
-      "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ2.8",
-      "shutter": "1/60s",
-      "iso": "400",
-      "alt": "Gangwon, Korea",
       "fileSize": "",
       "noExposureBoost": true
     },
