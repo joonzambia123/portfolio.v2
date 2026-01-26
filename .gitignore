@@ -31,8 +31,8 @@ dist-ssr
 # Local Netlify folder
 .netlify
 
-# Video source files
-Videos/
+# Video source files (root level only)
+/Videos/
 
 # Deno
 deno.lock
