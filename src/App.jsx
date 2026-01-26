@@ -445,6 +445,12 @@ function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false); // Loading state during video transitions
   const firstVideoReadyRef = useRef(false); // Track if first video is ready for loader
+
+  // Safari video buffer pool - keeps videos in memory for instant playback
+  const safariVideoPoolRef = useRef(new Map()); // Map<videoSrc, HTMLVideoElement>
+  const safariPoolOrderRef = useRef([]); // Track order for LRU eviction
+  const MAX_SAFARI_POOL_SIZE = 5;
+
   const [loadedComponents, setLoadedComponents] = useState({
     timeComponent: false,
     h1: false,
@@ -687,6 +693,17 @@ function App() {
     isTransitioningRef.current = isTransitioning;
   }, [isTransitioning]);
 
+  // Cleanup Safari buffer pool on unmount
+  useEffect(() => {
+    return () => {
+      safariVideoPoolRef.current.forEach((video) => {
+        video.src = '';
+        video.remove();
+      });
+      safariVideoPoolRef.current.clear();
+      safariPoolOrderRef.current = [];
+    };
+  }, []);
 
   // Track the last known width to prevent resetting during data refresh
   const lastMusicPillWidthRef = useRef(205);
@@ -900,6 +917,51 @@ function App() {
     const parts = posterPath.split('/');
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
+
+  // Preload video into Safari buffer pool for instant playback
+  const preloadVideoToPool = useCallback((videoSrc) => {
+    if (!videoSrc) return;
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (!isSafari) return;
+
+    // Already in pool - move to end of LRU order
+    if (safariVideoPoolRef.current.has(videoSrc)) {
+      const order = safariPoolOrderRef.current;
+      const idx = order.indexOf(videoSrc);
+      if (idx > -1) {
+        order.splice(idx, 1);
+        order.push(videoSrc);
+      }
+      return;
+    }
+
+    // Evict oldest if at capacity
+    if (safariVideoPoolRef.current.size >= MAX_SAFARI_POOL_SIZE) {
+      const oldestSrc = safariPoolOrderRef.current.shift();
+      if (oldestSrc) {
+        const oldVideo = safariVideoPoolRef.current.get(oldestSrc);
+        if (oldVideo) {
+          oldVideo.src = '';
+          oldVideo.remove();
+        }
+        safariVideoPoolRef.current.delete(oldestSrc);
+      }
+    }
+
+    // Create hidden video element
+    const video = document.createElement('video');
+    video.preload = 'auto';
+    video.muted = true;
+    video.playsInline = true;
+    video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px';
+    video.src = encodeVideoSrc(videoSrc);
+    document.body.appendChild(video);
+    video.load();
+
+    safariVideoPoolRef.current.set(videoSrc, video);
+    safariPoolOrderRef.current.push(videoSrc);
+  }, []);
 
   // Preload video on hover for faster transitions
   const preloadVideoOnHover = (direction) => {
@@ -1246,6 +1308,11 @@ function App() {
         if (response.ok && !isCancelled) {
           await response.blob();
           videoCacheRef.current.add(videoSrc);
+
+          // Safari: Also add to buffer pool for instant playback
+          if (isSafari) {
+            preloadVideoToPool(videoSrc);
+          }
         }
       } catch (e) {
         // Don't mark as cached on error
@@ -1490,8 +1557,17 @@ function App() {
     const nextIndex = (videoIndex + 1) % videoData.length;
     const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
 
-    // Safari: Trigger video elements to start buffering adjacent videos
+    // Safari: Preload adjacent videos into buffer pool for instant playback
     if (isSafari) {
+      // Add to buffer pool for instant switching
+      if (videoData[nextIndex]) {
+        preloadVideoToPool(getVideoSrc(videoData[nextIndex]));
+      }
+      if (videoData[prevIndex]) {
+        preloadVideoToPool(getVideoSrc(videoData[prevIndex]));
+      }
+
+      // Also trigger video elements to start buffering
       [nextIndex, prevIndex].forEach(idx => {
         const videoEl = videoElementsRef.current[idx];
         if (videoEl && videoEl.readyState < 3) {
@@ -1620,6 +1696,10 @@ function App() {
 
           // Stagger preloads slightly to avoid overwhelming Safari
           setTimeout(() => {
+            // Add to buffer pool for instant playback
+            preloadVideoToPool(getVideoSrc(video));
+
+            // Also trigger the video element to start buffering
             const videoEl = videoElementsRef.current[idx];
             if (videoEl) {
               videoEl.preload = 'auto';
