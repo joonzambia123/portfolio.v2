@@ -49,38 +49,34 @@ When adding a new video to the portfolio, follow these steps:
 - Place original video in `Videos/` folder (gitignored)
 - Naming: `Portfolio (LocationName).mov` or similar
 
-### 2. Compression Settings
+### 2. Video Quality Tiers
+The site uses a **2-tier system** based on browser:
+- **Standard (Premium)**: High quality for Chrome/desktop (1080p, CRF 26)
+- **Safari**: Optimized for Safari browsers (1080p, CRF 28, smaller files for faster buffering)
+
 Use ffmpeg at `/opt/homebrew/Cellar/ffmpeg/8.0.1_1/bin/ffmpeg`
 
-**All tiers are 1080p with different quality levels:**
-
-| Tier | Resolution | CRF | Audio | Target Size |
-|------|------------|-----|-------|-------------|
-| Medium | 1080p | 30 | 96k AAC | 2-4MB |
-| Premium | 1080p | 26 | 128k AAC | 4-8MB |
-| Ultra | 1080p | 23 | 192k AAC | 6-15MB |
+| Tier | File Suffix | Resolution | CRF | Audio | Target Size |
+|------|-------------|------------|-----|-------|-------------|
+| Standard | _Premium | 1080p | 26 | 128k AAC | 4-8MB |
+| Safari | _Safari | 1080p | 28 | 64k AAC | 1-4MB |
 
 ### 3. Compression Commands
 
-**For horizontal videos (landscape):**
 ```bash
-# Medium
-ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 30 -preset medium -c:a aac -b:a 96k -movflags +faststart "output_Medium.mp4" -y
-
-# Premium
+# Standard (Chrome/desktop)
 ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 26 -preset medium -c:a aac -b:a 128k -movflags +faststart "output_Premium.mp4" -y
 
-# Ultra
-ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 192k -movflags +faststart "output_Ultra.mp4" -y
+# Safari (smaller file for faster buffering)
+ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 28 -preset medium -c:a aac -b:a 64k -movflags +faststart "output_Safari.mp4" -y
 ```
 
 **For vertical videos (phone/portrait):**
 Same commands - ffmpeg auto-applies rotation metadata.
 
 ### 4. Output Location
-- `public/videos/compressed/medium/`
-- `public/videos/compressed/premium/`
-- `public/videos/compressed/ultra/`
+- `public/videos/compressed/premium/` (Standard tier files)
+- `public/videos/compressed/safari/` (Safari-optimized files)
 
 ### 5. Update JSON
 Add entry to `public/cms-data/homepage-media.json`:
@@ -88,9 +84,8 @@ Add entry to `public/cms-data/homepage-media.json`:
 {
   "id": <next_id>,
   "type": "video",
-  "src": "/videos/compressed/medium/Name_Medium.mp4",
-  "srcPremium": "/videos/compressed/premium/Name_Premium.mp4",
-  "srcUltra": "/videos/compressed/ultra/Name_Ultra.mp4",
+  "src": "/videos/compressed/premium/Name_Premium.mp4",
+  "srcSafari": "/videos/compressed/safari/Name_Safari.mp4",
   "location": "City, Country",
   "coordinates": "XX.XXXX°N, XX.XXXX°E",
   "coordinatesUrl": "https://www.google.com/maps?q=...",
@@ -102,6 +97,8 @@ Add entry to `public/cms-data/homepage-media.json`:
   "fileSize": ""
 }
 ```
+
+**Note:** For Cloudinary-hosted videos (external URLs), no `srcSafari` is needed - the app automatically applies URL transforms for Safari.
 
 ### 6. Commit & Deploy
 ```bash

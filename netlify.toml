@@ -38,11 +38,29 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Cache for images and videos - 1 week
+# Cache for videos - 1 week with Safari-critical headers
 [[headers]]
-  for = "/Videos/*"
+  for = "/videos/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+    Accept-Ranges = "bytes"
+    Access-Control-Allow-Origin = "*"
+    Content-Type = "video/mp4"
+
+[[headers]]
+  for = "/videos/compressed/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+    Accept-Ranges = "bytes"
+    Access-Control-Allow-Origin = "*"
+
+# Safari-optimized videos - same cache settings
+[[headers]]
+  for = "/videos/compressed/safari/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+    Accept-Ranges = "bytes"
+    Access-Control-Allow-Origin = "*"
 
 [[headers]]
   for = "/posters/*"

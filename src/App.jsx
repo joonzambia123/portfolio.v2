@@ -159,14 +159,10 @@ function App() {
   const [loaderMessage, setLoaderMessage] = useState(''); // Encouraging messages after 5 seconds
   const videoCacheRef = useRef(new Set()); // Track which videos are fully cached
   const adjacentVideosReadyRef = useRef(0); // Track how many adjacent videos are ready during loader
-  const safariVideoPoolRef = useRef(new Map()); // Safari: pool of preloaded video elements
-  const safariPoolOrderRef = useRef([]); // Track insertion order for LRU eviction
-  const MAX_SAFARI_POOL_SIZE = 5; // Limit pool size for memory efficiency with many videos
-  const MAX_CONCURRENT_PRELOADS = 3; // Limit concurrent video preloads
   const fontsLoadedRef = useRef(false); // Track if fonts are loaded
   const [fontsReady, setFontsReady] = useState(false); // State to trigger re-render when fonts load
   const loaderMinTimeRef = useRef(false); // Minimum loader display time
-  
+
   // Search input state
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -487,9 +483,6 @@ function App() {
   const lastMediaHashRef = useRef('');
   const lastCopyHashRef = useRef('');
 
-  // Adaptive video quality - 3 tiers: 'standard', 'premium', 'ultra'
-  const [videoQuality, setVideoQuality] = useState('standard');
-  const networkQualityRef = useRef('unknown'); // 'ultra', 'premium', 'standard', 'unknown'
   const videoFailedTiersRef = useRef(new Map()); // Track which tiers failed for each video id
   
   // City to timezone mapping - automatically determines timezone from city name
@@ -755,105 +748,32 @@ function App() {
                        navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;
     setIsMac(checkIsMac);
   }, []);
-
-  // Detect network quality and decide video tier: 'standard', 'premium', 'ultra'
-  useEffect(() => {
-    const detectNetworkQuality = () => {
-      // Use Network Information API if available
-      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      if (connection) {
-        const { effectiveType, downlink, saveData } = connection;
-
-        // Data saver enabled → Standard tier
-        if (saveData) {
-          networkQualityRef.current = 'standard';
-          setVideoQuality('standard');
-          return;
-        }
-
-        // Ultra tier: 4g + 15+ Mbps + desktop
-        if (effectiveType === '4g' && downlink >= 15 && !isMobile) {
-          networkQualityRef.current = 'ultra';
-          setVideoQuality('ultra');
-        }
-        // Premium tier: 4g + 5+ Mbps, or 4g desktop with 2+ Mbps
-        else if (effectiveType === '4g' && (downlink >= 5 || (!isMobile && downlink >= 2))) {
-          networkQualityRef.current = 'premium';
-          setVideoQuality('premium');
-        }
-        // Standard tier: 3g, slow 4g, mobile, or 2g
-        else {
-          networkQualityRef.current = 'standard';
-          setVideoQuality('standard');
-        }
-
-        // Listen for network changes
-        connection.addEventListener('change', detectNetworkQuality);
-      } else {
-        // No Network Information API - assume premium on desktop, standard on mobile
-        if (isMobile) {
-          networkQualityRef.current = 'standard';
-          setVideoQuality('standard');
-        } else {
-          networkQualityRef.current = 'premium';
-          setVideoQuality('premium');
-        }
-      }
-    };
-
-    detectNetworkQuality();
-
-    return () => {
-      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      if (connection) {
-        connection.removeEventListener('change', detectNetworkQuality);
-      }
-    };
-  }, []);
-
-  // Get the appropriate video source based on quality tier
+  // Get the appropriate video source - Safari gets smaller optimized files
   const getVideoSrc = (video) => {
     if (!video) return '';
 
-    // Get failed tiers for this video
-    const failedTiers = videoFailedTiersRef.current.get(video.id) || new Set();
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    // Try Ultra tier first if requested and available
-    if (videoQuality === 'ultra' && video.srcUltra && !failedTiers.has('ultra')) {
-      return video.srcUltra;
+    // Safari: Use smaller Safari-optimized files for faster loading
+    if (isSafari) {
+      // Local files: Use srcSafari if available
+      if (video.srcSafari) {
+        return video.srcSafari;
+      }
+      // Cloudinary URLs: Add Safari transforms (720p, lower quality)
+      if (video.src && video.src.includes('cloudinary.com')) {
+        return video.src.replace('/upload/', '/upload/c_scale,h_720,q_auto:eco/');
+      }
     }
 
-    // Try Premium tier if requested (or Ultra failed) and available
-    if ((videoQuality === 'ultra' || videoQuality === 'premium') && video.srcPremium && !failedTiers.has('premium')) {
-      return video.srcPremium;
-    }
-
-    // Fallback to Standard tier
+    // Default: Standard tier (1080p Premium quality)
     return video.src;
   };
 
-  // Handle video load failure - fallback to lower tier
+  // Handle video load failure - fallback to standard tier
   const handleVideoError = (videoId, videoElement) => {
-    const currentSrc = videoElement?.src || '';
-    const failedTiers = videoFailedTiersRef.current.get(videoId) || new Set();
-
-    // Determine which tier failed based on URL
-    let failedTier = 'standard';
-    if (currentSrc.includes('_Ultra')) {
-      failedTier = 'ultra';
-    } else if (currentSrc.includes('_Premium')) {
-      failedTier = 'premium';
-    }
-
-    if (!failedTiers.has(failedTier)) {
-      // Debug: console.log(`Video ${videoId} (${failedTier}) failed to load, falling back to lower tier`);
-      failedTiers.add(failedTier);
-      videoFailedTiersRef.current.set(videoId, failedTiers);
-      // Force re-render to use fallback source
-      setVideoData(prev => [...prev]);
-    }
+    // Log video errors for debugging
+    console.warn(`Video ${videoId} failed to load:`, videoElement?.src);
   };
 
   // Keyboard shortcuts: Cmd+K / Ctrl+K and Escape to close modal
@@ -981,75 +901,16 @@ function App() {
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
 
-  // Safari: Aggressively preload a video into the buffer pool with LRU eviction
-  const preloadVideoToPool = (src) => {
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (!isSafari || !src) return;
-
-    const encodedSrc = encodeVideoSrc(src);
-
-    // If already in pool, move to end of LRU order (most recently used)
-    if (safariVideoPoolRef.current.has(encodedSrc)) {
-      const orderIndex = safariPoolOrderRef.current.indexOf(encodedSrc);
-      if (orderIndex > -1) {
-        safariPoolOrderRef.current.splice(orderIndex, 1);
-        safariPoolOrderRef.current.push(encodedSrc);
-      }
-      return;
-    }
-
-    // Evict oldest entry if pool is at capacity (LRU eviction)
-    if (safariVideoPoolRef.current.size >= MAX_SAFARI_POOL_SIZE) {
-      const oldestSrc = safariPoolOrderRef.current.shift();
-      if (oldestSrc) {
-        const oldVideo = safariVideoPoolRef.current.get(oldestSrc);
-        if (oldVideo) {
-          oldVideo.src = ''; // Release resources
-          oldVideo.load();
-        }
-        safariVideoPoolRef.current.delete(oldestSrc);
-      }
-    }
-
-    // Create hidden video element for buffering
-    const poolVideo = document.createElement('video');
-    poolVideo.preload = 'auto';
-    poolVideo.muted = true;
-    poolVideo.playsInline = true;
-    poolVideo.setAttribute('playsinline', 'true');
-    poolVideo.setAttribute('webkit-playsinline', 'true');
-    poolVideo.src = encodedSrc;
-    poolVideo.load();
-
-    safariVideoPoolRef.current.set(encodedSrc, poolVideo);
-    safariPoolOrderRef.current.push(encodedSrc);
-  };
-
   // Preload video on hover for faster transitions
   const preloadVideoOnHover = (direction) => {
     if (videoData.length === 0 || isTransitioningRef.current) return;
 
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const baseIndex = isTransitioningRef.current ? targetVideoIndexRef.current : videoIndex;
     const targetIndex = direction === 'next'
       ? (baseIndex + 1) % videoData.length
       : (baseIndex - 1 + videoData.length) % videoData.length;
 
-    // Safari: Preload to the buffer pool
-    if (isSafari) {
-      const oppositeIndex = direction === 'next'
-        ? (baseIndex - 1 + videoData.length) % videoData.length
-        : (baseIndex + 1) % videoData.length;
-
-      if (videoData[oppositeIndex]) {
-        preloadVideoToPool(getVideoSrc(videoData[oppositeIndex]));
-      }
-      if (videoData[targetIndex]) {
-        preloadVideoToPool(getVideoSrc(videoData[targetIndex]));
-      }
-    }
-
-    // Trigger preload on the actual video element (don't change source, React manages that)
+    // Trigger preload on the target video element
     const targetVideoEl = videoElementsRef.current[targetIndex];
     if (targetVideoEl) {
       targetVideoEl.preload = 'auto';
@@ -1299,15 +1160,14 @@ function App() {
   }, []);
 
   // Preload FIRST + ADJACENT videos during the loader to enable smooth toggling
-  // This runs during the loader to guarantee the first few videos are ready
+  // Safari gets smaller optimized files, so simple preloading works for all browsers now
   useEffect(() => {
     if (videoData.length === 0) return;
 
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     adjacentVideosReadyRef.current = 0;
 
-    // Helper to preload a video and track readiness
-    const preloadVideoElement = (videoSrc, onReady) => {
+    // Simple video element preloading - works for all browsers
+    const preloadVideo = (videoSrc, onReady) => {
       const video = document.createElement('video');
       video.preload = 'auto';
       video.muted = true;
@@ -1318,7 +1178,6 @@ function App() {
         video.removeEventListener('canplaythrough', onCanPlayThrough);
         onReady();
       };
-
       video.addEventListener('canplaythrough', onCanPlayThrough);
       video.load();
 
@@ -1327,39 +1186,32 @@ function App() {
 
     // Preload first video
     const firstVideoSrc = getVideoSrc(videoData[0]);
-    const firstVideo = preloadVideoElement(firstVideoSrc, () => {
+    const firstVideo = preloadVideo(firstVideoSrc, () => {
       firstVideoReadyRef.current = true;
       videoCacheRef.current.add(firstVideoSrc);
     });
 
-    // Preload adjacent videos (next and previous) during loader for smooth toggling
+    // Preload adjacent videos (next and previous) for smooth toggling
     const adjacentVideos = [];
 
     if (videoData.length > 1) {
-      // Preload next video
-      const nextIdx = 1;
-      const nextVideoSrc = getVideoSrc(videoData[nextIdx]);
-      const nextVideo = preloadVideoElement(nextVideoSrc, () => {
+      const nextVideoSrc = getVideoSrc(videoData[1]);
+      adjacentVideos.push(preloadVideo(nextVideoSrc, () => {
         adjacentVideosReadyRef.current += 1;
         videoCacheRef.current.add(nextVideoSrc);
-        if (isSafari) preloadVideoToPool(nextVideoSrc);
-      });
-      adjacentVideos.push(nextVideo);
+      }));
 
       // Preload previous video (last in array)
       if (videoData.length > 2) {
-        const prevIdx = videoData.length - 1;
-        const prevVideoSrc = getVideoSrc(videoData[prevIdx]);
-        const prevVideo = preloadVideoElement(prevVideoSrc, () => {
+        const prevVideoSrc = getVideoSrc(videoData[videoData.length - 1]);
+        adjacentVideos.push(preloadVideo(prevVideoSrc, () => {
           adjacentVideosReadyRef.current += 1;
           videoCacheRef.current.add(prevVideoSrc);
-          if (isSafari) preloadVideoToPool(prevVideoSrc);
-        });
-        adjacentVideos.push(prevVideo);
+        }));
       }
     }
 
-    // Fallback: mark as ready after 6 seconds even if canplaythrough doesn't fire
+    // Fallback: mark as ready after 6 seconds
     const fallbackTimer = setTimeout(() => {
       if (!firstVideoReadyRef.current) {
         firstVideoReadyRef.current = true;
@@ -1367,11 +1219,9 @@ function App() {
     }, 6000);
 
     return () => {
-      firstVideo.removeEventListener('canplaythrough', () => {});
-      adjacentVideos.forEach(v => v.removeEventListener('canplaythrough', () => {}));
       clearTimeout(fallbackTimer);
     };
-  }, [videoData, videoQuality]);
+  }, [videoData]);
 
   // Background video preloading: Preload remaining videos AFTER loader completes
   // First 3 videos (current, next, prev) are preloaded during loader
@@ -1432,26 +1282,28 @@ function App() {
       isCancelled = true;
       clearTimeout(remainingTimer);
     };
-  }, [isLoading, videoData, videoQuality]);
+  }, [isLoading, videoData]);
 
   // Loader animation: Cycle through coordinates (only after fonts are loaded)
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
-    
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     let minTimeTimer = null;
     let coordInterval = null;
     let isMounted = true;
-    
+
     // Wait for fonts to load before starting the animation
     const startAnimation = () => {
       if (!isMounted) return;
-      
-      // Set minimum loader time (3 seconds to show a nice loop of coordinates)
+
+      // Set minimum loader time (3 seconds, slightly more for Safari)
+      const minTime = isSafari ? 3500 : 3000;
       minTimeTimer = setTimeout(() => {
         if (isMounted) {
           loaderMinTimeRef.current = true;
         }
-      }, 3000);
+      }, minTime);
       
       // Cycle through coordinates
       coordInterval = setInterval(() => {
@@ -1535,9 +1387,11 @@ function App() {
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
 
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
     // Check periodically if everything is ready:
-    // 1. Minimum time has passed (3 seconds for coordinates loop)
-    // 2. First video is ready to play
+    // 1. Minimum time has passed (3 seconds, or 5 seconds for Safari)
+    // 2. First video data is downloaded (fetch completed 30%+ for Safari)
     // 3. At least 1 adjacent video is ready (for smooth toggling)
     // 4. Fonts are loaded
     // 5. Last.fm is done loading (or timed out)
@@ -1554,11 +1408,11 @@ function App() {
       }
     }, 100);
 
-    // Maximum loader time (10 seconds) - exit even if not everything is ready
-    // Slightly longer to allow adjacent videos to load for smooth toggling
+    // Maximum loader time
+    const maxTime = isSafari ? 12000 : 10000;
     const maxTimer = setTimeout(() => {
       setIsLoading(false);
-    }, 10000);
+    }, maxTime);
 
     return () => {
       clearInterval(checkLoading);
@@ -1692,7 +1546,7 @@ function App() {
         }
       }
     });
-  }, [isLoading, videoIndex, videoData, videoQuality]);
+  }, [isLoading, videoIndex, videoData]);
 
   // Ensure videos play on mount - runs when loader finishes AND videoData is ready
   useEffect(() => {
@@ -1717,7 +1571,7 @@ function App() {
         firstVideo.muted = true;
         firstVideo.currentTime = 0;
 
-        // For Safari: wait for video to be ready before playing
+        // Play video with retry on failure
         const playVideo = () => {
           const playPromise = firstVideo.play();
           if (playPromise !== undefined) {
@@ -1732,20 +1586,33 @@ function App() {
           }
         };
 
-        // Safari needs to wait for video data to be loaded
-        if (isSafari && firstVideo.readyState < 3) {
-          // readyState 3 = HAVE_FUTURE_DATA (enough to start playing)
-          const onCanPlay = () => {
-            playVideo();
-            firstVideo.removeEventListener('canplay', onCanPlay);
-          };
-          firstVideo.addEventListener('canplay', onCanPlay);
+        // Safari: The loader should have waited for buffered data, but double-check
+        if (isSafari) {
+          // Force load the video source
+          firstVideo.load();
 
-          // Fallback: try playing anyway after a short delay
-          setTimeout(() => {
-            firstVideo.removeEventListener('canplay', onCanPlay);
+          // Check if video has enough data
+          const hasEnoughData = () => {
+            return firstVideo.readyState >= 2 ||
+              (firstVideo.buffered.length > 0 && firstVideo.buffered.end(0) > 0.3);
+          };
+
+          if (!hasEnoughData()) {
+            // Listen for when data is ready
+            const onCanPlay = () => {
+              firstVideo.removeEventListener('canplay', onCanPlay);
+              playVideo();
+            };
+            firstVideo.addEventListener('canplay', onCanPlay);
+
+            // Fallback: try playing after short delay
+            setTimeout(() => {
+              firstVideo.removeEventListener('canplay', onCanPlay);
+              playVideo();
+            }, 500);
+          } else {
             playVideo();
-          }, 200);
+          }
         } else {
           playVideo();
         }
@@ -1784,13 +1651,13 @@ function App() {
 
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
-  
+
   // Show coordinates loader while videos preload
   if (isLoading || !hasAnyData) {
-    const coordinates = videoData.length > 0 
+    const coordinates = videoData.length > 0
       ? videoData.map(v => v.coordinates)
       : ['6.79770°S, 107.57870°E', '37.82975°N, 122.40606°W', '56.76040°N, 4.69090°W', '10.77700°N, 106.69860°E'];
-    
+
     return (
       <div className="bg-[#FCFCFC] min-h-screen w-full flex flex-col items-center justify-center gap-4">
         {/* Only show text after fonts are loaded to prevent FOUT */}
