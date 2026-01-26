@@ -1246,11 +1246,6 @@ function App() {
         if (response.ok && !isCancelled) {
           await response.blob();
           videoCacheRef.current.add(videoSrc);
-
-          // Safari: Also add to buffer pool for instant playback
-          if (isSafari) {
-            preloadVideoToPool(videoSrc);
-          }
         }
       } catch (e) {
         // Don't mark as cached on error
@@ -1495,22 +1490,12 @@ function App() {
     const nextIndex = (videoIndex + 1) % videoData.length;
     const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
 
-    // Safari: Proactively preload adjacent videos into the buffer pool
+    // Safari: Trigger video elements to start buffering adjacent videos
     if (isSafari) {
-      // Preload next and prev immediately
-      if (videoData[nextIndex]) {
-        preloadVideoToPool(getVideoSrc(videoData[nextIndex]));
-      }
-      if (videoData[prevIndex]) {
-        preloadVideoToPool(getVideoSrc(videoData[prevIndex]));
-      }
-
-      // Also trigger video elements to start buffering (without changing source)
       [nextIndex, prevIndex].forEach(idx => {
         const videoEl = videoElementsRef.current[idx];
         if (videoEl && videoEl.readyState < 3) {
           videoEl.preload = 'auto';
-          // Don't call load() - it can reset the video. Just set preload.
         }
       });
     }
@@ -1635,9 +1620,6 @@ function App() {
 
           // Stagger preloads slightly to avoid overwhelming Safari
           setTimeout(() => {
-            preloadVideoToPool(getVideoSrc(video));
-
-            // Also trigger the video element to start buffering
             const videoEl = videoElementsRef.current[idx];
             if (videoEl) {
               videoEl.preload = 'auto';
