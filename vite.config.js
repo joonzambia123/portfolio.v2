@@ -42,15 +42,6 @@ export default defineConfig({
       '@cms-data': '/cms-data',
     },
   },
-  // Proxy CMS API requests through Vite (avoids CORS issues in Cursor browser)
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-    },
-  },
   // Build optimizations for performance
   build: {
     // Target modern browsers for smaller bundle

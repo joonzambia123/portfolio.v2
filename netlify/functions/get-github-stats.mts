@@ -17,13 +17,11 @@ interface CompareData {
   }>;
 }
 
-// Get Monday of current week (UTC)
+// Get date 7 days ago (rolling window)
 function getWeekStart(): Date {
   const now = new Date();
-  const dayOfWeek = now.getUTCDay();
-  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const weekStart = new Date(now);
-  weekStart.setUTCDate(now.getUTCDate() - diff);
+  weekStart.setUTCDate(now.getUTCDate() - 7);
   weekStart.setUTCHours(0, 0, 0, 0);
   return weekStart;
 }

@@ -49,6 +49,22 @@
       "fileSize": ""
     },
     {
+      "id": 6,
+      "type": "video",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588405/portfolio_videos/Fukuoka_Standard.mp4",
+      "srcPremium": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588442/portfolio_videos/Fukuoka_Premium.mp4",
+      "srcUltra": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588518/portfolio_videos/Fukuoka_Ultra.mp4",
+      "location": "Fukuoka, Japan",
+      "coordinates": "56.76040°N, 4.69090°W",
+      "coordinatesUrl": "",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "650",
+      "alt": "Japanese chef serving dish in Fukuoka",
+      "fileSize": ""
+    },
+    {
       "id": 3,
       "type": "video",
       "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588406/portfolio_videos/Saigon_Standard.mp4",
@@ -81,22 +97,6 @@
       "fileSize": ""
     },
     {
-      "id": 6,
-      "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588405/portfolio_videos/Fukuoka_Standard.mp4",
-      "srcPremium": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588442/portfolio_videos/Fukuoka_Premium.mp4",
-      "srcUltra": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588518/portfolio_videos/Fukuoka_Ultra.mp4",
-      "location": "Fukuoka, Japan",
-      "coordinates": "56.76040°N, 4.69090°W",
-      "coordinatesUrl": "",
-      "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ2.8",
-      "shutter": "1/60s",
-      "iso": "650",
-      "alt": "Japanese chef serving dish in Fukuoka",
-      "fileSize": ""
-    },
-    {
       "id": 7,
       "type": "video",
       "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588399/portfolio_videos/Caol_Standard.mp4",
@@ -111,6 +111,23 @@
       "iso": "150",
       "alt": "Man walking dogs in Caol, Scotland.",
       "fileSize": ""
+    },
+    {
+      "id": 8,
+      "type": "video",
+      "src": "/videos/compressed/medium/Okayama_Medium.mp4",
+      "srcPremium": "/videos/compressed/premium/Okayama_Premium.mp4",
+      "srcUltra": "/videos/compressed/ultra/Okayama_Ultra.mp4",
+      "location": "Okayama, Japan",
+      "coordinates": "34.6553°N, 133.9195°E",
+      "coordinatesUrl": "",
+      "camera": "iPhone 15 Pro",
+      "aperture": "ƒ1.8",
+      "shutter": "1/60s",
+      "iso": "100",
+      "alt": "Video from Okayama, Japan",
+      "fileSize": "",
+      "isVertical": true
     }
   ]
 }

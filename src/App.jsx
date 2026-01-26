@@ -637,15 +637,13 @@ function App() {
     };
 
     const fetchCmsData = async () => {
-      const isDev = import.meta.env.DEV;
-      
       try {
-        // Fetch both in parallel with timeout
+        // Always fetch from static JSON files
         const [mediaJson, copyJson] = await Promise.allSettled([
-          fetchWithTimeout(isDev ? '/api/collections/homepage-media' : '/cms-data/homepage-media.json', 5000),
-          fetchWithTimeout(isDev ? '/api/collections/website-copy' : '/cms-data/website-copy.json', 5000)
+          fetchWithTimeout('/cms-data/homepage-media.json', 5000),
+          fetchWithTimeout('/cms-data/website-copy.json', 5000)
         ]);
-        
+
         // Handle media data
         if (mediaJson.status === 'fulfilled') {
           const newMediaHash = JSON.stringify(mediaJson.value.data);
@@ -653,10 +651,8 @@ function App() {
             lastMediaHashRef.current = newMediaHash;
             setVideoData(mediaJson.value.data || []);
           }
-        } else {
-          // Debug: console.warn('Failed to fetch media data:', mediaJson.reason);
         }
-        
+
         // Handle website copy
         if (copyJson.status === 'fulfilled') {
           const newCopyHash = JSON.stringify(copyJson.value.data);
@@ -668,55 +664,16 @@ function App() {
             });
             setWebsiteCopy(copyObj);
           }
-        } else {
-          // Debug: console.warn('Failed to fetch website copy:', copyJson.reason);
-        }
-        
-        // If both failed, try static imports as fallback
-        if (mediaJson.status === 'rejected' && copyJson.status === 'rejected') {
-          try {
-            const [mediaModule, copyModule] = await Promise.all([
-              import('../cms-data/homepage-media.json'),
-              import('../cms-data/website-copy.json')
-            ]);
-            setVideoData(mediaModule.default.data || []);
-            const copyObj = {};
-            (copyModule.default.data || []).forEach(item => {
-              copyObj[item.key] = item.content;
-            });
-            setWebsiteCopy(copyObj);
-          } catch (fallbackError) {
-            // Debug: console.error('Fallback import also failed:', fallbackError);
-          }
         }
       } catch (error) {
-        // Debug: console.error('Failed to fetch CMS data:', error);
-        // Try static imports as last resort
-        try {
-          const [mediaModule, copyModule] = await Promise.all([
-            import('../cms-data/homepage-media.json'),
-            import('../cms-data/website-copy.json')
-          ]);
-          setVideoData(mediaModule.default.data || []);
-          const copyObj = {};
-          (copyModule.default.data || []).forEach(item => {
-            copyObj[item.key] = item.content;
-          });
-          setWebsiteCopy(copyObj);
-        } catch (fallbackError) {
-          // Debug: console.error('All CMS data loading methods failed:', fallbackError);
-        }
+        // Silent fail - data will remain unchanged
       }
     };
-    
+
     fetchCmsData();
-    
-    // In dev mode, poll every 2 seconds for CMS changes (works in Cursor browser)
-    const isDev = import.meta.env.DEV;
-    let pollInterval;
-    if (isDev) {
-      pollInterval = setInterval(fetchCmsData, 2000);
-    }
+
+    // Poll every 2 seconds for changes (useful during development)
+    let pollInterval = setInterval(fetchCmsData, 2000);
     
     // Also refetch when window regains focus
     const handleFocus = () => fetchCmsData();
@@ -2236,7 +2193,7 @@ function App() {
                       opacity: isActive ? 1 : 0,
                       visibility: isActive ? 'visible' : 'hidden',
                       transition: 'filter 250ms ease-in-out',
-                      transform: 'translateZ(0)',
+                      objectFit: 'cover',
                       willChange: isActive ? 'auto' : 'opacity',
                       ...(isMobileOrTablet && mobileMetadataExpanded && { filter: 'brightness(1.20)' })
                     }}
