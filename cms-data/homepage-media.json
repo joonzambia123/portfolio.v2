@@ -97,6 +97,22 @@
       "fileSize": ""
     },
     {
+      "id": 9,
+      "type": "video",
+      "src": "/videos/compressed/medium/Edinburgh_Medium.mp4",
+      "srcPremium": "/videos/compressed/premium/Edinburgh_Premium.mp4",
+      "srcUltra": "/videos/compressed/ultra/Edinburgh_Ultra.mp4",
+      "location": "Edinburgh, Scotland",
+      "coordinates": "55.9533°N, 3.1883°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=55.9533,-3.1883",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "400",
+      "alt": "Edinburgh, Scotland",
+      "fileSize": ""
+    },
+    {
       "id": 7,
       "type": "video",
       "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588399/portfolio_videos/Caol_Standard.mp4",
