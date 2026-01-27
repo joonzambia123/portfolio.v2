@@ -176,6 +176,13 @@ function App() {
   const [isHomeButtonHovered, setIsHomeButtonHovered] = useState(false);
   const [isFaceClicked, setIsFaceClicked] = useState(false);
   const [isFaceHoverExiting, setIsFaceHoverExiting] = useState(false);
+
+  // Global mouseup to handle releasing click outside button
+  useEffect(() => {
+    const handleGlobalMouseUp = () => setIsFaceClicked(false);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
   const [isCommitExpanded, setIsCommitExpanded] = useState(false);
   const faceHoverTimeoutRef = useRef(null);
   const faceZoneRef = useRef(null);
@@ -211,29 +218,17 @@ function App() {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
 
-    // When clicked, show happy expressions (still follows mouse naturally)
+    // When clicked, show happy expression with natural blinking
     if (isFaceClicked) {
-      const happyExpressions = ['(^_^)', '(^‿^)', '(≧◡≦)', '(◕‿◕)'];
-      let expressionIndex = 0;
+      // Simple happy smile
+      setFaceExpression('(^_^)');
 
-      // Start with a smile
-      setFaceExpression(happyExpressions[0]);
-
-      // Cycle through happy expressions with occasional blinks
+      // Natural happy blinks while held
       const happyInterval = setInterval(() => {
-        const action = Math.random();
-        if (action < 0.3) {
-          // Happy blink (30% chance)
-          setFaceExpression('(^_^)');
-          setTimeout(() => {
-            setFaceExpression(happyExpressions[Math.floor(Math.random() * happyExpressions.length)]);
-          }, 120);
-        } else {
-          // Switch to random happy expression
-          expressionIndex = Math.floor(Math.random() * happyExpressions.length);
-          setFaceExpression(happyExpressions[expressionIndex]);
-        }
-      }, 400);
+        // Occasional blink
+        setFaceExpression('(^‿^)');
+        setTimeout(() => setFaceExpression('(^_^)'), 150);
+      }, 800 + Math.random() * 400);
 
       return () => clearInterval(happyInterval);
     }
@@ -1965,7 +1960,7 @@ function App() {
               <button
                 className={`home-button flex items-center gap-[10px] px-[4px] py-[4px] rounded-[16px] cursor-pointer ${isHomeButtonHovered ? 'gary-active' : ''}`}
                 onClick={playClick}
-                onMouseDown={() => { setIsFaceClicked(true); console.log('Face clicked!'); }}
+                onMouseDown={() => setIsFaceClicked(true)}
                 onMouseUp={() => setIsFaceClicked(false)}
                 aria-label="Joonseo Chang - Home"
               >
