@@ -1222,14 +1222,71 @@ function App() {
   }, []);
 
   // Preload FIRST + ADJACENT videos during the loader to enable smooth toggling
-  // Safari gets smaller optimized files, so simple preloading works for all browsers now
+  // Safari: Uses buffer pool (persistent hidden video elements) for true preloading
+  // Chrome: Uses simple video element preloading
   useEffect(() => {
     if (videoData.length === 0) return;
 
     adjacentVideosReadyRef.current = 0;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    // Simple video element preloading - works for all browsers
-    const preloadVideo = (videoSrc, onReady) => {
+    // Safari: Create buffer pool videos that persist and actually buffer the data
+    const preloadVideoSafari = (videoSrc, onReady) => {
+      // Check if already in pool
+      if (safariVideoPoolRef.current.has(videoSrc)) {
+        const existingVideo = safariVideoPoolRef.current.get(videoSrc);
+        // Check if already ready
+        if (existingVideo.readyState >= 3) {
+          onReady();
+          return existingVideo;
+        }
+        // Wait for it to be ready
+        const onCanPlay = () => {
+          existingVideo.removeEventListener('canplaythrough', onCanPlay);
+          onReady();
+        };
+        existingVideo.addEventListener('canplaythrough', onCanPlay);
+        return existingVideo;
+      }
+
+      // Evict oldest if at capacity
+      if (safariVideoPoolRef.current.size >= MAX_SAFARI_POOL_SIZE) {
+        const oldestSrc = safariPoolOrderRef.current.shift();
+        if (oldestSrc) {
+          const oldVideo = safariVideoPoolRef.current.get(oldestSrc);
+          if (oldVideo) {
+            oldVideo.src = '';
+            oldVideo.remove();
+          }
+          safariVideoPoolRef.current.delete(oldestSrc);
+        }
+      }
+
+      // Create persistent hidden video element in DOM
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.muted = true;
+      video.playsInline = true;
+      video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px';
+      video.src = encodeVideoSrc(videoSrc);
+      document.body.appendChild(video);
+
+      const onCanPlayThrough = () => {
+        video.removeEventListener('canplaythrough', onCanPlayThrough);
+        onReady();
+      };
+      video.addEventListener('canplaythrough', onCanPlayThrough);
+      video.load();
+
+      // Add to pool
+      safariVideoPoolRef.current.set(videoSrc, video);
+      safariPoolOrderRef.current.push(videoSrc);
+
+      return video;
+    };
+
+    // Chrome/other browsers: Simple video element preloading
+    const preloadVideoSimple = (videoSrc, onReady) => {
       const video = document.createElement('video');
       video.preload = 'auto';
       video.muted = true;
@@ -1246,39 +1303,67 @@ function App() {
       return video;
     };
 
+    const preloadVideo = isSafari ? preloadVideoSafari : preloadVideoSimple;
+
+    // Fetch videos to populate HTTP cache (works for both browsers)
+    // This ensures video data is in browser cache before video elements try to load
+    const fetchVideoToCache = async (videoSrc) => {
+      try {
+        const encodedSrc = encodeVideoSrc(videoSrc);
+        const response = await fetch(encodedSrc);
+        if (response.ok) {
+          await response.blob(); // Force full download into cache
+          return true;
+        }
+      } catch (e) {
+        // Ignore fetch errors
+      }
+      return false;
+    };
+
     // Preload first video
     const firstVideoSrc = getVideoSrc(videoData[0]);
-    const firstVideo = preloadVideo(firstVideoSrc, () => {
+
+    // Start fetch immediately to populate HTTP cache (for both browsers)
+    // This runs in parallel with video element preloading
+    fetchVideoToCache(firstVideoSrc);
+
+    preloadVideo(firstVideoSrc, () => {
       firstVideoReadyRef.current = true;
       videoCacheRef.current.add(firstVideoSrc);
     });
 
     // Preload adjacent videos (next and previous) for smooth toggling
-    const adjacentVideos = [];
-
     if (videoData.length > 1) {
       const nextVideoSrc = getVideoSrc(videoData[1]);
-      adjacentVideos.push(preloadVideo(nextVideoSrc, () => {
+      const prevVideoSrc = videoData.length > 2 ? getVideoSrc(videoData[videoData.length - 1]) : null;
+
+      // Fetch adjacent videos to HTTP cache (staggered slightly)
+      setTimeout(() => fetchVideoToCache(nextVideoSrc), 300);
+      if (prevVideoSrc) {
+        setTimeout(() => fetchVideoToCache(prevVideoSrc), 600);
+      }
+
+      preloadVideo(nextVideoSrc, () => {
         adjacentVideosReadyRef.current += 1;
         videoCacheRef.current.add(nextVideoSrc);
-      }));
+      });
 
       // Preload previous video (last in array)
-      if (videoData.length > 2) {
-        const prevVideoSrc = getVideoSrc(videoData[videoData.length - 1]);
-        adjacentVideos.push(preloadVideo(prevVideoSrc, () => {
+      if (prevVideoSrc) {
+        preloadVideo(prevVideoSrc, () => {
           adjacentVideosReadyRef.current += 1;
           videoCacheRef.current.add(prevVideoSrc);
-        }));
+        });
       }
     }
 
-    // Fallback: mark as ready after 6 seconds
+    // Fallback: mark as ready after timeout
     const fallbackTimer = setTimeout(() => {
       if (!firstVideoReadyRef.current) {
         firstVideoReadyRef.current = true;
       }
-    }, 6000);
+    }, isSafari ? 8000 : 6000);
 
     return () => {
       clearTimeout(fallbackTimer);
@@ -1359,8 +1444,9 @@ function App() {
     const startAnimation = () => {
       if (!isMounted) return;
 
-      // Set minimum loader time (3 seconds, slightly more for Safari)
-      const minTime = isSafari ? 3500 : 3000;
+      // Set minimum loader time to allow videos to fully buffer
+      // Safari: 5 seconds, Chrome: 4 seconds
+      const minTime = isSafari ? 5000 : 4000;
       minTimeTimer = setTimeout(() => {
         if (isMounted) {
           loaderMinTimeRef.current = true;
@@ -1452,20 +1538,31 @@ function App() {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
     // Check periodically if everything is ready:
-    // 1. Minimum time has passed (3 seconds, or 5 seconds for Safari)
-    // 2. First video data is downloaded (fetch completed 30%+ for Safari)
-    // 3. At least 1 adjacent video is ready (for smooth toggling)
+    // 1. Minimum time has passed (4 seconds Chrome, 5 seconds Safari)
+    // 2. First video is ready (canplaythrough fired)
+    // 3. Adjacent videos are ready (for smooth toggling)
     // 4. Fonts are loaded
     // 5. Last.fm is done loading (or timed out)
+    // 6. Safari: Buffer pool has the first video
     const checkLoading = setInterval(() => {
       const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading || isDataComplete;
       const firstVideoReady = firstVideoReadyRef.current;
-      // Require at least 1 adjacent video ready, or only 1 video exists
-      const adjacentReady = videoData.length <= 1 || adjacentVideosReadyRef.current >= 1;
 
-      // Exit loader once first video + at least 1 adjacent are ready for smooth toggling
-      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady) {
+      // Require both adjacent videos ready, or fewer videos exist
+      const expectedAdjacent = Math.min(2, videoData.length - 1);
+      const adjacentReady = adjacentVideosReadyRef.current >= expectedAdjacent;
+
+      // Safari: Also check that buffer pool has the first video
+      let bufferPoolReady = true;
+      if (isSafari) {
+        const firstVideoSrc = getVideoSrc(videoData[0]);
+        const poolVideo = safariVideoPoolRef.current.get(firstVideoSrc);
+        bufferPoolReady = poolVideo && poolVideo.readyState >= 3;
+      }
+
+      // Exit loader once everything is ready
+      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady && bufferPoolReady) {
         setIsLoading(false);
       }
     }, 100);
