@@ -1998,7 +1998,7 @@ function App() {
                   </div>
                   {/* Floating z's during sleeping time */}
                   {isSleepingTime && !isHomeButtonHovered && !isFaceClicked && !isMouseNearFace && (
-                    <div className="absolute -top-1 -right-1 pointer-events-none">
+                    <div className="absolute top-1 right-2 pointer-events-none">
                       <span className="sleep-z sleep-z-1 absolute font-graphik text-[8px] text-[#b0b0b0]">z</span>
                       <span className="sleep-z sleep-z-2 absolute font-graphik text-[10px] text-[#b0b0b0]">z</span>
                       <span className="sleep-z sleep-z-3 absolute font-graphik text-[7px] text-[#b0b0b0]">z</span>
