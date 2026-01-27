@@ -218,19 +218,10 @@ function App() {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
 
-    // When hovering or clicked, show happy expression with natural blinking
+    // When hovering or clicked, show happy expression
     if (isHomeButtonHovered || isFaceClicked) {
-      // Simple happy smile
       setFaceExpression('(^_^)');
-
-      // Natural happy blinks while hovered/held
-      const happyInterval = setInterval(() => {
-        // Occasional blink
-        setFaceExpression('(^‿^)');
-        setTimeout(() => setFaceExpression('(^_^)'), 150);
-      }, 800 + Math.random() * 400);
-
-      return () => clearInterval(happyInterval);
+      return;
     }
 
     // When mouse is near face (but not hovering button), show frightened expression
