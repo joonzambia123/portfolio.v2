@@ -451,6 +451,10 @@ function App() {
   const safariPoolOrderRef = useRef([]); // Track order for LRU eviction
   const MAX_SAFARI_POOL_SIZE = 5;
 
+  // Video warm-up tracking - briefly plays each video to initialize decoder
+  const warmupCompleteRef = useRef(false);
+  const warmupCountRef = useRef(0);
+
   const [loadedComponents, setLoadedComponents] = useState({
     timeComponent: false,
     h1: false,
@@ -1222,32 +1226,35 @@ function App() {
   }, []);
 
   // Preload FIRST + ADJACENT videos during the loader to enable smooth toggling
-  // Safari: Uses buffer pool (persistent hidden video elements) for true preloading
-  // Chrome: Uses simple video element preloading
+  // Uses FETCH to fully download videos into HTTP cache (not just canplaythrough which is optimistic)
   useEffect(() => {
     if (videoData.length === 0) return;
 
     adjacentVideosReadyRef.current = 0;
+    firstVideoReadyRef.current = false; // Reset on new video data
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    // Safari: Create buffer pool videos that persist and actually buffer the data
-    const preloadVideoSafari = (videoSrc, onReady) => {
-      // Check if already in pool
-      if (safariVideoPoolRef.current.has(videoSrc)) {
-        const existingVideo = safariVideoPoolRef.current.get(videoSrc);
-        // Check if already ready
-        if (existingVideo.readyState >= 3) {
-          onReady();
-          return existingVideo;
+    // Fetch video fully into HTTP cache - this is the TRUE indicator of readiness
+    const fetchVideoToCache = async (videoSrc, onComplete) => {
+      try {
+        const encodedSrc = encodeVideoSrc(videoSrc);
+        const response = await fetch(encodedSrc);
+        if (response.ok) {
+          await response.blob(); // Force FULL download into cache
+          videoCacheRef.current.add(videoSrc);
+          onComplete(true);
+          return true;
         }
-        // Wait for it to be ready
-        const onCanPlay = () => {
-          existingVideo.removeEventListener('canplaythrough', onCanPlay);
-          onReady();
-        };
-        existingVideo.addEventListener('canplaythrough', onCanPlay);
-        return existingVideo;
+      } catch (e) {
+        // Fetch failed
       }
+      onComplete(false);
+      return false;
+    };
+
+    // Safari: Also create buffer pool video element after fetch completes
+    const createBufferPoolVideo = (videoSrc) => {
+      if (safariVideoPoolRef.current.has(videoSrc)) return;
 
       // Evict oldest if at capacity
       if (safariVideoPoolRef.current.size >= MAX_SAFARI_POOL_SIZE) {
@@ -1262,7 +1269,7 @@ function App() {
         }
       }
 
-      // Create persistent hidden video element in DOM
+      // Create persistent hidden video element
       const video = document.createElement('video');
       video.preload = 'auto';
       video.muted = true;
@@ -1270,67 +1277,24 @@ function App() {
       video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px';
       video.src = encodeVideoSrc(videoSrc);
       document.body.appendChild(video);
+      video.load(); // Should load from HTTP cache now
 
-      const onCanPlayThrough = () => {
-        video.removeEventListener('canplaythrough', onCanPlayThrough);
-        onReady();
-      };
-      video.addEventListener('canplaythrough', onCanPlayThrough);
-      video.load();
-
-      // Add to pool
       safariVideoPoolRef.current.set(videoSrc, video);
       safariPoolOrderRef.current.push(videoSrc);
-
-      return video;
     };
 
-    // Chrome/other browsers: Simple video element preloading
-    const preloadVideoSimple = (videoSrc, onReady) => {
-      const video = document.createElement('video');
-      video.preload = 'auto';
-      video.muted = true;
-      video.playsInline = true;
-      video.src = encodeVideoSrc(videoSrc);
-
-      const onCanPlayThrough = () => {
-        video.removeEventListener('canplaythrough', onCanPlayThrough);
-        onReady();
-      };
-      video.addEventListener('canplaythrough', onCanPlayThrough);
-      video.load();
-
-      return video;
-    };
-
-    const preloadVideo = isSafari ? preloadVideoSafari : preloadVideoSimple;
-
-    // Fetch videos to populate HTTP cache (works for both browsers)
-    // This ensures video data is in browser cache before video elements try to load
-    const fetchVideoToCache = async (videoSrc) => {
-      try {
-        const encodedSrc = encodeVideoSrc(videoSrc);
-        const response = await fetch(encodedSrc);
-        if (response.ok) {
-          await response.blob(); // Force full download into cache
-          return true;
-        }
-      } catch (e) {
-        // Ignore fetch errors
-      }
-      return false;
-    };
-
-    // Preload first video
+    // Preload first video - fetch MUST complete before we consider it ready
     const firstVideoSrc = getVideoSrc(videoData[0]);
 
-    // Start fetch immediately to populate HTTP cache (for both browsers)
-    // This runs in parallel with video element preloading
-    fetchVideoToCache(firstVideoSrc);
-
-    preloadVideo(firstVideoSrc, () => {
-      firstVideoReadyRef.current = true;
-      videoCacheRef.current.add(firstVideoSrc);
+    // Fetch first video (marks ready when complete)
+    fetchVideoToCache(firstVideoSrc, (success) => {
+      if (success) {
+        firstVideoReadyRef.current = true;
+        // Safari: Create buffer pool video after fetch completes
+        if (isSafari) {
+          createBufferPoolVideo(firstVideoSrc);
+        }
+      }
     });
 
     // Preload adjacent videos (next and previous) for smooth toggling
@@ -1338,37 +1302,160 @@ function App() {
       const nextVideoSrc = getVideoSrc(videoData[1]);
       const prevVideoSrc = videoData.length > 2 ? getVideoSrc(videoData[videoData.length - 1]) : null;
 
-      // Fetch adjacent videos to HTTP cache (staggered slightly)
-      setTimeout(() => fetchVideoToCache(nextVideoSrc), 300);
-      if (prevVideoSrc) {
-        setTimeout(() => fetchVideoToCache(prevVideoSrc), 600);
-      }
-
-      preloadVideo(nextVideoSrc, () => {
-        adjacentVideosReadyRef.current += 1;
-        videoCacheRef.current.add(nextVideoSrc);
-      });
-
-      // Preload previous video (last in array)
-      if (prevVideoSrc) {
-        preloadVideo(prevVideoSrc, () => {
-          adjacentVideosReadyRef.current += 1;
-          videoCacheRef.current.add(prevVideoSrc);
+      // Fetch next video (slightly staggered)
+      setTimeout(() => {
+        fetchVideoToCache(nextVideoSrc, (success) => {
+          if (success) {
+            adjacentVideosReadyRef.current += 1;
+            if (isSafari) createBufferPoolVideo(nextVideoSrc);
+          }
         });
+      }, 100);
+
+      // Fetch previous video
+      if (prevVideoSrc) {
+        setTimeout(() => {
+          fetchVideoToCache(prevVideoSrc, (success) => {
+            if (success) {
+              adjacentVideosReadyRef.current += 1;
+              if (isSafari) createBufferPoolVideo(prevVideoSrc);
+            }
+          });
+        }, 200);
       }
     }
 
-    // Fallback: mark as ready after timeout
+    // Fallback: mark as ready after timeout (in case fetch is slow)
     const fallbackTimer = setTimeout(() => {
       if (!firstVideoReadyRef.current) {
+        console.log('Video preload timeout - marking as ready');
         firstVideoReadyRef.current = true;
       }
-    }, isSafari ? 8000 : 6000);
+    }, isSafari ? 10000 : 8000);
 
     return () => {
       clearTimeout(fallbackTimer);
     };
   }, [videoData]);
+
+  // Video warm-up: Cycle through ALL videos during loader to initialize decoder
+  // This mimics what happens when user manually toggles through videos
+  useEffect(() => {
+    if (!isLoading || videoData.length === 0) return;
+
+    let isCancelled = false;
+    const warmupVideoRef = { current: null };
+
+    // Create a single hidden video element for warm-up
+    const createWarmupVideo = () => {
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.muted = true;
+      video.playsInline = true;
+      video.autoplay = false;
+      video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;z-index:-1';
+      document.body.appendChild(video);
+      return video;
+    };
+
+    // Warm up a single video: load, play briefly, pause
+    const warmUpVideo = (videoSrc, onComplete) => {
+      if (isCancelled || !warmupVideoRef.current) {
+        onComplete();
+        return;
+      }
+
+      const video = warmupVideoRef.current;
+      const encodedSrc = encodeVideoSrc(videoSrc);
+
+      // Cleanup any existing handlers
+      video.oncanplay = null;
+      video.onerror = null;
+
+      // Set timeout for this video (500ms max per video)
+      const timeout = setTimeout(() => {
+        video.pause();
+        warmupCountRef.current += 1;
+        onComplete();
+      }, 500);
+
+      video.oncanplay = () => {
+        if (isCancelled) {
+          clearTimeout(timeout);
+          onComplete();
+          return;
+        }
+        // Play briefly then pause
+        video.play().then(() => {
+          setTimeout(() => {
+            if (!isCancelled) {
+              video.pause();
+              warmupCountRef.current += 1;
+            }
+            clearTimeout(timeout);
+            onComplete();
+          }, 150); // Play for 150ms to initialize decoder
+        }).catch(() => {
+          // Play failed, still count as warmed up
+          clearTimeout(timeout);
+          warmupCountRef.current += 1;
+          onComplete();
+        });
+      };
+
+      video.onerror = () => {
+        clearTimeout(timeout);
+        warmupCountRef.current += 1;
+        onComplete();
+      };
+
+      // Load the video
+      video.src = encodedSrc;
+      video.load();
+    };
+
+    // Start warm-up process with 500ms delay to let initial fetches start
+    const startTimer = setTimeout(() => {
+      if (isCancelled) return;
+
+      warmupVideoRef.current = createWarmupVideo();
+
+      // Cycle through all videos
+      let currentIndex = 0;
+
+      const warmupNext = () => {
+        if (isCancelled || currentIndex >= videoData.length) {
+          // All done
+          warmupCompleteRef.current = true;
+          console.log(`Video warm-up complete: ${warmupCountRef.current}/${videoData.length} videos`);
+          return;
+        }
+
+        const video = videoData[currentIndex];
+        const videoSrc = getVideoSrc(video);
+        currentIndex++;
+
+        warmUpVideo(videoSrc, () => {
+          if (!isCancelled) {
+            // Small delay between videos to avoid overwhelming the browser
+            setTimeout(warmupNext, 50);
+          }
+        });
+      };
+
+      warmupNext();
+    }, 500);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(startTimer);
+      if (warmupVideoRef.current) {
+        warmupVideoRef.current.pause();
+        warmupVideoRef.current.src = '';
+        warmupVideoRef.current.remove();
+      }
+    };
+  }, [isLoading, videoData]);
 
   // Background video preloading: Preload remaining videos AFTER loader completes
   // First 3 videos (current, next, prev) are preloaded during loader
@@ -1531,45 +1618,43 @@ function App() {
     };
   }, [isLoading]);
 
-  // Check if loading is complete - wait for first + adjacent videos, fonts, and Last.fm
+  // Check if loading is complete - wait for video warm-up, fonts, and Last.fm
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
 
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
     // Check periodically if everything is ready:
-    // 1. Minimum time has passed (4 seconds Chrome, 5 seconds Safari)
-    // 2. First video is ready (canplaythrough fired)
-    // 3. Adjacent videos are ready (for smooth toggling)
-    // 4. Fonts are loaded
-    // 5. Last.fm is done loading (or timed out)
-    // 6. Safari: Buffer pool has the first video
+    // 1. Minimum time has passed (5 seconds Safari, 4 seconds Chrome)
+    // 2. First video fetch completed (video is in HTTP cache)
+    // 3. Adjacent videos fetch completed
+    // 4. Video warm-up complete OR at least 50% of videos warmed up
+    // 5. Fonts are loaded
+    // 6. Last.fm is done loading (or timed out)
     const checkLoading = setInterval(() => {
       const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading || isDataComplete;
       const firstVideoReady = firstVideoReadyRef.current;
 
-      // Require both adjacent videos ready, or fewer videos exist
+      // Require both adjacent videos ready (fetch complete), or fewer videos exist
       const expectedAdjacent = Math.min(2, videoData.length - 1);
       const adjacentReady = adjacentVideosReadyRef.current >= expectedAdjacent;
 
-      // Safari: Also check that buffer pool has the first video
-      let bufferPoolReady = true;
-      if (isSafari) {
-        const firstVideoSrc = getVideoSrc(videoData[0]);
-        const poolVideo = safariVideoPoolRef.current.get(firstVideoSrc);
-        bufferPoolReady = poolVideo && poolVideo.readyState >= 3;
-      }
+      // Require video warm-up: either complete, or at least 50% done
+      const minWarmupCount = Math.ceil(videoData.length * 0.5);
+      const warmupReady = warmupCompleteRef.current || warmupCountRef.current >= minWarmupCount;
 
-      // Exit loader once everything is ready
-      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady && bufferPoolReady) {
+      // Exit loader once all conditions met and min time passed
+      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady && warmupReady) {
+        console.log(`Loader complete: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
         setIsLoading(false);
       }
     }, 100);
 
-    // Maximum loader time
-    const maxTime = isSafari ? 12000 : 10000;
+    // Maximum loader time (longer to allow video warm-up)
+    const maxTime = isSafari ? 15000 : 12000;
     const maxTimer = setTimeout(() => {
+      console.log(`Loader timeout: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
       setIsLoading(false);
     }, maxTime);
 
