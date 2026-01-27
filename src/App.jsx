@@ -1338,41 +1338,52 @@ function App() {
     };
   }, [videoData]);
 
-  // Video warm-up: After loader ends, warm up other video elements (skip first which is already playing)
-  // This loads and briefly plays each video to initialize the decoder
+  // Video warm-up: Run DURING the loader to warm up ALL video elements
+  // Videos now render (hidden) during loader, so we can initialize them
   useEffect(() => {
-    // Run AFTER loader ends (when video elements exist in DOM)
-    if (isLoading || videoData.length === 0) return;
+    // Only run during loading when we have video data
+    if (!isLoading || videoData.length === 0) return;
 
     let isCancelled = false;
-    const videoElements = videoElementsRef.current;
 
-    // Warm up video elements by loading and briefly playing each (skip first video)
-    const warmUpOtherVideos = async () => {
-      console.log('Starting video warm-up for other videos');
+    // Wait for video elements to be mounted in DOM
+    const checkAndWarmUp = async () => {
+      const videoElements = videoElementsRef.current;
 
-      // Skip index 0 (first video is already playing)
-      for (let i = 1; i < videoElements.length; i++) {
+      // Wait until video elements exist
+      if (!videoElements || videoElements.length === 0 || !videoElements[0]) {
+        // Retry after a short delay
+        setTimeout(checkAndWarmUp, 100);
+        return;
+      }
+
+      console.log('Starting video warm-up during loader for', videoElements.length, 'videos');
+
+      // Warm up ALL videos
+      for (let i = 0; i < videoElements.length; i++) {
         if (isCancelled) break;
 
         const videoEl = videoElements[i];
         if (!videoEl) continue;
 
         try {
-          // Force preload
+          // Force preload for all videos
           videoEl.preload = 'auto';
+          videoEl.muted = true;
           videoEl.load();
 
-          // Wait for enough data, then play briefly
+          // Wait for enough data, then play briefly to initialize decoder
           await new Promise((resolve) => {
             const timeout = setTimeout(() => {
               warmupCountRef.current += 1;
               resolve();
-            }, 300); // Max 300ms per video
+            }, 500); // Max 500ms per video
 
             const onCanPlay = () => {
               videoEl.removeEventListener('canplay', onCanPlay);
-              // Play briefly to initialize decoder
+              videoEl.removeEventListener('loadeddata', onCanPlay);
+
+              // Play briefly to initialize decoder (video is muted and hidden)
               videoEl.play().then(() => {
                 setTimeout(() => {
                   if (!isCancelled) {
@@ -1382,7 +1393,7 @@ function App() {
                   clearTimeout(timeout);
                   warmupCountRef.current += 1;
                   resolve();
-                }, 80);
+                }, 100); // Play for 100ms
               }).catch(() => {
                 clearTimeout(timeout);
                 warmupCountRef.current += 1;
@@ -1391,17 +1402,19 @@ function App() {
             };
 
             videoEl.addEventListener('canplay', onCanPlay);
+            videoEl.addEventListener('loadeddata', onCanPlay);
 
             // If already ready, trigger immediately
-            if (videoEl.readyState >= 3) {
+            if (videoEl.readyState >= 2) {
               videoEl.removeEventListener('canplay', onCanPlay);
+              videoEl.removeEventListener('loadeddata', onCanPlay);
               onCanPlay();
             }
           });
 
-          // Small delay between videos
+          // Small delay between videos to avoid overwhelming browser
           if (!isCancelled && i < videoElements.length - 1) {
-            await new Promise(r => setTimeout(r, 30));
+            await new Promise(r => setTimeout(r, 50));
           }
         } catch (e) {
           warmupCountRef.current += 1;
@@ -1410,12 +1423,12 @@ function App() {
 
       if (!isCancelled) {
         warmupCompleteRef.current = true;
-        console.log(`Video warm-up complete: ${warmupCountRef.current}/${videoElements.length - 1} other videos`);
+        console.log(`Video warm-up complete during loader: ${warmupCountRef.current}/${videoElements.length} videos`);
       }
     };
 
-    // Wait 500ms to ensure first video playback is stable before warming up others
-    const timer = setTimeout(warmUpOtherVideos, 500);
+    // Start warm-up after a brief delay to let DOM settle
+    const timer = setTimeout(checkAndWarmUp, 200);
 
     return () => {
       isCancelled = true;
@@ -1584,7 +1597,7 @@ function App() {
     };
   }, [isLoading]);
 
-  // Check if loading is complete - wait for first + adjacent videos, fonts, and Last.fm
+  // Check if loading is complete - wait for video warm-up, fonts, and Last.fm
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
 
@@ -1592,28 +1605,28 @@ function App() {
 
     // Check periodically if everything is ready:
     // 1. Minimum time has passed (5 seconds Safari, 4 seconds Chrome)
-    // 2. First video fetch completed (video is in HTTP cache)
-    // 3. Adjacent videos fetch completed
-    // 4. Fonts are loaded
-    // 5. Last.fm is done loading (or timed out)
+    // 2. Video warm-up complete (or at least 50% done)
+    // 3. Fonts are loaded
+    // 4. Last.fm is done loading (or timed out)
     const checkLoading = setInterval(() => {
       const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading || isDataComplete;
-      const firstVideoReady = firstVideoReadyRef.current;
 
-      // Require both adjacent videos ready (fetch complete), or fewer videos exist
-      const expectedAdjacent = Math.min(2, videoData.length - 1);
-      const adjacentReady = adjacentVideosReadyRef.current >= expectedAdjacent;
+      // Require warm-up: either complete OR at least 50% of videos warmed up
+      const minWarmup = Math.ceil(videoData.length * 0.5);
+      const warmupReady = warmupCompleteRef.current || warmupCountRef.current >= minWarmup;
 
-      // Exit loader once first 3 videos are fetched and min time passed
-      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady) {
+      // Exit loader once warm-up has made enough progress and min time passed
+      if (loaderMinTimeRef.current && fontsReady && lastFmReady && warmupReady) {
+        console.log(`Loader complete: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
         setIsLoading(false);
       }
     }, 100);
 
-    // Maximum loader time
-    const maxTime = isSafari ? 12000 : 10000;
+    // Maximum loader time (allow enough for warm-up)
+    const maxTime = isSafari ? 15000 : 12000;
     const maxTimer = setTimeout(() => {
+      console.log(`Loader timeout: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
       setIsLoading(false);
     }, maxTime);
 
@@ -1788,34 +1801,34 @@ function App() {
           }
         };
 
-        // Safari: The loader should have waited for buffered data, but double-check
-        if (isSafari) {
-          // Force load the video source
+        // Check if video was warmed up during loader (already has data)
+        const hasEnoughData = () => {
+          return firstVideo.readyState >= 2 ||
+            (firstVideo.buffered.length > 0 && firstVideo.buffered.end(0) > 0.3);
+        };
+
+        if (hasEnoughData()) {
+          // Video was warmed up during loader - just play it
+          console.log('First video ready from warm-up, playing directly');
+          playVideo();
+        } else if (isSafari) {
+          // Safari: Video not ready, force load and wait
+          console.log('First video not ready, loading...');
           firstVideo.load();
 
-          // Check if video has enough data
-          const hasEnoughData = () => {
-            return firstVideo.readyState >= 2 ||
-              (firstVideo.buffered.length > 0 && firstVideo.buffered.end(0) > 0.3);
-          };
-
-          if (!hasEnoughData()) {
-            // Listen for when data is ready
-            const onCanPlay = () => {
-              firstVideo.removeEventListener('canplay', onCanPlay);
-              playVideo();
-            };
-            firstVideo.addEventListener('canplay', onCanPlay);
-
-            // Fallback: try playing after short delay
-            setTimeout(() => {
-              firstVideo.removeEventListener('canplay', onCanPlay);
-              playVideo();
-            }, 500);
-          } else {
+          const onCanPlay = () => {
+            firstVideo.removeEventListener('canplay', onCanPlay);
             playVideo();
-          }
+          };
+          firstVideo.addEventListener('canplay', onCanPlay);
+
+          // Fallback: try playing after short delay
+          setTimeout(() => {
+            firstVideo.removeEventListener('canplay', onCanPlay);
+            playVideo();
+          }, 500);
         } else {
+          // Chrome: Just try to play
           playVideo();
         }
       }
@@ -1855,41 +1868,50 @@ function App() {
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
 
-  // Show coordinates loader while videos preload
-  if (isLoading || !hasAnyData) {
-    const coordinates = videoData.length > 0
-      ? videoData.map(v => v.coordinates)
-      : ['6.79770°S, 107.57870°E', '37.82975°N, 122.40606°W', '56.76040°N, 4.69090°W', '10.77700°N, 106.69860°E'];
-
-    return (
-      <div className="bg-[#FCFCFC] min-h-screen w-full flex flex-col items-center justify-center gap-4">
-        {/* Only show text after fonts are loaded to prevent FOUT */}
-        {fontsReady ? (
-          <>
-            <div className={`coord-loader font-graphik text-[16px] text-[#91918e] ${coordFading ? 'coord-fade-out' : 'coord-fade-in'}`}>
-              {coordinates[currentCoordIndex % coordinates.length]}
-            </div>
-            {loaderMessage && (
-              <div className="font-graphik text-[13px] text-[#b5b5b5] animate-pulse">
-                {loaderMessage}
-              </div>
-            )}
-          </>
-        ) : (
-          /* Invisible placeholder to prevent layout shift */
-          <div className="h-[24px]" />
-        )}
-      </div>
-    );
-  }
-  
   // Use fallback data if missing
   const safeVideoData = videoData.length > 0 ? videoData : [];
   const safeWebsiteCopy = Object.keys(websiteCopy).length > 0 ? websiteCopy : {};
 
+  // Coordinates for loader animation
+  const loaderCoordinates = videoData.length > 0
+    ? videoData.map(v => v.coordinates)
+    : ['6.79770°S, 107.57870°E', '37.82975°N, 122.40606°W', '56.76040°N, 4.69090°W', '10.77700°N, 106.69860°E'];
+
+  // If no data at all, show minimal loader
+  if (!hasAnyData) {
+    return (
+      <div className="bg-[#FCFCFC] min-h-screen w-full flex flex-col items-center justify-center gap-4">
+        <div className="h-[24px]" />
+      </div>
+    );
+  }
+
   return (
     <>
     <div className="bg-[#FCFCFC] min-h-screen w-full">
+      {/* Loader Overlay - covers content while videos load */}
+      {isLoading && (
+        <div
+          className="fixed inset-0 z-[9999] bg-[#FCFCFC] flex flex-col items-center justify-center gap-4 transition-opacity duration-300"
+          style={{ pointerEvents: 'auto' }}
+        >
+          {fontsReady ? (
+            <>
+              <div className={`coord-loader font-graphik text-[16px] text-[#91918e] ${coordFading ? 'coord-fade-out' : 'coord-fade-in'}`}>
+                {loaderCoordinates[currentCoordIndex % loaderCoordinates.length]}
+              </div>
+              {loaderMessage && (
+                <div className="font-graphik text-[13px] text-[#b5b5b5] animate-pulse">
+                  {loaderMessage}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="h-[24px]" />
+          )}
+        </div>
+      )}
+
       {/* Skip link for keyboard users */}
       <a
         href="#main-content"
