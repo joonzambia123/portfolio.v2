@@ -1965,9 +1965,8 @@ function App() {
               <button
                 className={`home-button flex items-center gap-[10px] px-[4px] py-[4px] rounded-[16px] cursor-pointer ${isHomeButtonHovered ? 'gary-active' : ''}`}
                 onClick={playClick}
-                onMouseDown={() => setIsFaceClicked(true)}
+                onMouseDown={() => { setIsFaceClicked(true); console.log('Face clicked!'); }}
                 onMouseUp={() => setIsFaceClicked(false)}
-                onMouseLeave={() => setIsFaceClicked(false)}
                 aria-label="Joonseo Chang - Home"
               >
                 <div
