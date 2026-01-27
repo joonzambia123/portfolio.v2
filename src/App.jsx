@@ -176,6 +176,18 @@ function App() {
   const [isHomeButtonHovered, setIsHomeButtonHovered] = useState(false);
   const [isFaceClicked, setIsFaceClicked] = useState(false);
   const [isFaceHoverExiting, setIsFaceHoverExiting] = useState(false);
+  const [isSleepingTime, setIsSleepingTime] = useState(false);
+
+  // Check if it's sleeping time (10PM - 6AM local time)
+  useEffect(() => {
+    const checkSleepingTime = () => {
+      const hour = new Date().getHours();
+      setIsSleepingTime(hour >= 22 || hour < 6);
+    };
+    checkSleepingTime();
+    const interval = setInterval(checkSleepingTime, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
 
   // Global mouseup to handle releasing click outside button
   useEffect(() => {
@@ -218,7 +230,7 @@ function App() {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
 
-    // When hovering or clicked, show happy expression with rare blinks
+    // When hovering or clicked, show happy expression (even during sleep time)
     if (isHomeButtonHovered || isFaceClicked) {
       setFaceExpression('(^_^)');
 
@@ -231,9 +243,16 @@ function App() {
       return () => clearInterval(happyInterval);
     }
 
-    // When mouse is near face (but not hovering button), show frightened expression
+    // When mouse is near face (but not hovering button), show startled expression
     if (isMouseNearFace) {
-      setFaceExpression('(O_O)');
+      setFaceExpression(isSleepingTime ? '(o_o)' : '(O_O)');
+      return;
+    }
+
+    // Sleeping state (10PM - 6AM)
+    if (isSleepingTime) {
+      setFaceExpression('(-_-)');
+      setFaceTransform({ scaleY: 1, scaleX: 1, translateX: 0, translateY: 0 });
       return;
     }
 
@@ -448,7 +467,7 @@ function App() {
       clearTimeout(lookTimeout);
       clearTimeout(contentTimeout);
     };
-  }, [isLoading, isMouseNearFace, isFaceClicked, isHomeButtonHovered]);
+  }, [isLoading, isMouseNearFace, isFaceClicked, isHomeButtonHovered, isSleepingTime]);
 
   // Last.fm integration
   const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, isDataComplete, playPreview, stopPreview } = useLastFm();
@@ -1964,7 +1983,7 @@ function App() {
               >
                 <div
                   ref={faceIconRef}
-                  className={`face-icon-container h-[37px] w-[42px] flex items-center justify-center rounded-[12px] ${isMouseNearFace ? 'frightened' : ''}`}
+                  className={`face-icon-container h-[37px] w-[42px] flex items-center justify-center rounded-[12px] ${isMouseNearFace ? 'frightened' : ''} relative`}
                 >
                   <div
                     className="flex items-center justify-center leading-none"
@@ -1977,6 +1996,14 @@ function App() {
                       {faceExpression}
                     </span>
                   </div>
+                  {/* Floating z's during sleeping time */}
+                  {isSleepingTime && !isHomeButtonHovered && !isFaceClicked && !isMouseNearFace && (
+                    <div className="absolute -top-1 -right-1 pointer-events-none">
+                      <span className="sleep-z sleep-z-1 absolute font-graphik text-[8px] text-[#b0b0b0]">z</span>
+                      <span className="sleep-z sleep-z-2 absolute font-graphik text-[10px] text-[#b0b0b0]">z</span>
+                      <span className="sleep-z sleep-z-3 absolute font-graphik text-[7px] text-[#b0b0b0]">z</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col items-start gap-[3px] pr-[8px]">
                   <span className="nav-name font-graphik text-[14px] text-[#5b5b5e] leading-none transition-colors duration-[250ms]">Joonseo Chang</span>
