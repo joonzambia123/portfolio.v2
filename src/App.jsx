@@ -1338,127 +1338,89 @@ function App() {
     };
   }, [videoData]);
 
-  // Video warm-up: Force ACTUAL FRAME DECODING by playing videos briefly
-  // Key insight: browsers defer frame decoding until video is visible AND playing
-  // Just buffering data isn't enough - we need to force the decoder to render frames
+  // Video optimization: Simple approach
+  // 1. Fetch all video data into browser cache (parallel, fast)
+  // 2. Only decode first video frames (guaranteed to play immediately)
+  // 3. Other videos load instantly from cache when toggled
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
 
     let isCancelled = false;
 
-    // Force a video to decode frames by making it visible and playing briefly
-    const forceDecodeFrames = async (videoEl, isFirst = false) => {
-      if (!videoEl || isCancelled) return;
-
-      return new Promise((resolve) => {
-        let resolved = false;
-        const done = () => {
-          if (resolved) return;
-          resolved = true;
-          // Restore hidden state (but keep first video visible)
-          if (!isFirst) {
-            videoEl.style.visibility = 'hidden';
-            videoEl.style.opacity = '0';
-            videoEl.pause();
-            videoEl.currentTime = 0;
-          }
-          warmupCountRef.current += 1;
-          resolve();
-        };
-
-        // Max time per video
-        const timeout = setTimeout(done, isFirst ? 3000 : 800);
-
-        videoEl.preload = 'auto';
-        videoEl.muted = true;
-
-        // CRITICAL: Make video VISIBLE to force frame decoding
-        // Use minimal visibility - browser still decodes when technically visible
-        videoEl.style.visibility = 'visible';
-        videoEl.style.opacity = '0.01'; // Nearly invisible but triggers decoding
-
-        videoEl.load();
-
-        // Wait for canplay then ACTUALLY PLAY to trigger frame decode
-        const onCanPlay = () => {
-          if (resolved || isCancelled) return;
-
-          videoEl.play().then(() => {
-            // Wait for actual frame to render (timeupdate fires when frame decoded)
-            const onTimeUpdate = () => {
-              videoEl.removeEventListener('timeupdate', onTimeUpdate);
-              clearTimeout(timeout);
-              if (isFirst) {
-                firstVideoReadyRef.current = true;
-                console.log('First video: frames decoded');
-              }
-              done();
-            };
-            videoEl.addEventListener('timeupdate', onTimeUpdate, { once: true });
-
-            // Fallback: if no timeupdate after 200ms, consider it done
-            setTimeout(() => {
-              videoEl.removeEventListener('timeupdate', onTimeUpdate);
-              if (!resolved) {
-                if (isFirst) firstVideoReadyRef.current = true;
-                done();
-              }
-            }, isFirst ? 500 : 200);
-          }).catch(() => {
-            clearTimeout(timeout);
-            if (isFirst) firstVideoReadyRef.current = true;
-            done();
-          });
-        };
-
-        if (videoEl.readyState >= 3) {
-          onCanPlay();
-        } else {
-          videoEl.addEventListener('canplay', onCanPlay, { once: true });
-        }
-      });
-    };
-
-    const warmUpAllVideos = async () => {
+    const optimizeVideos = async () => {
       const videoElements = videoElementsRef.current;
 
       // Wait for video elements to mount
       if (!videoElements || videoElements.length === 0 || !videoElements[0]) {
-        if (!isCancelled) setTimeout(warmUpAllVideos, 100);
+        if (!isCancelled) setTimeout(optimizeVideos, 100);
         return;
       }
 
-      console.log('Starting video warm-up with FRAME DECODING for', videoElements.length, 'videos');
+      console.log('Starting video optimization for', videoElements.length, 'videos');
 
-      // FIRST: Decode frames for first video (this one stays visible)
-      await forceDecodeFrames(videoElements[0], true);
+      // STEP 1: Fetch ALL video data into browser cache (parallel)
+      // This is fast because it's just HTTP requests, no decoding
+      const fetchPromises = videoData.map(async (video) => {
+        try {
+          const videoSrc = getVideoSrc(video);
+          const response = await fetch(encodeVideoSrc(videoSrc));
+          if (response.ok) {
+            await response.blob(); // Force complete download
+            videoCacheRef.current.add(videoSrc);
+          }
+        } catch (e) {}
+        warmupCountRef.current += 1;
+      });
 
-      // THEN: Decode frames for remaining videos in parallel batches
-      const BATCH_SIZE = 4;
-      const remainingVideos = videoElements.slice(1);
+      // Start all fetches in parallel
+      Promise.all(fetchPromises).then(() => {
+        if (!isCancelled) {
+          warmupCompleteRef.current = true;
+          console.log('All videos cached');
+        }
+      });
 
-      for (let i = 0; i < remainingVideos.length; i += BATCH_SIZE) {
-        if (isCancelled) break;
+      // STEP 2: Decode ONLY first video (for immediate playback)
+      const firstVideo = videoElements[0];
+      if (firstVideo && !isCancelled) {
+        firstVideo.preload = 'auto';
+        firstVideo.muted = true;
+        firstVideo.style.visibility = 'visible';
+        firstVideo.style.opacity = '0.01';
+        firstVideo.load();
 
-        const batch = remainingVideos.slice(i, Math.min(i + BATCH_SIZE, remainingVideos.length));
-        await Promise.all(batch.map(videoEl => forceDecodeFrames(videoEl, false)));
+        await new Promise((resolve) => {
+          const done = () => {
+            firstVideoReadyRef.current = true;
+            console.log('First video ready');
+            resolve();
+          };
 
-        console.log(`Batch complete: ${warmupCountRef.current}/${videoElements.length} videos decoded`);
-      }
+          const timeout = setTimeout(done, 3000);
 
-      if (!isCancelled) {
-        warmupCompleteRef.current = true;
-        console.log(`Video warm-up COMPLETE: ${warmupCountRef.current}/${videoElements.length} videos with frames decoded`);
+          const onCanPlay = () => {
+            firstVideo.play().then(() => {
+              const onFrame = () => {
+                firstVideo.removeEventListener('timeupdate', onFrame);
+                clearTimeout(timeout);
+                done();
+              };
+              firstVideo.addEventListener('timeupdate', onFrame, { once: true });
+              setTimeout(() => {
+                firstVideo.removeEventListener('timeupdate', onFrame);
+                if (!firstVideoReadyRef.current) done();
+              }, 300);
+            }).catch(done);
+          };
+
+          if (firstVideo.readyState >= 3) onCanPlay();
+          else firstVideo.addEventListener('canplay', onCanPlay, { once: true });
+        });
       }
     };
 
-    // Start after brief delay for DOM to settle
-    const timer = setTimeout(warmUpAllVideos, 200);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(optimizeVideos, 100);
+    return () => { isCancelled = true; clearTimeout(timer); };
   }, [isLoading, videoData]);
 
   // Background video preloading: Preload remaining videos AFTER loader completes
@@ -1537,7 +1499,7 @@ function App() {
 
       // Set minimum loader time to allow videos to fully buffer
       // Safari: 6 seconds, Chrome: 5 seconds (increased for better buffering)
-      const minTime = isSafari ? 6000 : 5000;
+      const minTime = isSafari ? 4000 : 3000;
       minTimeTimer = setTimeout(() => {
         if (isMounted) {
           loaderMinTimeRef.current = true;
@@ -1630,28 +1592,28 @@ function App() {
 
     // Check periodically if everything is ready:
     // 1. Minimum time has passed (6 seconds Safari, 5 seconds Chrome)
-    // 2. First video is FULLY ready (buffered)
-    // 3. Video warm-up complete (or at least 80% done)
+    // 2. First video is FULLY ready (decoded, can play)
+    // 3. Videos are being cached (at least 50% fetched)
     // 4. Fonts are loaded
     // 5. Last.fm is done loading (or timed out)
     const checkLoading = setInterval(() => {
       const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading || isDataComplete;
-      const firstVideoBuffered = firstVideoReadyRef.current;
+      const firstVideoReady = firstVideoReadyRef.current;
 
-      // Require 80% warm-up (not 50%) for smoother experience
-      const minWarmup = Math.ceil(videoData.length * 0.8);
-      const warmupReady = warmupCompleteRef.current || warmupCountRef.current >= minWarmup;
+      // Require 50% of videos cached (fetch is fast, so this should complete quickly)
+      const minCached = Math.ceil(videoData.length * 0.5);
+      const cacheReady = warmupCompleteRef.current || warmupCountRef.current >= minCached;
 
-      // Exit loader once first video buffered, warm-up done, and min time passed
-      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoBuffered && warmupReady) {
-        console.log(`Loader complete: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
+      // Exit loader once first video ready and enough cached
+      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && cacheReady) {
+        console.log(`Loader complete: ${warmupCountRef.current}/${videoData.length} videos cached`);
         setIsLoading(false);
       }
     }, 100);
 
-    // Maximum loader time (allow enough for warm-up)
-    const maxTime = isSafari ? 15000 : 12000;
+    // Maximum loader time (faster since we're just caching, not decoding all)
+    const maxTime = isSafari ? 10000 : 8000;
     const maxTimer = setTimeout(() => {
       console.log(`Loader timeout: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
       setIsLoading(false);
