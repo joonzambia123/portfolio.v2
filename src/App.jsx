@@ -1576,7 +1576,7 @@ function App() {
 
       // Set minimum loader time to allow videos to fully decode frames
       // Safari: 6 seconds, Chrome: 5 seconds (gives warmup time to decode all videos)
-      const minTime = isSafari ? 6000 : 5000;
+      const minTime = isSafari ? 4000 : 3000;
       minTimeTimer = setTimeout(() => {
         if (isMounted) {
           loaderMinTimeRef.current = true;
@@ -1690,7 +1690,7 @@ function App() {
     }, 100);
 
     // Maximum loader time
-    const maxTime = isSafari ? 12000 : 10000;
+    const maxTime = isSafari ? 8000 : 6000;
     const maxTimer = setTimeout(() => {
       console.log(`Loader timeout: ${warmupCountRef.current}/${videoData.length} videos decoded`);
       setIsLoading(false);
