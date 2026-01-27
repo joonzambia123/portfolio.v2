@@ -1458,6 +1458,9 @@ function App() {
       });
     };
 
+    // Yield to main thread to prevent blocking
+    const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
+
     const warmUpVideos = async () => {
       const videoElements = videoElementsRef.current;
 
@@ -1472,9 +1475,20 @@ function App() {
       await decodeFirstVideo(videoElements[0]);
       console.log('First video ready');
 
-      // Then: Preload all other videos in parallel (fast)
+      // Yield after first video
+      await yieldToMain();
+
+      // Then: Preload other videos in batches, yielding between batches
       const otherVideos = videoElements.slice(1);
-      await Promise.all(otherVideos.map(v => preloadVideo(v)));
+      const BATCH_SIZE = 4;
+
+      for (let i = 0; i < otherVideos.length; i += BATCH_SIZE) {
+        if (isCancelled) break;
+        const batch = otherVideos.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(v => preloadVideo(v)));
+        // Yield to main thread between batches
+        await yieldToMain();
+      }
 
       if (!isCancelled) {
         warmupCompleteRef.current = true;
