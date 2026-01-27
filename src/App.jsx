@@ -1338,97 +1338,125 @@ function App() {
     };
   }, [videoData]);
 
-  // Video warm-up: Run DURING the loader to warm up ALL video elements
-  // Videos now render (hidden) during loader, so we can initialize them
+  // Video warm-up: PARALLEL processing during loader with REAL buffering checks
+  // This ensures videos are actually ready to play, not just touched
   useEffect(() => {
-    // Only run during loading when we have video data
     if (!isLoading || videoData.length === 0) return;
 
     let isCancelled = false;
 
-    // Wait for video elements to be mounted in DOM
-    const checkAndWarmUp = async () => {
+    const warmUpAllVideos = async () => {
       const videoElements = videoElementsRef.current;
 
-      // Wait until video elements exist
+      // Wait for video elements to mount
       if (!videoElements || videoElements.length === 0 || !videoElements[0]) {
-        // Retry after a short delay
-        setTimeout(checkAndWarmUp, 100);
+        if (!isCancelled) setTimeout(warmUpAllVideos, 100);
         return;
       }
 
-      console.log('Starting video warm-up during loader for', videoElements.length, 'videos');
+      console.log('Starting PARALLEL video warm-up for', videoElements.length, 'videos');
 
-      // Warm up ALL videos
-      for (let i = 0; i < videoElements.length; i++) {
+      // FIRST: Ensure first video is FULLY ready (wait for real buffering)
+      const firstVideo = videoElements[0];
+      if (firstVideo && !isCancelled) {
+        firstVideo.preload = 'auto';
+        firstVideo.muted = true;
+        firstVideo.load();
+
+        await new Promise((resolve) => {
+          let resolved = false;
+          const done = () => {
+            if (resolved) return;
+            resolved = true;
+            firstVideoReadyRef.current = true;
+            warmupCountRef.current += 1;
+            console.log('First video ready');
+            resolve();
+          };
+
+          // Check for buffered data (at least 2 seconds)
+          const checkBuffer = () => {
+            if (resolved || isCancelled) return;
+            try {
+              if (firstVideo.buffered.length > 0 && firstVideo.buffered.end(0) >= 2) {
+                done();
+                return;
+              }
+              if (firstVideo.readyState >= 4) { // HAVE_ENOUGH_DATA
+                done();
+                return;
+              }
+            } catch (e) {}
+            setTimeout(checkBuffer, 100);
+          };
+
+          // Max 4 seconds for first video
+          const timeout = setTimeout(done, 4000);
+
+          firstVideo.addEventListener('canplaythrough', () => {
+            clearTimeout(timeout);
+            done();
+          }, { once: true });
+
+          checkBuffer();
+        });
+      }
+
+      // THEN: Warm up remaining videos in PARALLEL batches
+      const BATCH_SIZE = 4;
+      const remainingVideos = videoElements.slice(1);
+
+      for (let i = 0; i < remainingVideos.length; i += BATCH_SIZE) {
         if (isCancelled) break;
 
-        const videoEl = videoElements[i];
-        if (!videoEl) continue;
+        const batch = remainingVideos.slice(i, Math.min(i + BATCH_SIZE, remainingVideos.length));
 
-        try {
-          // Force preload for all videos
+        await Promise.all(batch.map(async (videoEl) => {
+          if (!videoEl || isCancelled) return;
+
           videoEl.preload = 'auto';
           videoEl.muted = true;
           videoEl.load();
 
-          // Wait for enough data, then play briefly to initialize decoder
           await new Promise((resolve) => {
-            const timeout = setTimeout(() => {
+            let resolved = false;
+            const done = () => {
+              if (resolved) return;
+              resolved = true;
               warmupCountRef.current += 1;
               resolve();
-            }, 500); // Max 500ms per video
-
-            const onCanPlay = () => {
-              videoEl.removeEventListener('canplay', onCanPlay);
-              videoEl.removeEventListener('loadeddata', onCanPlay);
-
-              // Play briefly to initialize decoder (video is muted and hidden)
-              videoEl.play().then(() => {
-                setTimeout(() => {
-                  if (!isCancelled) {
-                    videoEl.pause();
-                    videoEl.currentTime = 0;
-                  }
-                  clearTimeout(timeout);
-                  warmupCountRef.current += 1;
-                  resolve();
-                }, 100); // Play for 100ms
-              }).catch(() => {
-                clearTimeout(timeout);
-                warmupCountRef.current += 1;
-                resolve();
-              });
             };
 
-            videoEl.addEventListener('canplay', onCanPlay);
-            videoEl.addEventListener('loadeddata', onCanPlay);
+            // Max 1 second per video in batch
+            const timeout = setTimeout(done, 1000);
 
-            // If already ready, trigger immediately
-            if (videoEl.readyState >= 2) {
-              videoEl.removeEventListener('canplay', onCanPlay);
-              videoEl.removeEventListener('loadeddata', onCanPlay);
-              onCanPlay();
+            // Check for any buffered data or canplay
+            const onReady = () => {
+              clearTimeout(timeout);
+              done();
+            };
+
+            if (videoEl.readyState >= 3) {
+              onReady();
+              return;
             }
-          });
 
-          // Small delay between videos to avoid overwhelming browser
-          if (!isCancelled && i < videoElements.length - 1) {
-            await new Promise(r => setTimeout(r, 50));
-          }
-        } catch (e) {
-          warmupCountRef.current += 1;
-        }
+            videoEl.addEventListener('canplay', onReady, { once: true });
+            videoEl.addEventListener('loadeddata', onReady, { once: true });
+          });
+        }));
+
+        console.log(`Batch complete: ${warmupCountRef.current}/${videoElements.length} videos ready`);
       }
 
       if (!isCancelled) {
         warmupCompleteRef.current = true;
-        console.log(`Video warm-up complete during loader: ${warmupCountRef.current}/${videoElements.length} videos`);
+        console.log(`Video warm-up COMPLETE: ${warmupCountRef.current}/${videoElements.length} videos`);
       }
     };
 
-    // Start warm-up after a brief delay to let DOM settle
-    const timer = setTimeout(checkAndWarmUp, 200);
+    // Start after brief delay for DOM to settle
+    const timer = setTimeout(warmUpAllVideos, 200);
 
     return () => {
       isCancelled = true;
@@ -1511,8 +1539,8 @@ function App() {
       if (!isMounted) return;
 
       // Set minimum loader time to allow videos to fully buffer
-      // Safari: 5 seconds, Chrome: 4 seconds
-      const minTime = isSafari ? 5000 : 4000;
+      // Safari: 6 seconds, Chrome: 5 seconds (increased for better buffering)
+      const minTime = isSafari ? 6000 : 5000;
       minTimeTimer = setTimeout(() => {
         if (isMounted) {
           loaderMinTimeRef.current = true;
@@ -1604,20 +1632,22 @@ function App() {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
     // Check periodically if everything is ready:
-    // 1. Minimum time has passed (5 seconds Safari, 4 seconds Chrome)
-    // 2. Video warm-up complete (or at least 50% done)
-    // 3. Fonts are loaded
-    // 4. Last.fm is done loading (or timed out)
+    // 1. Minimum time has passed (6 seconds Safari, 5 seconds Chrome)
+    // 2. First video is FULLY ready (buffered)
+    // 3. Video warm-up complete (or at least 80% done)
+    // 4. Fonts are loaded
+    // 5. Last.fm is done loading (or timed out)
     const checkLoading = setInterval(() => {
       const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading || isDataComplete;
+      const firstVideoBuffered = firstVideoReadyRef.current;
 
-      // Require warm-up: either complete OR at least 50% of videos warmed up
-      const minWarmup = Math.ceil(videoData.length * 0.5);
+      // Require 80% warm-up (not 50%) for smoother experience
+      const minWarmup = Math.ceil(videoData.length * 0.8);
       const warmupReady = warmupCompleteRef.current || warmupCountRef.current >= minWarmup;
 
-      // Exit loader once warm-up has made enough progress and min time passed
-      if (loaderMinTimeRef.current && fontsReady && lastFmReady && warmupReady) {
+      // Exit loader once first video buffered, warm-up done, and min time passed
+      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoBuffered && warmupReady) {
         console.log(`Loader complete: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
         setIsLoading(false);
       }
@@ -1780,56 +1810,20 @@ function App() {
       const firstVideo = videoElementsRef.current[0] || videoRef1.current;
 
       if (firstVideo) {
-        // Ensure first video is visible
+        // First video is GUARANTEED ready from warm-up (buffered during loader)
         firstVideo.style.visibility = 'visible';
         firstVideo.style.opacity = '1';
         firstVideo.muted = true;
         firstVideo.currentTime = 0;
 
-        // Play video with retry on failure
-        const playVideo = () => {
-          const playPromise = firstVideo.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(() => {
-              // Retry with a slight delay
-              setTimeout(() => {
-                if (firstVideo) {
-                  firstVideo.play().catch(() => {});
-                }
-              }, 100);
-            });
-          }
-        };
-
-        // Check if video was warmed up during loader (already has data)
-        const hasEnoughData = () => {
-          return firstVideo.readyState >= 2 ||
-            (firstVideo.buffered.length > 0 && firstVideo.buffered.end(0) > 0.3);
-        };
-
-        if (hasEnoughData()) {
-          // Video was warmed up during loader - just play it
-          console.log('First video ready from warm-up, playing directly');
-          playVideo();
-        } else if (isSafari) {
-          // Safari: Video not ready, force load and wait
-          console.log('First video not ready, loading...');
-          firstVideo.load();
-
-          const onCanPlay = () => {
-            firstVideo.removeEventListener('canplay', onCanPlay);
-            playVideo();
-          };
-          firstVideo.addEventListener('canplay', onCanPlay);
-
-          // Fallback: try playing after short delay
-          setTimeout(() => {
-            firstVideo.removeEventListener('canplay', onCanPlay);
-            playVideo();
-          }, 500);
-        } else {
-          // Chrome: Just try to play
-          playVideo();
+        // Play immediately - video should be fully buffered
+        console.log('Playing first video (buffered during loader)');
+        const playPromise = firstVideo.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Retry once on failure
+            setTimeout(() => firstVideo.play().catch(() => {}), 100);
+          });
         }
       }
 
@@ -2292,7 +2286,7 @@ function App() {
                     poster={getPosterSrc(getVideoSrc(video))}
                     muted
                     playsInline
-                    preload={isActive ? "auto" : "metadata"}
+                    preload="auto"
                     controls={false}
                     loop={false}
                     onEnded={handleVideoEnded}
