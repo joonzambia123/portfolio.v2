@@ -174,6 +174,7 @@ function App() {
   const [faceTransform, setFaceTransform] = useState({ scaleY: 1, scaleX: 1, translateX: 0, translateY: 0 });
   const [isMouseNearFace, setIsMouseNearFace] = useState(false);
   const [isHomeButtonHovered, setIsHomeButtonHovered] = useState(false);
+  const [isFaceClicked, setIsFaceClicked] = useState(false);
   const [isFaceHoverExiting, setIsFaceHoverExiting] = useState(false);
   const [isCommitExpanded, setIsCommitExpanded] = useState(false);
   const faceHoverTimeoutRef = useRef(null);
@@ -209,6 +210,33 @@ function App() {
   useEffect(() => {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
+
+    // When clicked, show happy expressions (still follows mouse naturally)
+    if (isFaceClicked) {
+      const happyExpressions = ['(^_^)', '(^‿^)', '(≧◡≦)', '(◕‿◕)'];
+      let expressionIndex = 0;
+
+      // Start with a smile
+      setFaceExpression(happyExpressions[0]);
+
+      // Cycle through happy expressions with occasional blinks
+      const happyInterval = setInterval(() => {
+        const action = Math.random();
+        if (action < 0.3) {
+          // Happy blink (30% chance)
+          setFaceExpression('(^_^)');
+          setTimeout(() => {
+            setFaceExpression(happyExpressions[Math.floor(Math.random() * happyExpressions.length)]);
+          }, 120);
+        } else {
+          // Switch to random happy expression
+          expressionIndex = Math.floor(Math.random() * happyExpressions.length);
+          setFaceExpression(happyExpressions[expressionIndex]);
+        }
+      }, 400);
+
+      return () => clearInterval(happyInterval);
+    }
 
     // When mouse is near face, show frightened expression and skip normal animations
     if (isMouseNearFace) {
@@ -427,7 +455,7 @@ function App() {
       clearTimeout(lookTimeout);
       clearTimeout(contentTimeout);
     };
-  }, [isLoading, isMouseNearFace]);
+  }, [isLoading, isMouseNearFace, isFaceClicked]);
 
   // Last.fm integration
   const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, isDataComplete, playPreview, stopPreview } = useLastFm();
@@ -1937,6 +1965,9 @@ function App() {
               <button
                 className={`home-button flex items-center gap-[10px] px-[4px] py-[4px] rounded-[16px] cursor-pointer ${isHomeButtonHovered ? 'gary-active' : ''}`}
                 onClick={playClick}
+                onMouseDown={() => setIsFaceClicked(true)}
+                onMouseUp={() => setIsFaceClicked(false)}
+                onMouseLeave={() => setIsFaceClicked(false)}
                 aria-label="Joonseo Chang - Home"
               >
                 <div
