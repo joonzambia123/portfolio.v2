@@ -218,12 +218,12 @@ function App() {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
 
-    // When clicked, show happy expression with natural blinking
-    if (isFaceClicked) {
+    // When hovering or clicked, show happy expression with natural blinking
+    if (isHomeButtonHovered || isFaceClicked) {
       // Simple happy smile
       setFaceExpression('(^_^)');
 
-      // Natural happy blinks while held
+      // Natural happy blinks while hovered/held
       const happyInterval = setInterval(() => {
         // Occasional blink
         setFaceExpression('(^‿^)');
@@ -233,7 +233,7 @@ function App() {
       return () => clearInterval(happyInterval);
     }
 
-    // When mouse is near face, show frightened expression and skip normal animations
+    // When mouse is near face (but not hovering button), show frightened expression
     if (isMouseNearFace) {
       setFaceExpression('(O_O)');
       return;
@@ -450,7 +450,7 @@ function App() {
       clearTimeout(lookTimeout);
       clearTimeout(contentTimeout);
     };
-  }, [isLoading, isMouseNearFace, isFaceClicked]);
+  }, [isLoading, isMouseNearFace, isFaceClicked, isHomeButtonHovered]);
 
   // Last.fm integration
   const { currentTrack, isLoading: musicLoading, error: musicError, isPlaying: isPreviewPlaying, isDataComplete, playPreview, stopPreview } = useLastFm();
