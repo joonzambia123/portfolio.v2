@@ -1338,12 +1338,86 @@ function App() {
     };
   }, [videoData]);
 
-  // Video warm-up: PARALLEL processing during loader with REAL buffering checks
-  // This ensures videos are actually ready to play, not just touched
+  // Video warm-up: Force ACTUAL FRAME DECODING by playing videos briefly
+  // Key insight: browsers defer frame decoding until video is visible AND playing
+  // Just buffering data isn't enough - we need to force the decoder to render frames
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
 
     let isCancelled = false;
+
+    // Force a video to decode frames by making it visible and playing briefly
+    const forceDecodeFrames = async (videoEl, isFirst = false) => {
+      if (!videoEl || isCancelled) return;
+
+      return new Promise((resolve) => {
+        let resolved = false;
+        const done = () => {
+          if (resolved) return;
+          resolved = true;
+          // Restore hidden state (but keep first video visible)
+          if (!isFirst) {
+            videoEl.style.visibility = 'hidden';
+            videoEl.style.opacity = '0';
+            videoEl.pause();
+            videoEl.currentTime = 0;
+          }
+          warmupCountRef.current += 1;
+          resolve();
+        };
+
+        // Max time per video
+        const timeout = setTimeout(done, isFirst ? 3000 : 800);
+
+        videoEl.preload = 'auto';
+        videoEl.muted = true;
+
+        // CRITICAL: Make video VISIBLE to force frame decoding
+        // Use minimal visibility - browser still decodes when technically visible
+        videoEl.style.visibility = 'visible';
+        videoEl.style.opacity = '0.01'; // Nearly invisible but triggers decoding
+
+        videoEl.load();
+
+        // Wait for canplay then ACTUALLY PLAY to trigger frame decode
+        const onCanPlay = () => {
+          if (resolved || isCancelled) return;
+
+          videoEl.play().then(() => {
+            // Wait for actual frame to render (timeupdate fires when frame decoded)
+            const onTimeUpdate = () => {
+              videoEl.removeEventListener('timeupdate', onTimeUpdate);
+              clearTimeout(timeout);
+              if (isFirst) {
+                firstVideoReadyRef.current = true;
+                console.log('First video: frames decoded');
+              }
+              done();
+            };
+            videoEl.addEventListener('timeupdate', onTimeUpdate, { once: true });
+
+            // Fallback: if no timeupdate after 200ms, consider it done
+            setTimeout(() => {
+              videoEl.removeEventListener('timeupdate', onTimeUpdate);
+              if (!resolved) {
+                if (isFirst) firstVideoReadyRef.current = true;
+                done();
+              }
+            }, isFirst ? 500 : 200);
+          }).catch(() => {
+            clearTimeout(timeout);
+            if (isFirst) firstVideoReadyRef.current = true;
+            done();
+          });
+        };
+
+        if (videoEl.readyState >= 3) {
+          onCanPlay();
+        } else {
+          videoEl.addEventListener('canplay', onCanPlay, { once: true });
+        }
+      });
+    };
 
     const warmUpAllVideos = async () => {
       const videoElements = videoElementsRef.current;
@@ -1354,55 +1428,12 @@ function App() {
         return;
       }
 
-      console.log('Starting PARALLEL video warm-up for', videoElements.length, 'videos');
+      console.log('Starting video warm-up with FRAME DECODING for', videoElements.length, 'videos');
 
-      // FIRST: Ensure first video is FULLY ready (wait for real buffering)
-      const firstVideo = videoElements[0];
-      if (firstVideo && !isCancelled) {
-        firstVideo.preload = 'auto';
-        firstVideo.muted = true;
-        firstVideo.load();
+      // FIRST: Decode frames for first video (this one stays visible)
+      await forceDecodeFrames(videoElements[0], true);
 
-        await new Promise((resolve) => {
-          let resolved = false;
-          const done = () => {
-            if (resolved) return;
-            resolved = true;
-            firstVideoReadyRef.current = true;
-            warmupCountRef.current += 1;
-            console.log('First video ready');
-            resolve();
-          };
-
-          // Check for buffered data (at least 2 seconds)
-          const checkBuffer = () => {
-            if (resolved || isCancelled) return;
-            try {
-              if (firstVideo.buffered.length > 0 && firstVideo.buffered.end(0) >= 2) {
-                done();
-                return;
-              }
-              if (firstVideo.readyState >= 4) { // HAVE_ENOUGH_DATA
-                done();
-                return;
-              }
-            } catch (e) {}
-            setTimeout(checkBuffer, 100);
-          };
-
-          // Max 4 seconds for first video
-          const timeout = setTimeout(done, 4000);
-
-          firstVideo.addEventListener('canplaythrough', () => {
-            clearTimeout(timeout);
-            done();
-          }, { once: true });
-
-          checkBuffer();
-        });
-      }
-
-      // THEN: Warm up remaining videos in PARALLEL batches
+      // THEN: Decode frames for remaining videos in parallel batches
       const BATCH_SIZE = 4;
       const remainingVideos = videoElements.slice(1);
 
@@ -1410,48 +1441,14 @@ function App() {
         if (isCancelled) break;
 
         const batch = remainingVideos.slice(i, Math.min(i + BATCH_SIZE, remainingVideos.length));
+        await Promise.all(batch.map(videoEl => forceDecodeFrames(videoEl, false)));
 
-        await Promise.all(batch.map(async (videoEl) => {
-          if (!videoEl || isCancelled) return;
-
-          videoEl.preload = 'auto';
-          videoEl.muted = true;
-          videoEl.load();
-
-          await new Promise((resolve) => {
-            let resolved = false;
-            const done = () => {
-              if (resolved) return;
-              resolved = true;
-              warmupCountRef.current += 1;
-              resolve();
-            };
-
-            // Max 1 second per video in batch
-            const timeout = setTimeout(done, 1000);
-
-            // Check for any buffered data or canplay
-            const onReady = () => {
-              clearTimeout(timeout);
-              done();
-            };
-
-            if (videoEl.readyState >= 3) {
-              onReady();
-              return;
-            }
-
-            videoEl.addEventListener('canplay', onReady, { once: true });
-            videoEl.addEventListener('loadeddata', onReady, { once: true });
-          });
-        }));
-
-        console.log(`Batch complete: ${warmupCountRef.current}/${videoElements.length} videos ready`);
+        console.log(`Batch complete: ${warmupCountRef.current}/${videoElements.length} videos decoded`);
       }
 
       if (!isCancelled) {
         warmupCompleteRef.current = true;
-        console.log(`Video warm-up COMPLETE: ${warmupCountRef.current}/${videoElements.length} videos`);
+        console.log(`Video warm-up COMPLETE: ${warmupCountRef.current}/${videoElements.length} videos with frames decoded`);
       }
     };
 
