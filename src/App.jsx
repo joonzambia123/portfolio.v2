@@ -28,6 +28,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
   const animationRef = useRef(null);
 
   const GAP = 50; // Gap between text instances
+  const SCROLL_SPEED = 35; // Uniform scroll speed in pixels per second
 
   // Check if text overflows container
   useEffect(() => {
@@ -45,7 +46,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
     return () => clearTimeout(timeout);
   }, [children, maxWidth]);
 
-  // Circular scroll: wait 8s initially (+ delay), scroll, then wait 16s AFTER animation ends, repeat
+  // Circular scroll: wait 8s initially (+ delay), scroll at uniform speed, then wait 16s AFTER animation ends, repeat
   useEffect(() => {
     if (!isOverflowing || !textWidth) {
       setScrollOffset(0);
@@ -53,7 +54,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
     }
 
     const loopDistance = textWidth + GAP; // One full loop
-    const scrollDuration = 12000; // 12 seconds for the scroll
+    const scrollDuration = (loopDistance / SCROLL_SPEED) * 1000; // Duration based on uniform speed
     const initialWait = 8000 + delay; // First scroll after 8 seconds + any additional delay
     const pauseAfterScroll = 16000 + delay; // Keep same delay offset in subsequent cycles
     const cycleTime = scrollDuration + pauseAfterScroll; // Total cycle
