@@ -218,10 +218,17 @@ function App() {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
 
-    // When hovering or clicked, show happy expression
+    // When hovering or clicked, show happy expression with rare blinks
     if (isHomeButtonHovered || isFaceClicked) {
       setFaceExpression('(^_^)');
-      return;
+
+      // Rare blinks - every 3-5 seconds
+      const happyInterval = setInterval(() => {
+        setFaceExpression('(^‿^)');
+        setTimeout(() => setFaceExpression('(^_^)'), 150);
+      }, 3000 + Math.random() * 2000);
+
+      return () => clearInterval(happyInterval);
     }
 
     // When mouse is near face (but not hovering button), show frightened expression
