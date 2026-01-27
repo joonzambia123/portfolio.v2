@@ -1338,122 +1338,88 @@ function App() {
     };
   }, [videoData]);
 
-  // Video warm-up: Cycle through ALL videos during loader to initialize decoder
-  // This mimics what happens when user manually toggles through videos
+  // Video warm-up: After loader ends, warm up other video elements (skip first which is already playing)
+  // This loads and briefly plays each video to initialize the decoder
   useEffect(() => {
-    if (!isLoading || videoData.length === 0) return;
+    // Run AFTER loader ends (when video elements exist in DOM)
+    if (isLoading || videoData.length === 0) return;
 
     let isCancelled = false;
-    const warmupVideoRef = { current: null };
+    const videoElements = videoElementsRef.current;
 
-    // Create a single hidden video element for warm-up
-    const createWarmupVideo = () => {
-      const video = document.createElement('video');
-      video.preload = 'auto';
-      video.muted = true;
-      video.playsInline = true;
-      video.autoplay = false;
-      video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;z-index:-1';
-      document.body.appendChild(video);
-      return video;
-    };
+    // Warm up video elements by loading and briefly playing each (skip first video)
+    const warmUpOtherVideos = async () => {
+      console.log('Starting video warm-up for other videos');
 
-    // Warm up a single video: load, play briefly, pause
-    const warmUpVideo = (videoSrc, onComplete) => {
-      if (isCancelled || !warmupVideoRef.current) {
-        onComplete();
-        return;
+      // Skip index 0 (first video is already playing)
+      for (let i = 1; i < videoElements.length; i++) {
+        if (isCancelled) break;
+
+        const videoEl = videoElements[i];
+        if (!videoEl) continue;
+
+        try {
+          // Force preload
+          videoEl.preload = 'auto';
+          videoEl.load();
+
+          // Wait for enough data, then play briefly
+          await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+              warmupCountRef.current += 1;
+              resolve();
+            }, 300); // Max 300ms per video
+
+            const onCanPlay = () => {
+              videoEl.removeEventListener('canplay', onCanPlay);
+              // Play briefly to initialize decoder
+              videoEl.play().then(() => {
+                setTimeout(() => {
+                  if (!isCancelled) {
+                    videoEl.pause();
+                    videoEl.currentTime = 0;
+                  }
+                  clearTimeout(timeout);
+                  warmupCountRef.current += 1;
+                  resolve();
+                }, 80);
+              }).catch(() => {
+                clearTimeout(timeout);
+                warmupCountRef.current += 1;
+                resolve();
+              });
+            };
+
+            videoEl.addEventListener('canplay', onCanPlay);
+
+            // If already ready, trigger immediately
+            if (videoEl.readyState >= 3) {
+              videoEl.removeEventListener('canplay', onCanPlay);
+              onCanPlay();
+            }
+          });
+
+          // Small delay between videos
+          if (!isCancelled && i < videoElements.length - 1) {
+            await new Promise(r => setTimeout(r, 30));
+          }
+        } catch (e) {
+          warmupCountRef.current += 1;
+        }
       }
 
-      const video = warmupVideoRef.current;
-      const encodedSrc = encodeVideoSrc(videoSrc);
-
-      // Cleanup any existing handlers
-      video.oncanplay = null;
-      video.onerror = null;
-
-      // Set timeout for this video (500ms max per video)
-      const timeout = setTimeout(() => {
-        video.pause();
-        warmupCountRef.current += 1;
-        onComplete();
-      }, 500);
-
-      video.oncanplay = () => {
-        if (isCancelled) {
-          clearTimeout(timeout);
-          onComplete();
-          return;
-        }
-        // Play briefly then pause
-        video.play().then(() => {
-          setTimeout(() => {
-            if (!isCancelled) {
-              video.pause();
-              warmupCountRef.current += 1;
-            }
-            clearTimeout(timeout);
-            onComplete();
-          }, 150); // Play for 150ms to initialize decoder
-        }).catch(() => {
-          // Play failed, still count as warmed up
-          clearTimeout(timeout);
-          warmupCountRef.current += 1;
-          onComplete();
-        });
-      };
-
-      video.onerror = () => {
-        clearTimeout(timeout);
-        warmupCountRef.current += 1;
-        onComplete();
-      };
-
-      // Load the video
-      video.src = encodedSrc;
-      video.load();
+      if (!isCancelled) {
+        warmupCompleteRef.current = true;
+        console.log(`Video warm-up complete: ${warmupCountRef.current}/${videoElements.length - 1} other videos`);
+      }
     };
 
-    // Start warm-up process with 500ms delay to let initial fetches start
-    const startTimer = setTimeout(() => {
-      if (isCancelled) return;
-
-      warmupVideoRef.current = createWarmupVideo();
-
-      // Cycle through all videos
-      let currentIndex = 0;
-
-      const warmupNext = () => {
-        if (isCancelled || currentIndex >= videoData.length) {
-          // All done
-          warmupCompleteRef.current = true;
-          console.log(`Video warm-up complete: ${warmupCountRef.current}/${videoData.length} videos`);
-          return;
-        }
-
-        const video = videoData[currentIndex];
-        const videoSrc = getVideoSrc(video);
-        currentIndex++;
-
-        warmUpVideo(videoSrc, () => {
-          if (!isCancelled) {
-            // Small delay between videos to avoid overwhelming the browser
-            setTimeout(warmupNext, 50);
-          }
-        });
-      };
-
-      warmupNext();
-    }, 500);
+    // Wait 500ms to ensure first video playback is stable before warming up others
+    const timer = setTimeout(warmUpOtherVideos, 500);
 
     return () => {
       isCancelled = true;
-      clearTimeout(startTimer);
-      if (warmupVideoRef.current) {
-        warmupVideoRef.current.pause();
-        warmupVideoRef.current.src = '';
-        warmupVideoRef.current.remove();
-      }
+      clearTimeout(timer);
     };
   }, [isLoading, videoData]);
 
@@ -1618,7 +1584,7 @@ function App() {
     };
   }, [isLoading]);
 
-  // Check if loading is complete - wait for video warm-up, fonts, and Last.fm
+  // Check if loading is complete - wait for first + adjacent videos, fonts, and Last.fm
   useEffect(() => {
     if (!isLoading || videoData.length === 0) return;
 
@@ -1628,9 +1594,8 @@ function App() {
     // 1. Minimum time has passed (5 seconds Safari, 4 seconds Chrome)
     // 2. First video fetch completed (video is in HTTP cache)
     // 3. Adjacent videos fetch completed
-    // 4. Video warm-up complete OR at least 50% of videos warmed up
-    // 5. Fonts are loaded
-    // 6. Last.fm is done loading (or timed out)
+    // 4. Fonts are loaded
+    // 5. Last.fm is done loading (or timed out)
     const checkLoading = setInterval(() => {
       const fontsReady = fontsLoadedRef.current;
       const lastFmReady = !musicLoading || isDataComplete;
@@ -1640,21 +1605,15 @@ function App() {
       const expectedAdjacent = Math.min(2, videoData.length - 1);
       const adjacentReady = adjacentVideosReadyRef.current >= expectedAdjacent;
 
-      // Require video warm-up: either complete, or at least 50% done
-      const minWarmupCount = Math.ceil(videoData.length * 0.5);
-      const warmupReady = warmupCompleteRef.current || warmupCountRef.current >= minWarmupCount;
-
-      // Exit loader once all conditions met and min time passed
-      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady && warmupReady) {
-        console.log(`Loader complete: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
+      // Exit loader once first 3 videos are fetched and min time passed
+      if (loaderMinTimeRef.current && fontsReady && lastFmReady && firstVideoReady && adjacentReady) {
         setIsLoading(false);
       }
     }, 100);
 
-    // Maximum loader time (longer to allow video warm-up)
-    const maxTime = isSafari ? 15000 : 12000;
+    // Maximum loader time
+    const maxTime = isSafari ? 12000 : 10000;
     const maxTimer = setTimeout(() => {
-      console.log(`Loader timeout: ${warmupCountRef.current}/${videoData.length} videos warmed up`);
       setIsLoading(false);
     }, maxTime);
 
