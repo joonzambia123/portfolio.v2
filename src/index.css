@@ -119,6 +119,37 @@
     }
   }
 
+  /* Timeline text slide animations */
+  @keyframes timelineSlideUp {
+    from {
+      transform: translateY(31px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes timelineSlideDown {
+    from {
+      transform: translateY(-31px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .timeline-slide-up {
+    animation: timelineSlideUp 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .timeline-slide-down {
+    animation: timelineSlideDown 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   /* Native dotted underlines */
   .dotted-underline-blue,
   .dotted-underline-grey,

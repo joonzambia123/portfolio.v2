@@ -4,13 +4,16 @@ import { useRef, useState, useEffect } from 'react'
 const Timeline = ({ milestones }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const [pressedArrow, setPressedArrow] = useState(null) // 'left', 'right', or null
+  const [slideDirection, setSlideDirection] = useState(null) // 'up', 'down', or null
   const containerRef = useRef(null)
 
   const goToNext = () => {
+    setSlideDirection('up')
     setActiveIndex(prev => prev < milestones.length - 1 ? prev + 1 : 0)
   }
 
   const goToPrev = () => {
+    setSlideDirection('down')
     setActiveIndex(prev => prev > 0 ? prev - 1 : milestones.length - 1)
   }
 
@@ -151,46 +154,50 @@ const Timeline = ({ milestones }) => {
 
       {/* Timeline text list - always shows 3 rows */}
       <div
-        className="relative"
+        className="relative overflow-hidden"
         style={{
           height: `${rowHeight * 3 - 11}px` // 3 rows minus last gap
         }}
       >
-        {visibleIndices.map((milestoneIndex, position) => {
-          const milestone = milestones[milestoneIndex]
-          return (
-            <div
-              key={`${activeIndex}-${position}`}
-              className="flex items-center justify-between font-graphik text-[14px]"
-              onClick={() => setActiveIndex(milestoneIndex)}
-              style={{
-                opacity: opacities[position],
-                transition: 'opacity 300ms ease',
-                height: '20px',
-                marginBottom: position < 2 ? '11px' : '0px',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer'
-              }}
-            >
-              <span style={{
-                color: '#5B5B5E',
-                flex: 1,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                {milestone.caption}
-              </span>
-              <span style={{
-                color: '#C3C3C3',
-                flexShrink: 0,
-                marginLeft: '60px',
-                textAlign: 'right'
-              }}>
-                {milestone.year}
-              </span>
-            </div>
-          )
-        })}
+        <div
+          key={activeIndex}
+          className={slideDirection === 'up' ? 'timeline-slide-up' : slideDirection === 'down' ? 'timeline-slide-down' : ''}
+        >
+          {visibleIndices.map((milestoneIndex, position) => {
+            const milestone = milestones[milestoneIndex]
+            return (
+              <div
+                key={`${activeIndex}-${position}`}
+                className="flex items-center justify-between font-graphik text-[14px]"
+                onClick={() => setActiveIndex(milestoneIndex)}
+                style={{
+                  opacity: opacities[position],
+                  height: '20px',
+                  marginBottom: position < 2 ? '11px' : '0px',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer'
+                }}
+              >
+                <span style={{
+                  color: '#5B5B5E',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {milestone.caption}
+                </span>
+                <span style={{
+                  color: '#C3C3C3',
+                  flexShrink: 0,
+                  marginLeft: '60px',
+                  textAlign: 'right'
+                }}>
+                  {milestone.year}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
