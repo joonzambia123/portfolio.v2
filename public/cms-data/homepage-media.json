@@ -15,17 +15,17 @@
       "fileSize": ""
     },
     {
-      "id": 4,
+      "id": 7,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588423/portfolio_videos/Bandung_Premium.mp4",
-      "location": "Bandung, Indonesia",
-      "coordinates": "6.79770°S, 107.57870°E",
-      "coordinatesUrl": "https://www.google.com/maps?q=-6.79770,107.57870",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588441/portfolio_videos/Caol_Premium.mp4",
+      "location": "Caol, Scotland",
+      "coordinates": "56.8380°N, 5.1060°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=56.8380,-5.1060",
       "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ9.0",
+      "aperture": "ƒ8.0",
       "shutter": "1/60s",
-      "iso": "320",
-      "alt": "Indonesian kids",
+      "iso": "150",
+      "alt": "Man walking dogs in Caol, Scotland.",
       "fileSize": ""
     },
     {
@@ -43,17 +43,17 @@
       "fileSize": ""
     },
     {
-      "id": 2,
+      "id": 4,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588442/portfolio_videos/Corrour_Premium.mp4",
-      "location": "Corrour, Scotland",
-      "coordinates": "56.76040°N, 4.69090°W",
-      "coordinatesUrl": "https://www.google.com/maps?q=56.76040,-4.69090",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588423/portfolio_videos/Bandung_Premium.mp4",
+      "location": "Bandung, Indonesia",
+      "coordinates": "6.79770°S, 107.57870°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=-6.79770,107.57870",
       "camera": "Sony FX3 · Sigma 24-70",
       "aperture": "ƒ9.0",
       "shutter": "1/60s",
-      "iso": "500",
-      "alt": "Corrour mountain landscape",
+      "iso": "320",
+      "alt": "Indonesian kids",
       "fileSize": ""
     },
     {
@@ -71,6 +71,20 @@
       "alt": "Jeju, Korea",
       "fileSize": "",
       "noExposureBoost": true
+    },
+    {
+      "id": 2,
+      "type": "video",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588442/portfolio_videos/Corrour_Premium.mp4",
+      "location": "Corrour, Scotland",
+      "coordinates": "56.76040°N, 4.69090°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=56.76040,-4.69090",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ9.0",
+      "shutter": "1/60s",
+      "iso": "500",
+      "alt": "Corrour mountain landscape",
+      "fileSize": ""
     },
     {
       "id": 6,
@@ -213,18 +227,20 @@
       "noExposureBoost": true
     },
     {
-      "id": 7,
+      "id": 8,
       "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588441/portfolio_videos/Caol_Premium.mp4",
-      "location": "Caol, Scotland",
-      "coordinates": "56.8380°N, 5.1060°W",
-      "coordinatesUrl": "https://www.google.com/maps?q=56.8380,-5.1060",
-      "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ8.0",
+      "src": "/videos/compressed/premium/Okayama_Premium.mp4",
+      "srcSafari": "/videos/compressed/safari/Okayama_Safari.mp4",
+      "location": "Okayama, Japan",
+      "coordinates": "34.6553°N, 133.9195°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=34.6553,133.9195",
+      "camera": "iPhone 15 Pro",
+      "aperture": "ƒ1.8",
       "shutter": "1/60s",
-      "iso": "150",
-      "alt": "Man walking dogs in Caol, Scotland.",
-      "fileSize": ""
+      "iso": "100",
+      "alt": "Video from Okayama, Japan",
+      "fileSize": "",
+      "noExposureBoost": true
     },
     {
       "id": 18,
@@ -239,22 +255,6 @@
       "shutter": "1/60s",
       "iso": "400",
       "alt": "Jeju, Korea",
-      "fileSize": "",
-      "noExposureBoost": true
-    },
-    {
-      "id": 8,
-      "type": "video",
-      "src": "/videos/compressed/premium/Okayama_Premium.mp4",
-      "srcSafari": "/videos/compressed/safari/Okayama_Safari.mp4",
-      "location": "Okayama, Japan",
-      "coordinates": "34.6553°N, 133.9195°E",
-      "coordinatesUrl": "https://www.google.com/maps?q=34.6553,133.9195",
-      "camera": "iPhone 15 Pro",
-      "aperture": "ƒ1.8",
-      "shutter": "1/60s",
-      "iso": "100",
-      "alt": "Video from Okayama, Japan",
       "fileSize": "",
       "noExposureBoost": true
     }

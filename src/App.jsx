@@ -1844,9 +1844,13 @@ function App() {
   }, [isLoading, videoIndex, videoData]);
 
   // Ensure videos play on mount - runs when loader finishes AND videoData is ready
+  // Also re-runs when navigating back to home page
   useEffect(() => {
     // Wait for loader to finish and video data to be available
     if (isLoading || videoData.length === 0) return;
+
+    // Only run on home page
+    if (location.pathname !== '/') return;
 
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
@@ -1907,7 +1911,7 @@ function App() {
         });
       }
     });
-  }, [isLoading, videoData]);
+  }, [isLoading, videoData, location.pathname]);
 
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
@@ -2176,9 +2180,9 @@ function App() {
 
       {/* Main Content - Routes */}
       <Routes>
-        <Route path="/about" element={<About />} />
+        <Route path="/about" element={<div key="about" className="page-enter"><About /></div>} />
         <Route path="*" element={
-          <main id="main-content" className="w-full min-h-screen flex items-center justify-center py-[120px] mt-[-10px]">
+          <main key="home" id="main-content" className="page-enter w-full min-h-screen flex items-center justify-center py-[120px] mt-[-10px]">
         <div className="flex gap-[50px] items-start text-left main-content-wrapper">
           {/* Left Column - Text Content */}
           <div className="flex flex-col w-[375px]">
