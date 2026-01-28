@@ -145,16 +145,20 @@ const Timeline = ({ milestones }) => {
             transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         >
-          {milestones.map((milestone, index) => (
+          {milestones.map((milestone, index) => {
+            const isClickable = index >= activeIndex && index <= activeIndex + 2
+            return (
             <div
               key={milestone.id}
               className="flex items-center justify-between font-graphik text-[14px]"
+              onClick={() => isClickable && setActiveIndex(index)}
               style={{
                 opacity: getOpacity(index),
                 transition: 'opacity 400ms ease',
                 height: '20px',
                 marginBottom: '11px',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                cursor: isClickable ? 'pointer' : 'default'
               }}
             >
               <span style={{
@@ -174,7 +178,8 @@ const Timeline = ({ milestones }) => {
                 {milestone.year}
               </span>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
