@@ -3,27 +3,27 @@ import { useRef, useState, useEffect } from 'react'
 
 const Timeline = ({ milestones }) => {
   const [activeIndex, setActiveIndex] = useState(0)
-  const [pressedArrow, setPressedArrow] = useState(null) // 'left', 'right', or null
-  const [slideDirection, setSlideDirection] = useState(null) // 'up', 'down', or null
+  const [pressedArrow, setPressedArrow] = useState(null)
   const containerRef = useRef(null)
 
+  const rowHeight = 31 // 20px + 11px gap
+  const len = milestones.length
+
   const goToNext = () => {
-    setSlideDirection('up')
-    setActiveIndex(prev => prev < milestones.length - 1 ? prev + 1 : 0)
+    setActiveIndex(prev => (prev + 1) % len)
   }
 
   const goToPrev = () => {
-    setSlideDirection('down')
-    setActiveIndex(prev => prev > 0 ? prev - 1 : milestones.length - 1)
+    setActiveIndex(prev => (prev - 1 + len) % len)
   }
 
   // Trigger press animation
-  const triggerPress = (direction) => {
-    setPressedArrow(direction)
+  const triggerPress = (dir) => {
+    setPressedArrow(dir)
     setTimeout(() => setPressedArrow(null), 100)
   }
 
-  // Keyboard navigation (left/right arrows only)
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowRight') {
@@ -41,7 +41,7 @@ const Timeline = ({ milestones }) => {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeIndex])
+  }, [])
 
   // Touch/swipe navigation
   const touchStartY = useRef(0)
@@ -53,21 +53,35 @@ const Timeline = ({ milestones }) => {
     }
   }
 
+  // Get current milestone for photo
   const currentMilestone = milestones[activeIndex]
-  const rowHeight = 20 + 11 // Row content height (20px) + gap (11px)
 
-  // Get 3 visible indices with wrap-around
-  const getVisibleIndices = () => {
-    const len = milestones.length
-    return [
-      activeIndex,
-      (activeIndex + 1) % len,
-      (activeIndex + 2) % len
-    ]
+  // Render ALL items for true carousel scrolling
+  // Use CSS to position and animate
+  const allItems = milestones.map((m, i) => ({ ...m, dataIndex: i }))
+
+  // Calculate which items are visible (with wrap-around)
+  const getOpacity = (dataIndex) => {
+    let diff = dataIndex - activeIndex
+    // Handle wrap-around
+    if (diff < -len/2) diff += len
+    if (diff > len/2) diff -= len
+
+    if (diff === 0) return 1
+    if (diff === 1) return 0.3
+    if (diff === 2) return 0.15
+    return 0
   }
 
-  const visibleIndices = getVisibleIndices()
-  const opacities = [1, 0.3, 0.15]
+  // Calculate translateY for each item (circular positioning)
+  const getTranslateY = (dataIndex) => {
+    let diff = dataIndex - activeIndex
+    // Handle wrap-around for positioning
+    if (diff < -len/2) diff += len
+    if (diff > len/2) diff -= len
+
+    return diff * rowHeight
+  }
 
   return (
     <div
@@ -152,52 +166,48 @@ const Timeline = ({ milestones }) => {
         </button>
       </div>
 
-      {/* Timeline text list - always shows 3 rows */}
+      {/* Timeline text list - infinite carousel */}
       <div
         className="relative overflow-hidden"
-        style={{
-          height: `${rowHeight * 3 - 11}px` // 3 rows minus last gap
-        }}
+        style={{ height: `${rowHeight * 3 - 11}px` }}
       >
-        <div
-          key={activeIndex}
-          className={slideDirection === 'up' ? 'timeline-slide-up' : slideDirection === 'down' ? 'timeline-slide-down' : ''}
-        >
-          {visibleIndices.map((milestoneIndex, position) => {
-            const milestone = milestones[milestoneIndex]
-            return (
-              <div
-                key={`${activeIndex}-${position}`}
-                className="flex items-center justify-between font-graphik text-[14px]"
-                onClick={() => setActiveIndex(milestoneIndex)}
-                style={{
-                  opacity: opacities[position],
-                  height: '20px',
-                  marginBottom: position < 2 ? '11px' : '0px',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer'
-                }}
-              >
-                <span style={{
-                  color: '#5B5B5E',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {milestone.caption}
-                </span>
-                <span style={{
-                  color: '#C3C3C3',
-                  flexShrink: 0,
-                  marginLeft: '60px',
-                  textAlign: 'right'
-                }}>
-                  {milestone.year}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+        {allItems.map((item) => (
+          <div
+            key={item.id}
+            className="absolute w-full flex items-center justify-between font-graphik text-[14px]"
+            onClick={() => {
+              const diff = item.dataIndex - activeIndex
+              if (diff === 1 || (diff === 1 - len)) goToNext()
+              if (diff === 2 || (diff === 2 - len)) { goToNext(); setTimeout(goToNext, 280) }
+            }}
+            style={{
+              opacity: getOpacity(item.dataIndex),
+              transform: `translateY(${getTranslateY(item.dataIndex)}px)`,
+              transition: 'transform 250ms ease-out, opacity 250ms ease-out',
+              height: '20px',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              pointerEvents: getOpacity(item.dataIndex) > 0 ? 'auto' : 'none'
+            }}
+          >
+            <span style={{
+              color: '#5B5B5E',
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {item.caption}
+            </span>
+            <span style={{
+              color: '#C3C3C3',
+              flexShrink: 0,
+              marginLeft: '60px',
+              textAlign: 'right'
+            }}>
+              {item.year}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )

@@ -7,7 +7,7 @@ export const timelineData = [
     type: 'video',
     src: '/videos/compressed/premium/Jeju2_Premium.mp4',
     srcSafari: '/videos/compressed/safari/Jeju2_Safari.mp4',
-    caption: 'This is me, 5 days ago. Let\'s rewind, shall we?',
+    caption: 'This is me 5 days ago. Let\'s take a look back.',
     alt: 'Recent video of Joon'
   },
   {
