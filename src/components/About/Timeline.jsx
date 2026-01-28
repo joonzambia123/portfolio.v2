@@ -18,10 +18,12 @@ const Timeline = ({ milestones }) => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowRight') {
         e.preventDefault()
+        if (document.activeElement) document.activeElement.blur()
         goToNext()
       }
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
+        if (document.activeElement) document.activeElement.blur()
         goToPrev()
       }
     }
