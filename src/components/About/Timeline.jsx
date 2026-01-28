@@ -13,11 +13,17 @@ const Timeline = ({ milestones }) => {
     if (activeIndex > 0) setActiveIndex(prev => prev - 1)
   }
 
-  // Keyboard navigation
+  // Keyboard navigation (left/right arrows only)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') goToNext()
-      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') goToPrev()
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        goToNext()
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        goToPrev()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -60,7 +66,7 @@ const Timeline = ({ milestones }) => {
         <button
           onClick={goToPrev}
           disabled={activeIndex === 0}
-          className="absolute left-[-40px] top-1/2 -translate-y-1/2 z-10"
+          className="absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none"
           style={{
             width: '28px',
             height: '28px',
@@ -113,7 +119,7 @@ const Timeline = ({ milestones }) => {
         <button
           onClick={goToNext}
           disabled={activeIndex === milestones.length - 1}
-          className="absolute right-[-40px] top-1/2 -translate-y-1/2 z-10"
+          className="absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none"
           style={{
             width: '28px',
             height: '28px',
