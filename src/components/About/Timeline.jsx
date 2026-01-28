@@ -17,7 +17,7 @@ const Timeline = ({ milestones }) => {
   // Trigger press animation
   const triggerPress = (direction) => {
     setPressedArrow(direction)
-    setTimeout(() => setPressedArrow(null), 150)
+    setTimeout(() => setPressedArrow(null), 100)
   }
 
   // Keyboard navigation (left/right arrows only)
@@ -77,7 +77,7 @@ const Timeline = ({ milestones }) => {
         <button
           onClick={() => { triggerPress('left'); goToPrev() }}
           disabled={activeIndex === 0}
-          className={`absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-150 ${activeIndex === 0 ? '' : 'hover:opacity-80 hover:scale-110'}`}
+          className={`absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-100 ${activeIndex === 0 ? '' : 'hover:opacity-80 hover:scale-110'}`}
           style={{
             width: '28px',
             height: '28px',
@@ -90,7 +90,7 @@ const Timeline = ({ milestones }) => {
           }}
           aria-label="Previous milestone"
         >
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="transition-all duration-150">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="transition-all duration-100">
             <path d="M7 1L1 7L7 13" stroke={pressedArrow === 'left' ? '#333' : '#5B5B5E'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
@@ -130,7 +130,7 @@ const Timeline = ({ milestones }) => {
         <button
           onClick={() => { triggerPress('right'); goToNext() }}
           disabled={activeIndex === milestones.length - 1}
-          className={`absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-150 ${activeIndex === milestones.length - 1 ? '' : 'hover:opacity-80 hover:scale-110'}`}
+          className={`absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-100 ${activeIndex === milestones.length - 1 ? '' : 'hover:opacity-80 hover:scale-110'}`}
           style={{
             width: '28px',
             height: '28px',
@@ -143,7 +143,7 @@ const Timeline = ({ milestones }) => {
           }}
           aria-label="Next milestone"
         >
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="transition-all duration-150">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="transition-all duration-100">
             <path d="M1 1L7 7L1 13" stroke={pressedArrow === 'right' ? '#333' : '#5B5B5E'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
