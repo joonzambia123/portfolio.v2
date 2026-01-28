@@ -3,6 +3,7 @@ import { useRef, useState, useEffect } from 'react'
 
 const Timeline = ({ milestones }) => {
   const [activeIndex, setActiveIndex] = useState(0)
+  const [pressedArrow, setPressedArrow] = useState(null) // 'left', 'right', or null
   const containerRef = useRef(null)
 
   const goToNext = () => {
@@ -13,17 +14,25 @@ const Timeline = ({ milestones }) => {
     if (activeIndex > 0) setActiveIndex(prev => prev - 1)
   }
 
+  // Trigger press animation
+  const triggerPress = (direction) => {
+    setPressedArrow(direction)
+    setTimeout(() => setPressedArrow(null), 150)
+  }
+
   // Keyboard navigation (left/right arrows only)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowRight') {
+      if (e.key === 'ArrowRight' && activeIndex < milestones.length - 1) {
         e.preventDefault()
         if (document.activeElement) document.activeElement.blur()
+        triggerPress('right')
         goToNext()
       }
-      if (e.key === 'ArrowLeft') {
+      if (e.key === 'ArrowLeft' && activeIndex > 0) {
         e.preventDefault()
         if (document.activeElement) document.activeElement.blur()
+        triggerPress('left')
         goToPrev()
       }
     }
@@ -66,22 +75,23 @@ const Timeline = ({ milestones }) => {
       <div className="relative w-full mb-[20px]">
         {/* Left arrow */}
         <button
-          onClick={goToPrev}
+          onClick={() => { triggerPress('left'); goToPrev() }}
           disabled={activeIndex === 0}
-          className={`absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-200 ${activeIndex === 0 ? '' : 'hover:opacity-80 hover:scale-110 active:scale-95'}`}
+          className={`absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-150 ${activeIndex === 0 ? '' : 'hover:opacity-80 hover:scale-110'}`}
           style={{
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: activeIndex === 0 ? 0.2 : 0.5,
-            cursor: activeIndex === 0 ? 'default' : 'pointer'
+            opacity: pressedArrow === 'left' ? 1 : (activeIndex === 0 ? 0.2 : 0.5),
+            cursor: activeIndex === 0 ? 'default' : 'pointer',
+            transform: pressedArrow === 'left' ? 'translateY(-50%) scale(0.9)' : undefined
           }}
           aria-label="Previous milestone"
         >
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-            <path d="M7 1L1 7L7 13" stroke="#5B5B5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="transition-all duration-150">
+            <path d="M7 1L1 7L7 13" stroke={pressedArrow === 'left' ? '#333' : '#5B5B5E'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
@@ -118,22 +128,23 @@ const Timeline = ({ milestones }) => {
 
         {/* Right arrow */}
         <button
-          onClick={goToNext}
+          onClick={() => { triggerPress('right'); goToNext() }}
           disabled={activeIndex === milestones.length - 1}
-          className={`absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-200 ${activeIndex === milestones.length - 1 ? '' : 'hover:opacity-80 hover:scale-110 active:scale-95'}`}
+          className={`absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-150 ${activeIndex === milestones.length - 1 ? '' : 'hover:opacity-80 hover:scale-110'}`}
           style={{
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: activeIndex === milestones.length - 1 ? 0.2 : 0.5,
-            cursor: activeIndex === milestones.length - 1 ? 'default' : 'pointer'
+            opacity: pressedArrow === 'right' ? 1 : (activeIndex === milestones.length - 1 ? 0.2 : 0.5),
+            cursor: activeIndex === milestones.length - 1 ? 'default' : 'pointer',
+            transform: pressedArrow === 'right' ? 'translateY(-50%) scale(0.9)' : undefined
           }}
           aria-label="Next milestone"
         >
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-            <path d="M1 1L7 7L1 13" stroke="#5B5B5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="transition-all duration-150">
+            <path d="M1 1L7 7L1 13" stroke={pressedArrow === 'right' ? '#333' : '#5B5B5E'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
