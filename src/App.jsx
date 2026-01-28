@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLastFm } from './hooks/useLastFm'
 import { useGitHubStats } from './hooks/useGitHubStats'
 import { useSounds } from './hooks/useSounds'
 import { Agentation } from 'agentation'
+import About from './components/About/About'
 
 // Lazy load modal components to defer Framer Motion loading
 const SlideUpModal = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.default })))
@@ -150,6 +152,8 @@ const imgLine5 = "https://www.figma.com/api/mcp/asset/e24604e5-5571-4d0f-ab1d-ae
 const imgGroup = "https://www.figma.com/api/mcp/asset/61c7aa82-f3ce-422a-beda-513c99c4bdb8";
 
 function App() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [clockTimeString, setClockTimeString] = useState('');
   const [clockTime, setClockTime] = useState({ hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
   
@@ -177,6 +181,16 @@ function App() {
   const [isFaceClicked, setIsFaceClicked] = useState(false);
   const [isFaceHoverExiting, setIsFaceHoverExiting] = useState(false);
   const [isSleepingTime, setIsSleepingTime] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false); // Nav background on scroll
+
+  // Check if scrolled for nav background
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Check if it's sleeping time (10PM - 6AM local time)
   useEffect(() => {
@@ -1125,7 +1139,7 @@ function App() {
     }, startDelay + stagger * 4 + 50);
   }, [isLoading]);
 
-  // Trigger subtle jiggle animation: initial after 8s, then every 5s. Stops permanently once user hovers.
+  // Trigger subtle jiggle animation: initial 8s after loading completes, then every 5s. Stops permanently once user hovers.
   const jiggleIntervalRef = useRef(null);
   const jigglePauseTimeoutRef = useRef(null);
   const jiggleTimeoutRef = useRef(null);
@@ -1190,8 +1204,8 @@ function App() {
       setHasDiscoveredContent(true);
       setShowJiggle(false);
       clearAllJiggleTimers();
-    } else if (!hasDiscoveredContent) {
-      // Only start jiggle cycle if user hasn't discovered content yet
+    } else if (!hasDiscoveredContent && !isLoading) {
+      // Only start jiggle cycle if user hasn't discovered content yet AND site has finished loading
       jigglePauseTimeoutRef.current = setTimeout(() => {
         if (!isHoveredRef.current && !hasDiscoveredContent) {
           startJiggle();
@@ -1203,7 +1217,7 @@ function App() {
     return () => {
       clearAllJiggleTimers();
     };
-  }, [isHovered, hasDiscoveredContent]);
+  }, [isHovered, hasDiscoveredContent, isLoading]);
 
   // Update clock time based on CMS city setting
   useEffect(() => {
@@ -1951,7 +1965,15 @@ function App() {
       </a>
 
       {/* Navigation Bar - Light Mode */}
-      <div className={`fixed top-0 left-0 right-0 z-50 top-nav-container ${loadedComponents.navBar ? 'component-loaded' : 'component-hidden'}`}>
+      <div
+        className={`fixed top-0 left-0 right-0 z-50 top-nav-container ${loadedComponents.navBar ? 'component-loaded' : 'component-hidden'}`}
+        style={{
+          backgroundColor: isScrolled ? 'rgba(252, 252, 252, 0.85)' : 'transparent',
+          backdropFilter: isScrolled ? 'blur(12px)' : 'none',
+          WebkitBackdropFilter: isScrolled ? 'blur(12px)' : 'none',
+          transition: 'background-color 300ms ease, backdrop-filter 300ms ease'
+        }}
+      >
         <div className="light-nav-bar h-[62px] w-full px-[15px] flex items-center justify-between">
           {/* Gary Section - Face Icon + Name + Hover Info Box */}
           <div className="gary-section relative">
@@ -1990,7 +2012,7 @@ function App() {
             >
               <button
                 className={`home-button flex items-center gap-[10px] px-[4px] py-[4px] rounded-[16px] cursor-pointer ${isHomeButtonHovered ? 'gary-active' : ''}`}
-                onClick={playClick}
+                onClick={() => { playClick(); navigate('/'); }}
                 onMouseDown={() => setIsFaceClicked(true)}
                 onMouseUp={() => setIsFaceClicked(false)}
                 aria-label="Joonseo Chang - Home"
@@ -2075,12 +2097,13 @@ function App() {
 
           {/* Center - Navigation Links */}
           <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[20px]" aria-label="Main navigation">
-            <button
-              className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
+            <Link
+              to="/about"
+              className={`nav-text-link font-graphik text-[14px] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px] ${location.pathname === '/about' ? 'text-[#5b5b5e]' : 'text-[#9f9fa3]'}`}
               onClick={playClick}
             >
               About
-            </button>
+            </Link>
             <button
               className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
               onClick={playClick}
@@ -2151,8 +2174,11 @@ function App() {
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#EAEAEA]"></div>
       </div>
 
-      {/* Main Content */}
-      <main id="main-content" className="w-full min-h-screen flex items-center justify-center py-[120px] mt-[-10px]">
+      {/* Main Content - Routes */}
+      <Routes>
+        <Route path="/about" element={<About />} />
+        <Route path="*" element={
+          <main id="main-content" className="w-full min-h-screen flex items-center justify-center py-[120px] mt-[-10px]">
         <div className="flex gap-[50px] items-start text-left main-content-wrapper">
           {/* Left Column - Text Content */}
           <div className="flex flex-col w-[375px]">
@@ -2343,7 +2369,44 @@ function App() {
                 );
               })}
             </div>
-            <div 
+
+            {/* Liquid glass info button - archived for now
+            <button
+              className="info-glass-button absolute top-3 right-3 z-40 w-8 h-8 rounded-full flex items-center justify-center
+                         opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100
+                         transition-all duration-300 ease-out
+                         hover:!scale-110 active:!scale-95 cursor-pointer"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06), inset 0 0 0 0.5px rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Placeholder for future functionality
+              }}
+              aria-label="Video information"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.85)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </button>
+            */}
+
+            <div
               className="relative z-30 w-full black-box-container" 
               onClick={(e) => e.stopPropagation()}
               onMouseEnter={() => {
@@ -2449,6 +2512,8 @@ function App() {
           </div>
         </div>
       </main>
+        } />
+      </Routes>
 
       {/* Bottom Component - Born Slippy, Activity, Shortcuts, Contact */}
       <div
