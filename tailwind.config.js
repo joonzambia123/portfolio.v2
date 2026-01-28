@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'graphik': ['Graphik', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        'matter': ['Matter', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'system-ui', '-apple-system', 'sans-serif'],
-        'calluna': ['Calluna', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
+        'graphik': ['Graphik', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        'matter': ['Matter', 'system-ui', '-apple-system', 'sans-serif'],
+        'calluna': ['Calluna', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
       },
     },
   },

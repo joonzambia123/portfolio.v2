@@ -1,5 +1,5 @@
-/* Google Fonts for CJK (Chinese, Japanese, Korean) text */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&display=swap');
+/* Google Font for Korean text */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400&display=swap');
 
 @tailwind base;
 @tailwind components;
