@@ -1,6 +1,20 @@
 {
   "data": [
     {
+      "id": 3,
+      "type": "video",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588433/portfolio_videos/Saigon_Premium.mp4",
+      "location": "Saigon, Vietnam",
+      "coordinates": "10.77700°N, 106.69860°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=10.77700,106.69860",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "270",
+      "alt": "Street scene in Saigon",
+      "fileSize": ""
+    },
+    {
       "id": 4,
       "type": "video",
       "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588423/portfolio_videos/Bandung_Premium.mp4",
@@ -70,20 +84,6 @@
       "shutter": "1/60s",
       "iso": "650",
       "alt": "Japanese chef serving dish in Fukuoka",
-      "fileSize": ""
-    },
-    {
-      "id": 3,
-      "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588433/portfolio_videos/Saigon_Premium.mp4",
-      "location": "Saigon, Vietnam",
-      "coordinates": "10.77700°N, 106.69860°E",
-      "coordinatesUrl": "https://www.google.com/maps?q=10.77700,106.69860",
-      "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ2.8",
-      "shutter": "1/60s",
-      "iso": "270",
-      "alt": "Street scene in Saigon",
       "fileSize": ""
     },
     {
