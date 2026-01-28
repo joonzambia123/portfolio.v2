@@ -68,7 +68,7 @@ const Timeline = ({ milestones }) => {
         <button
           onClick={goToPrev}
           disabled={activeIndex === 0}
-          className="absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none"
+          className={`absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-200 ${activeIndex === 0 ? '' : 'hover:opacity-80 hover:scale-110 active:scale-95'}`}
           style={{
             width: '28px',
             height: '28px',
@@ -76,8 +76,7 @@ const Timeline = ({ milestones }) => {
             alignItems: 'center',
             justifyContent: 'center',
             opacity: activeIndex === 0 ? 0.2 : 0.5,
-            cursor: activeIndex === 0 ? 'default' : 'pointer',
-            transition: 'opacity 200ms ease'
+            cursor: activeIndex === 0 ? 'default' : 'pointer'
           }}
           aria-label="Previous milestone"
         >
@@ -121,7 +120,7 @@ const Timeline = ({ milestones }) => {
         <button
           onClick={goToNext}
           disabled={activeIndex === milestones.length - 1}
-          className="absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none"
+          className={`absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-200 ${activeIndex === milestones.length - 1 ? '' : 'hover:opacity-80 hover:scale-110 active:scale-95'}`}
           style={{
             width: '28px',
             height: '28px',
@@ -129,8 +128,7 @@ const Timeline = ({ milestones }) => {
             alignItems: 'center',
             justifyContent: 'center',
             opacity: activeIndex === milestones.length - 1 ? 0.2 : 0.5,
-            cursor: activeIndex === milestones.length - 1 ? 'default' : 'pointer',
-            transition: 'opacity 200ms ease'
+            cursor: activeIndex === milestones.length - 1 ? 'default' : 'pointer'
           }}
           aria-label="Next milestone"
         >
