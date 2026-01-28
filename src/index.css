@@ -122,28 +122,32 @@
   /* Timeline text slide animations */
   @keyframes timelineSlideUp {
     from {
-      transform: translateY(8px);
+      transform: translateY(31px);
+      opacity: 0.5;
     }
     to {
       transform: translateY(0);
+      opacity: 1;
     }
   }
 
   @keyframes timelineSlideDown {
     from {
-      transform: translateY(-8px);
+      transform: translateY(-31px);
+      opacity: 0.5;
     }
     to {
       transform: translateY(0);
+      opacity: 1;
     }
   }
 
   .timeline-slide-up {
-    animation: timelineSlideUp 250ms ease-out;
+    animation: timelineSlideUp 400ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .timeline-slide-down {
-    animation: timelineSlideDown 250ms ease-out;
+    animation: timelineSlideDown 400ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Native dotted underlines */
