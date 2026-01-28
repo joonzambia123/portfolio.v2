@@ -7,11 +7,11 @@ const Timeline = ({ milestones }) => {
   const containerRef = useRef(null)
 
   const goToNext = () => {
-    if (activeIndex < milestones.length - 1) setActiveIndex(prev => prev + 1)
+    setActiveIndex(prev => prev < milestones.length - 1 ? prev + 1 : 0)
   }
 
   const goToPrev = () => {
-    if (activeIndex > 0) setActiveIndex(prev => prev - 1)
+    setActiveIndex(prev => prev > 0 ? prev - 1 : milestones.length - 1)
   }
 
   // Trigger press animation
@@ -23,13 +23,13 @@ const Timeline = ({ milestones }) => {
   // Keyboard navigation (left/right arrows only)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowRight' && activeIndex < milestones.length - 1) {
+      if (e.key === 'ArrowRight') {
         e.preventDefault()
         if (document.activeElement) document.activeElement.blur()
         triggerPress('right')
         goToNext()
       }
-      if (e.key === 'ArrowLeft' && activeIndex > 0) {
+      if (e.key === 'ArrowLeft') {
         e.preventDefault()
         if (document.activeElement) document.activeElement.blur()
         triggerPress('left')
@@ -53,16 +53,18 @@ const Timeline = ({ milestones }) => {
   const currentMilestone = milestones[activeIndex]
   const rowHeight = 20 + 11 // Row content height (20px) + gap (11px)
 
-  // Calculate opacity based on position relative to active
-  // Row 1 = 100%, Row 2 = 30%, Row 3 = 15%
-  const getOpacity = (index) => {
-    const position = index - activeIndex
-    if (position === 0) return 1      // Current/active - full opacity
-    if (position === 1) return 0.3    // Second row
-    if (position === 2) return 0.15   // Third row
-    if (position < 0) return 0        // Above active - hidden
-    return 0                          // Beyond third - hidden
+  // Get 3 visible indices with wrap-around
+  const getVisibleIndices = () => {
+    const len = milestones.length
+    return [
+      activeIndex,
+      (activeIndex + 1) % len,
+      (activeIndex + 2) % len
+    ]
   }
+
+  const visibleIndices = getVisibleIndices()
+  const opacities = [1, 0.3, 0.15]
 
   return (
     <div
@@ -76,16 +78,15 @@ const Timeline = ({ milestones }) => {
         {/* Left arrow */}
         <button
           onClick={() => { triggerPress('left'); goToPrev() }}
-          disabled={activeIndex === 0}
-          className={`absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-100 ${activeIndex === 0 ? '' : 'hover:opacity-80 hover:scale-110'}`}
+          className="absolute left-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-100 hover:opacity-80 hover:scale-110"
           style={{
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: pressedArrow === 'left' ? 1 : (activeIndex === 0 ? 0.2 : 0.5),
-            cursor: activeIndex === 0 ? 'default' : 'pointer',
+            opacity: pressedArrow === 'left' ? 1 : 0.5,
+            cursor: 'pointer',
             transform: pressedArrow === 'left' ? 'translateY(-50%) scale(0.9)' : undefined
           }}
           aria-label="Previous milestone"
@@ -129,16 +130,15 @@ const Timeline = ({ milestones }) => {
         {/* Right arrow */}
         <button
           onClick={() => { triggerPress('right'); goToNext() }}
-          disabled={activeIndex === milestones.length - 1}
-          className={`absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-100 ${activeIndex === milestones.length - 1 ? '' : 'hover:opacity-80 hover:scale-110'}`}
+          className="absolute right-[-40px] top-1/2 -translate-y-1/2 z-10 outline-none focus:outline-none transition-all duration-100 hover:opacity-80 hover:scale-110"
           style={{
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: pressedArrow === 'right' ? 1 : (activeIndex === milestones.length - 1 ? 0.2 : 0.5),
-            cursor: activeIndex === milestones.length - 1 ? 'default' : 'pointer',
+            opacity: pressedArrow === 'right' ? 1 : 0.5,
+            cursor: 'pointer',
             transform: pressedArrow === 'right' ? 'translateY(-50%) scale(0.9)' : undefined
           }}
           aria-label="Next milestone"
@@ -151,31 +151,25 @@ const Timeline = ({ milestones }) => {
 
       {/* Timeline text list - always shows 3 rows */}
       <div
-        className="relative overflow-hidden"
+        className="relative"
         style={{
           height: `${rowHeight * 3 - 11}px` // 3 rows minus last gap
         }}
       >
-        <div
-          style={{
-            transform: `translateY(${-activeIndex * rowHeight}px)`,
-            transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)'
-          }}
-        >
-          {milestones.map((milestone, index) => {
-            const isClickable = index >= activeIndex && index <= activeIndex + 2
-            return (
+        {visibleIndices.map((milestoneIndex, position) => {
+          const milestone = milestones[milestoneIndex]
+          return (
             <div
-              key={milestone.id}
+              key={`${activeIndex}-${position}`}
               className="flex items-center justify-between font-graphik text-[14px]"
-              onClick={() => isClickable && setActiveIndex(index)}
+              onClick={() => setActiveIndex(milestoneIndex)}
               style={{
-                opacity: getOpacity(index),
-                transition: 'opacity 400ms ease',
+                opacity: opacities[position],
+                transition: 'opacity 300ms ease',
                 height: '20px',
-                marginBottom: '11px',
+                marginBottom: position < 2 ? '11px' : '0px',
                 whiteSpace: 'nowrap',
-                cursor: isClickable ? 'pointer' : 'default'
+                cursor: 'pointer'
               }}
             >
               <span style={{
@@ -195,9 +189,8 @@ const Timeline = ({ milestones }) => {
                 {milestone.year}
               </span>
             </div>
-            )
-          })}
-        </div>
+          )
+        })}
       </div>
     </div>
   )
