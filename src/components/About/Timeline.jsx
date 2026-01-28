@@ -4,16 +4,39 @@ import { useRef, useState, useEffect } from 'react'
 const Timeline = ({ milestones }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const [pressedArrow, setPressedArrow] = useState(null)
+  const [showSlowDown, setShowSlowDown] = useState(false)
   const containerRef = useRef(null)
+  const toggleTimestamps = useRef([])
 
   const rowHeight = 31 // 20px + 11px gap
   const len = milestones.length
 
+  // Check if toggling too fast
+  const checkSpeed = () => {
+    const now = Date.now()
+    toggleTimestamps.current.push(now)
+    // Keep only last 8 toggles
+    if (toggleTimestamps.current.length > 8) {
+      toggleTimestamps.current.shift()
+    }
+    // If 8 toggles in under 1.5 seconds, show message
+    if (toggleTimestamps.current.length >= 8) {
+      const oldest = toggleTimestamps.current[0]
+      if (now - oldest < 1500) {
+        setShowSlowDown(true)
+        setTimeout(() => setShowSlowDown(false), 2000)
+        toggleTimestamps.current = [] // Reset
+      }
+    }
+  }
+
   const goToNext = () => {
+    checkSpeed()
     setActiveIndex(prev => (prev + 1) % len)
   }
 
   const goToPrev = () => {
+    checkSpeed()
     setActiveIndex(prev => (prev - 1 + len) % len)
   }
 
@@ -57,13 +80,11 @@ const Timeline = ({ milestones }) => {
   const currentMilestone = milestones[activeIndex]
 
   // Render ALL items for true carousel scrolling
-  // Use CSS to position and animate
   const allItems = milestones.map((m, i) => ({ ...m, dataIndex: i }))
 
   // Calculate which items are visible (with wrap-around)
   const getOpacity = (dataIndex) => {
     let diff = dataIndex - activeIndex
-    // Handle wrap-around
     if (diff < -len/2) diff += len
     if (diff > len/2) diff -= len
 
@@ -76,7 +97,6 @@ const Timeline = ({ milestones }) => {
   // Calculate translateY for each item (circular positioning)
   const getTranslateY = (dataIndex) => {
     let diff = dataIndex - activeIndex
-    // Handle wrap-around for positioning
     if (diff < -len/2) diff += len
     if (diff > len/2) diff -= len
 
@@ -115,7 +135,7 @@ const Timeline = ({ milestones }) => {
 
         {/* Photo/Video */}
         <div
-          className="w-full overflow-hidden outline outline-1 outline-black/5"
+          className="w-full overflow-hidden outline outline-1 outline-black/5 relative"
           style={{
             height: '259px',
             borderRadius: '8px',
@@ -141,6 +161,20 @@ const Timeline = ({ milestones }) => {
               className="w-full h-full object-cover"
               style={{ animation: 'fadeIn 300ms ease' }}
             />
+          )}
+
+          {/* Easter egg: slow down message */}
+          {showSlowDown && (
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-black/60"
+              style={{
+                animation: 'fadeIn 200ms ease'
+              }}
+            >
+              <span className="font-graphik text-[14px] text-white">
+                Slow down there, tiger.
+              </span>
+            </div>
           )}
         </div>
 
@@ -183,7 +217,7 @@ const Timeline = ({ milestones }) => {
             style={{
               opacity: getOpacity(item.dataIndex),
               transform: `translateY(${getTranslateY(item.dataIndex)}px)`,
-              transition: 'transform 250ms ease-out, opacity 250ms ease-out',
+              transition: 'transform 280ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 280ms cubic-bezier(0.25, 0.1, 0.25, 1)',
               height: '20px',
               whiteSpace: 'nowrap',
               cursor: 'pointer',
