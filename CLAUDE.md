@@ -37,7 +37,8 @@
 - `src/hooks/useGitHubStats.js` - GitHub stats hook
 - `src/components/SlideUpModal.jsx` - Modal components
 - `netlify.toml` - Netlify configuration
-- `public/cms-data/*.json` - CMS content
+- `cms-data/*.json` - CMS content (source of truth, copied to `public/cms-data/` at build time by Vite plugin)
+- `public/cms-data/*.json` - CMS content (build output, DO NOT edit directly)
 
 ---
 
@@ -79,7 +80,9 @@ Same commands - ffmpeg auto-applies rotation metadata.
 - `public/videos/compressed/safari/` (Safari-optimized files)
 
 ### 5. Update JSON
-Add entry to `public/cms-data/homepage-media.json`:
+**IMPORTANT:** Edit `cms-data/homepage-media.json` (root-level source of truth), NOT `public/cms-data/homepage-media.json`. The Vite build has a `copyCmsData` plugin (`vite.config.js`) that copies from `cms-data/` → `public/cms-data/` at build time, so edits to `public/` get overwritten.
+
+Add entry to `cms-data/homepage-media.json`:
 ```json
 {
   "id": <next_id>,
@@ -102,7 +105,7 @@ Add entry to `public/cms-data/homepage-media.json`:
 
 ### 6. Commit & Deploy
 ```bash
-git add public/videos/compressed/*/Name*.mp4 public/cms-data/homepage-media.json
+git add public/videos/compressed/*/Name*.mp4 cms-data/homepage-media.json
 git commit -m "Add Name video"
 git push
 ```

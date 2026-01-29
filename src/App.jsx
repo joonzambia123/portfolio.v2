@@ -2045,7 +2045,7 @@ function App() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col items-start gap-[3px] pr-[8px]">
+                <div className="flex flex-col items-start gap-[4px] pr-[8px]">
                   <span className="nav-name font-graphik text-[14px] text-[#5b5b5e] leading-none transition-colors duration-[250ms]">Joonseo Chang</span>
                   <span className="font-graphik text-[14px] leading-none">
                     <span className="activity-added text-[#c3c3c3] transition-colors duration-[250ms]">+{(githubStats?.added || 0).toLocaleString()}</span>

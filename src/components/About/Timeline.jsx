@@ -1,5 +1,7 @@
 // Vertical timeline with photo above and scrolling text below
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
+
+const AUTO_ROTATE_MS = 10000
 
 const Timeline = ({ milestones }) => {
   const [activeIndex, setActiveIndex] = useState(0)
@@ -7,9 +9,53 @@ const Timeline = ({ milestones }) => {
   const [showSlowDown, setShowSlowDown] = useState(false)
   const containerRef = useRef(null)
   const toggleTimestamps = useRef([])
+  const autoRotateTimer = useRef(null)
+  const fillRefs = useRef([])
 
   const rowHeight = 31 // 20px + 11px gap
   const len = milestones.length
+
+  // Direct DOM fill animation — bypasses React rendering entirely
+  useEffect(() => {
+    fillRefs.current.forEach((el, idx) => {
+      if (!el) return
+      if (idx === activeIndex) {
+        // Reset to 0 instantly
+        el.style.transition = 'none'
+        el.style.width = '0%'
+        el.style.opacity = '1'
+        // Force reflow so browser paints 0% before transition
+        el.offsetWidth
+        // Single smooth transition to 100%
+        el.style.transition = `width ${AUTO_ROTATE_MS}ms linear`
+        el.style.width = '100%'
+      } else {
+        el.style.transition = 'none'
+        el.style.width = '0%'
+        el.style.opacity = '0'
+      }
+    })
+  }, [activeIndex])
+
+  // Auto-rotation timer
+  const startAutoRotate = useCallback(() => {
+    if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current)
+    autoRotateTimer.current = setTimeout(() => {
+      setActiveIndex(prev => (prev + 1) % len)
+    }, AUTO_ROTATE_MS)
+  }, [len])
+
+  // Restart timer whenever activeIndex changes
+  useEffect(() => {
+    startAutoRotate()
+  }, [activeIndex, startAutoRotate])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current)
+    }
+  }, [])
 
   // Check if toggling too fast
   const checkSpeed = () => {
@@ -162,6 +208,45 @@ const Timeline = ({ milestones }) => {
               style={{ animation: 'fadeIn 300ms ease' }}
             />
           )}
+
+          {/* Progress bar */}
+          <div
+            className="absolute bottom-0 left-0 right-0 flex items-center justify-center z-10"
+            style={{ padding: '0 16px 14px' }}
+          >
+            <div className="flex items-center" style={{ gap: '4px' }}>
+              {milestones.map((_, idx) => {
+                const isActive = idx === activeIndex
+                return (
+                  <div
+                    key={idx}
+                    className="relative overflow-hidden"
+                    style={{
+                      width: isActive ? '28px' : '16px',
+                      height: isActive ? '4px' : '3px',
+                      borderRadius: '2px',
+                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.25)',
+                      transition: 'width 450ms cubic-bezier(0.34, 1.4, 0.64, 1), height 450ms cubic-bezier(0.34, 1.4, 0.64, 1), background-color 300ms ease'
+                    }}
+                  >
+                    <div
+                      ref={el => { fillRefs.current[idx] = el }}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        height: '100%',
+                        borderRadius: '2px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                        width: '0%',
+                        opacity: 0
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
 
           {/* Easter egg: slow down message */}
           {showSlowDown && (
