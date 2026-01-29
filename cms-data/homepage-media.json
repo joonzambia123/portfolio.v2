@@ -257,6 +257,22 @@
       "alt": "Jeju, Korea",
       "fileSize": "",
       "noExposureBoost": true
+    },
+    {
+      "id": 19,
+      "type": "video",
+      "src": "/videos/compressed/premium/Dublin_Premium.mp4",
+      "srcSafari": "/videos/compressed/safari/Dublin_Safari.mp4",
+      "location": "Dublin, Ireland",
+      "coordinates": "53.3498°N, 6.2603°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=53.3498,-6.2603",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "400",
+      "alt": "Dublin, Ireland",
+      "fileSize": "",
+      "noExposureBoost": true
     }
   ]
 }
