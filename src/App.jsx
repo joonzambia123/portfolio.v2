@@ -1859,6 +1859,8 @@ function App() {
       // Reset indices
       video1IndexRef.current = 0;
       video2IndexRef.current = 1;
+      setVideoIndex(0);
+      setActiveVideo(1);
 
       // Get the first video element
       const firstVideo = videoElementsRef.current[0] || videoRef1.current;
