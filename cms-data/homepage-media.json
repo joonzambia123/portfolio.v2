@@ -273,6 +273,22 @@
       "alt": "Dublin, Ireland",
       "fileSize": "",
       "noExposureBoost": true
+    },
+    {
+      "id": 20,
+      "type": "video",
+      "src": "/videos/compressed/premium/Guangzhou_Premium.mp4",
+      "srcSafari": "/videos/compressed/safari/Guangzhou_Safari.mp4",
+      "location": "Guangzhou, China",
+      "coordinates": "23.1291°N, 113.2644°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=23.1291,113.2644",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "400",
+      "alt": "Guangzhou, China",
+      "fileSize": "",
+      "noExposureBoost": true
     }
   ]
 }
