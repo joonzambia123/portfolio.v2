@@ -2643,7 +2643,7 @@ function App() {
                 <div className="absolute w-[2px] h-[2px] rounded-full bg-[#0a0a0a] z-20"></div>
               </div>
             </div>
-            <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[1px] items-start min-w-0 flex-shrink">
+            <div className="music-text-container flex flex-col font-graphik text-[14px] justify-center gap-[2px] items-start min-w-0 flex-shrink">
               <MarqueeText
                 className="text-[#333] leading-[1.2]"
                 maxWidth="calc(var(--music-pill-width, 205px) - 100px)"
