@@ -289,6 +289,22 @@
       "alt": "Guangzhou, China",
       "fileSize": "",
       "noExposureBoost": true
+    },
+    {
+      "id": 21,
+      "type": "video",
+      "src": "/videos/compressed/premium/Glenfinnan_Premium.mp4",
+      "srcSafari": "/videos/compressed/safari/Glenfinnan_Safari.mp4",
+      "location": "Glenfinnan, Scotland",
+      "coordinates": "56.8706°N, 5.4384°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=56.8706,-5.4384",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ2.8",
+      "shutter": "1/60s",
+      "iso": "400",
+      "alt": "Glenfinnan, Scotland",
+      "fileSize": "",
+      "noExposureBoost": true
     }
   ]
 }
