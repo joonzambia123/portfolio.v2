@@ -129,6 +129,157 @@ const KoreanNameOverlay = () => {
 }
 
 
+// Handwritten annotation: "my own little time machine..."
+// Sequence: arrowhead draws → line draws → text letter-by-letter → dots
+const CHAR_DELAY = 55 // ms per character
+
+const HandwrittenAnnotation = () => {
+  const [arrowDrawn, setArrowDrawn] = useState(false)
+  const [lineDrawn, setLineDrawn] = useState(false)
+  const [textStarted, setTextStarted] = useState(false)
+  const [dotsVisible, setDotsVisible] = useState(false)
+
+  const line1 = 'a little time machine inspired'
+  const line2 = 'by the carousel scene in mad men'
+  const totalChars = line1.length + line2.length
+
+  useEffect(() => {
+    // Korean text finishes ~3450ms. Arrowhead draws first.
+    const arrowTimer = setTimeout(() => setArrowDrawn(true), 3600)
+    // Line starts drawing after arrowhead (~250ms)
+    const lineTimer = setTimeout(() => setLineDrawn(true), 3850)
+    // Text starts after line finishes drawing (~800ms)
+    const textTimer = setTimeout(() => setTextStarted(true), 4650)
+    // Dots appear one by one after all characters finish, with emphasis spacing
+    const dotsBase = 4650 + totalChars * CHAR_DELAY + 150
+    const dot1Timer = setTimeout(() => setDotsVisible(1), dotsBase)
+    const dot2Timer = setTimeout(() => setDotsVisible(2), dotsBase + 200)
+    const dot3Timer = setTimeout(() => setDotsVisible(3), dotsBase + 400)
+    return () => {
+      clearTimeout(arrowTimer)
+      clearTimeout(lineTimer)
+      clearTimeout(textTimer)
+      clearTimeout(dot1Timer)
+      clearTimeout(dot2Timer)
+      clearTimeout(dot3Timer)
+    }
+  }, [])
+
+  const renderChars = (text, startIndex) =>
+    text.split('').map((char, i) => (
+      <span
+        key={i}
+        style={{
+          opacity: textStarted ? 0.85 : 0,
+          transition: `opacity 120ms ease ${(startIndex + i) * CHAR_DELAY}ms`,
+        }}
+      >
+        {char}
+      </span>
+    ))
+
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        right: '-410px',
+        top: '190px',
+      }}
+    >
+      <svg
+        width="180"
+        height="190"
+        viewBox="0 0 180 190"
+        fill="none"
+        className="overflow-visible"
+      >
+        {/* Arrowhead — draws first */}
+        <path
+          d="M 0 0 Q 4 -1, 10 -3"
+          stroke="#007AFF"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeOpacity="0.7"
+          fill="none"
+          style={{
+            strokeDasharray: 12,
+            strokeDashoffset: arrowDrawn ? 0 : 12,
+            transition: 'stroke-dashoffset 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+        />
+        <path
+          d="M 0 0 Q 2 4, 6 9"
+          stroke="#007AFF"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeOpacity="0.7"
+          fill="none"
+          style={{
+            strokeDasharray: 12,
+            strokeDashoffset: arrowDrawn ? 0 : 12,
+            transition: 'stroke-dashoffset 180ms cubic-bezier(0.22, 1, 0.36, 1) 60ms',
+          }}
+        />
+        {/* Main curved line — draws after arrowhead */}
+        <path
+          d="M 0 0 C 32 8, 55 22, 72 42 C 90 62, 105 85, 125 108 C 138 128, 148 150, 155 175"
+          stroke="#007AFF"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeOpacity="0.7"
+          fill="none"
+          style={{
+            strokeDasharray: 250,
+            strokeDashoffset: lineDrawn ? 0 : 250,
+            transition: 'stroke-dashoffset 800ms cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+        />
+      </svg>
+      {/* Text — letter by letter */}
+      <div
+        style={{
+          fontFamily: "'Nanum Brush Script', cursive",
+          fontSize: '22px',
+          color: '#007AFF',
+          lineHeight: '26px',
+          marginTop: '-12px',
+          marginLeft: '110px',
+          whiteSpace: 'nowrap',
+          transform: 'rotate(-3deg)',
+        }}
+      >
+        {renderChars(line1, 0)}
+        <br />
+        <span style={{ marginLeft: '6px' }}>{renderChars(line2, line1.length)}</span>
+        {[
+          { cx: 1.5, cy: 2.8, r: 1.1, ml: '2px', dot: 1 },
+          { cx: 1.5, cy: 2.6, r: 1.15, ml: '3px', dot: 2 },
+          { cx: 1.5, cy: 2.9, r: 1.05, ml: '3px', dot: 3 },
+        ].map(({ cx, cy, r, ml, dot }) => (
+          <svg
+            key={dot}
+            width="4"
+            height="4"
+            viewBox="0 0 4 4"
+            fill="#007AFF"
+            style={{
+              display: 'inline-block',
+              verticalAlign: 'baseline',
+              marginLeft: ml,
+              position: 'relative',
+              top: '0px',
+              opacity: dotsVisible >= dot ? 0.85 : 0,
+              transition: 'opacity 120ms ease',
+            }}
+          >
+            <circle cx={cx} cy={cy} r={r} />
+          </svg>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const About = () => {
   return (
     <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px]">
@@ -145,8 +296,11 @@ const About = () => {
           </p>
         </header>
 
-        {/* Timeline Section - full 403px width */}
-        <Timeline milestones={timelineData} />
+        {/* Timeline Section - full 403px width, with annotation */}
+        <div className="relative" style={{ width: '403px' }}>
+          <Timeline milestones={timelineData} />
+          <HandwrittenAnnotation />
+        </div>
 
         {/* Closing text - narrower 341px */}
         <section className="mt-[25px]" style={{ width: '341px' }}>

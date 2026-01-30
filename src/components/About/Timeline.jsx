@@ -24,11 +24,14 @@ const Timeline = ({ milestones }) => {
         el.style.transition = 'none'
         el.style.width = '0%'
         el.style.opacity = '1'
-        // Force reflow so browser paints 0% before transition
-        el.offsetWidth
-        // Single smooth transition to 100%
-        el.style.transition = `width ${AUTO_ROTATE_MS}ms linear`
-        el.style.width = '100%'
+        // Use double rAF instead of forced reflow to avoid blocking video playback
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!el) return
+            el.style.transition = `width ${AUTO_ROTATE_MS}ms linear`
+            el.style.width = '100%'
+          })
+        })
       } else {
         el.style.transition = 'none'
         el.style.width = '0%'
