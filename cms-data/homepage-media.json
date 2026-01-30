@@ -105,20 +105,6 @@
       "noExposureBoost": true
     },
     {
-      "id": 2,
-      "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588442/portfolio_videos/Corrour_Premium.mp4",
-      "location": "Corrour, Scotland",
-      "coordinates": "56.76040°N, 4.69090°W",
-      "coordinatesUrl": "https://www.google.com/maps?q=56.76040,-4.69090",
-      "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ9.0",
-      "shutter": "1/60s",
-      "iso": "500",
-      "alt": "Corrour mountain landscape",
-      "fileSize": ""
-    },
-    {
       "id": 6,
       "type": "video",
       "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588442/portfolio_videos/Fukuoka_Premium.mp4",
@@ -130,6 +116,20 @@
       "shutter": "1/60s",
       "iso": "650",
       "alt": "Japanese chef serving dish in Fukuoka",
+      "fileSize": ""
+    },
+    {
+      "id": 2,
+      "type": "video",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588442/portfolio_videos/Corrour_Premium.mp4",
+      "location": "Corrour, Scotland",
+      "coordinates": "56.76040°N, 4.69090°W",
+      "coordinatesUrl": "https://www.google.com/maps?q=56.76040,-4.69090",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ9.0",
+      "shutter": "1/60s",
+      "iso": "500",
+      "alt": "Corrour mountain landscape",
       "fileSize": ""
     },
     {
