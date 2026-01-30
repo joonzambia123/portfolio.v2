@@ -43,20 +43,6 @@
       "fileSize": ""
     },
     {
-      "id": 4,
-      "type": "video",
-      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588423/portfolio_videos/Bandung_Premium.mp4",
-      "location": "Bandung, Indonesia",
-      "coordinates": "6.79770°S, 107.57870°E",
-      "coordinatesUrl": "https://www.google.com/maps?q=-6.79770,107.57870",
-      "camera": "Sony FX3 · Sigma 24-70",
-      "aperture": "ƒ9.0",
-      "shutter": "1/60s",
-      "iso": "320",
-      "alt": "Indonesian kids",
-      "fileSize": ""
-    },
-    {
       "id": 16,
       "type": "video",
       "src": "/videos/compressed/premium/Jeju_Premium.mp4",
@@ -71,6 +57,20 @@
       "alt": "Jeju, Korea",
       "fileSize": "",
       "noExposureBoost": true
+    },
+    {
+      "id": 4,
+      "type": "video",
+      "src": "https://res.cloudinary.com/dxsdxpm9m/video/upload/v1768588423/portfolio_videos/Bandung_Premium.mp4",
+      "location": "Bandung, Indonesia",
+      "coordinates": "6.79770°S, 107.57870°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=-6.79770,107.57870",
+      "camera": "Sony FX3 · Sigma 24-70",
+      "aperture": "ƒ9.0",
+      "shutter": "1/60s",
+      "iso": "320",
+      "alt": "Indonesian kids",
+      "fileSize": ""
     },
     {
       "id": 20,
