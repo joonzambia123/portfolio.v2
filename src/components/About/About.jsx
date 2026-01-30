@@ -128,189 +128,33 @@ const KoreanNameOverlay = () => {
   )
 }
 
-const hobbiesData = [
-  {
-    label: "Led Korea's oldest and largest competitive ",
-    bold: 'debate society',
-    suffix: '.',
-  },
-  {
-    label: 'Trying to tell fun stories through painfully ',
-    bold: 'amateur movies',
-    suffix: '.',
-  },
-  {
-    label: 'I was once the 2x Chicago ',
-    bold: 'taekwondo',
-    suffix: ' champion, in poomsae and sparring.',
-  },
-  {
-    label: 'Really like ',
-    bold: 'chess',
-    suffix: '. Actually a pretty mediocre player tho. Play me here.',
-  },
-  {
-    label: 'Also enjoy playing ',
-    bold: 'racket sports',
-    suffix: ', both table tennis and just tennis.',
-  },
-  {
-    label: 'Occasionally, I ',
-    bold: 'sing',
-    suffix: '. Sometimes, if I\'m feeling sadistic, in public. Run.',
-  },
-]
-
-const HobbyCard = ({ label, bold, suffix, isVisible, delay }) => (
-  <div
-    className="flex flex-col"
-    style={{
-      width: '261px',
-      gap: '10px',
-      opacity: isVisible ? 1 : 0,
-      transform: isVisible ? 'translateY(0)' : 'translateY(16px)',
-      transition: `opacity 500ms ease ${delay}ms, transform 500ms ease ${delay}ms`,
-    }}
-  >
-    <div
-      className="rounded-[8px]"
-      style={{
-        width: '261px',
-        height: '181px',
-        backgroundColor: '#c4c4c4',
-      }}
-    />
-    <p
-      className="font-graphik"
-      style={{
-        fontSize: '14px',
-        lineHeight: '22px',
-        color: '#969494',
-      }}
-    >
-      {label}
-      <span style={{ color: '#e6eaee' }}>{bold}</span>
-      {suffix}
-    </p>
-  </div>
-)
 
 const About = () => {
-  const sectionRef = useRef(null)
-  const [sectionVisible, setSectionVisible] = useState(false)
-  const closingRef = useRef(null)
-  const [closingVisible, setClosingVisible] = useState(false)
-
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setSectionVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.15 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    const el = closingRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setClosingVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.3 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
   return (
-    <div className="w-full min-h-screen bg-[#FCFCFC]">
-      {/* Light section */}
-      <div className="pt-[174px] pb-[45px]">
-        {/* Centered content container - 403px for timeline per Figma */}
-        <div className="mx-auto flex flex-col items-center" style={{ width: '403px' }}>
+    <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px]">
+      {/* Centered content container - 403px for timeline per Figma */}
+      <div className="mx-auto flex flex-col items-center" style={{ width: '403px' }}>
 
-          {/* Greeting Header - narrower 341px */}
-          <header className="flex flex-col gap-[8px] mb-[20px]" style={{ width: '341px' }}>
-            <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
-              Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline /></span>.<KoreanNameOverlay /></span>
-            </h1>
-            <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
-              I make things for screens and occasionally the real world. When I'm not pushing pixels or arguing with TypeScript, I'm out somewhere with a camera.
-            </p>
-          </header>
-
-          {/* Timeline Section - full 403px width */}
-          <Timeline milestones={timelineData} />
-
-          {/* Closing text - narrower 341px */}
-          <section className="mt-[25px] flex flex-col gap-[16px]" style={{ width: '341px' }}>
-            <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
-              Outside of work, I collect hobbies the way some people collect stamps — earnestly, and with no clear endgame. Some are competitive, some are creative, and some are just an excuse to leave the house before noon.
-            </p>
-            <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
-              Below are a few of the things I care about when I'm not staring at a code editor. Most started as distractions and quietly became genuine obsessions.
-            </p>
-          </section>
-
-        </div>
-      </div>
-
-      {/* Dark hobbies section */}
-      <div
-        ref={sectionRef}
-        className="w-full dark-section-skeuomorphic"
-        style={{
-          padding: '45px 0',
-        }}
-      >
-        <div
-          className="mx-auto grid grid-cols-3"
-          style={{
-            gap: '40px 34px',
-            width: 'fit-content',
-          }}
-        >
-          {hobbiesData.map((hobby, i) => (
-            <HobbyCard key={i} {...hobby} isVisible={sectionVisible} delay={i * 120} />
-          ))}
-        </div>
-      </div>
-
-      {/* Below hobbies text */}
-      <div ref={closingRef} className="pt-[45px] pb-[200px]">
-        <div className="mx-auto flex flex-col gap-[16px]" style={{ width: '341px' }}>
-          <p
-            className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]"
-            style={{
-              opacity: closingVisible ? 1 : 0,
-              transform: closingVisible ? 'translateY(0)' : 'translateY(16px)',
-              transition: 'opacity 500ms ease, transform 500ms ease',
-            }}
-          >
-            If you've scrolled this far, you're either genuinely curious or procrastinating. Either way, I appreciate it. I'm always open to meeting new people and hearing about what they're working on.
+        {/* Greeting Header - narrower 341px */}
+        <header className="flex flex-col gap-[8px] mb-[20px]" style={{ width: '341px' }}>
+          <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
+            Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline /></span>.<KoreanNameOverlay /></span>
+          </h1>
+          <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
+            I make things for screens and occasionally the real world. When I'm not pushing pixels or arguing with TypeScript, I'm out somewhere with a camera.
           </p>
-          <p
-            className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]"
-            style={{
-              opacity: closingVisible ? 1 : 0,
-              transform: closingVisible ? 'translateY(0)' : 'translateY(16px)',
-              transition: 'opacity 500ms ease 120ms, transform 500ms ease 120ms',
-            }}
-          >
-            Feel free to reach out if you want to collaborate, talk shop, or challenge me to a chess game you'll probably win.
+        </header>
+
+        {/* Timeline Section - full 403px width */}
+        <Timeline milestones={timelineData} />
+
+        {/* Closing text - narrower 341px */}
+        <section className="mt-[25px]" style={{ width: '341px' }}>
+          <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
+            Outside of work, I collect hobbies the way some people collect stamps — earnestly, and with no clear endgame. Some are competitive, some are creative, and some are just an excuse to leave the house before noon.
           </p>
-        </div>
+        </section>
+
       </div>
     </div>
   )

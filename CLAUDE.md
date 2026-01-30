@@ -125,3 +125,88 @@ When the user asks to "remember" or "learn" a procedure:
    - Expected outputs/sizes
 4. **Keep it actionable** - Future Claude should be able to follow without clarification
 5. **Update existing sections** if the procedure changes (don't duplicate)
+
+---
+
+## Animated Dashed Gridlines Design
+
+A reusable pattern for dark sections with card grids. Creates dashed lines passing through column/row gaps with a marching-ants animation.
+
+### Layout Structure
+- Cards in a CSS grid with explicit column sizing: `gridTemplateColumns: 'repeat(N, <card-width>px)'`
+- `columnGap` and `rowGap` for spacing
+- Grid wrapper: `mx-auto relative` with `width: fit-content`
+- Section: `overflow: hidden` to clip extended gridlines at edges
+
+### Gridline Positioning
+Gridlines are absolutely positioned inside the grid wrapper, with `overflow: visible` so they extend beyond.
+
+**Vertical lines** pass through column gaps and extend to section edges:
+- Internal gap centers: `(col) * cardWidth + (col - 1) * gapWidth + gapWidth/2` for each gap
+- Extended lines: continue the same `cardWidth + gapWidth` interval beyond the grid edges
+- Top/bottom: `-<section-padding>px` to reach section edges
+
+**Horizontal lines** pass through row gaps:
+- Position at `top: calc(50% - 0.5px)` for 2-row grids (adjust for more rows)
+- Extend with `left: -50vw; right: -50vw` to span full viewport width
+
+**Formula for N-column grid (cardWidth=W, gapWidth=G):**
+```
+// All vertical lines at interval of (W + G), centered in gaps
+// offset = (i - leftExtensions) * (W + G) + W + G/2
+// where leftExtensions = number of lines to extend left of grid
+```
+
+### CSS Classes (in index.css)
+```css
+.gridline-vertical {
+  width: 1px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1) 0px,
+    rgba(255, 255, 255, 0.1) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  background-size: 1px 12px;
+  animation: gridlineMarchV 8s linear infinite;
+}
+
+.gridline-horizontal {
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.1) 0px,
+    rgba(255, 255, 255, 0.1) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  background-size: 12px 1px;
+  animation: gridlineMarchH 8s linear infinite;
+}
+
+@keyframes gridlineMarchV {
+  to { background-position-y: -12px; }
+}
+@keyframes gridlineMarchH {
+  to { background-position-x: -12px; }
+}
+```
+
+### Dark Section Styling
+Uses `.dark-section-skeuomorphic` class:
+- Background: `linear-gradient(180deg, #1e1e1f 0%, #161617 100%)`
+- Inset shadows, subtle white border top/bottom
+- `::before` pseudo-element: top highlight (40px, 2.5% white opacity)
+- `::after` pseudo-element: bottom shadow (40px, 30% black opacity)
+
+### Card Design (when used)
+- Fixed width cards (e.g., 200px) with rounded video placeholders
+- Text below: font-graphik 14px, `#969494` base, `#e6eaee` for highlighted keywords (no bold)
+- Sequential fade-in + slide-up on scroll (IntersectionObserver, 120ms stagger per card)
+
+### Key Design Decisions
+- Gridlines are **animated** (marching ants) not static
+- Lines extend **beyond the grid** to section edges for a "continuous grid" feel
+- Section `overflow: hidden` clips the extended lines cleanly
+- Dashes: 6px on, 6px off, `rgba(255,255,255,0.1)` on dark backgrounds
