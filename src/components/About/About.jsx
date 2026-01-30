@@ -39,14 +39,26 @@ const BrushUnderline = () => {
 
 // Calligraphy animation for 장준서
 // Per-character diagonal brush-sweep reveal using clip-path
+const PRONUNCIATION_AUDIO = '/audio/name pronunciation.m4a'
+
 const KoreanNameOverlay = () => {
   const [isVisible, setIsVisible] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     // Appears after the underline finishes drawing (~1500 + 700 = 2200ms)
     const timer = setTimeout(() => setIsVisible(true), 2400)
     return () => clearTimeout(timer)
   }, [])
+
+  const handleClick = () => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(PRONUNCIATION_AUDIO)
+    }
+    audioRef.current.currentTime = 0
+    audioRef.current.play()
+  }
 
   const chars = [
     { char: '장', delay: '0ms' },
@@ -56,13 +68,17 @@ const KoreanNameOverlay = () => {
 
   return (
     <div
-      className="absolute pointer-events-none flex"
+      className="absolute flex"
       style={{
         top: '-28px',
         right: '-10px',
         transform: 'rotate(-7deg)',
         letterSpacing: '-2px',
+        cursor: 'pointer',
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={handleClick}
     >
       {chars.map(({ char, delay }) => (
         <span
@@ -80,6 +96,34 @@ const KoreanNameOverlay = () => {
           {char}
         </span>
       ))}
+
+      {/* Hover tooltip */}
+      <div
+        className="absolute"
+        style={{
+          bottom: '100%',
+          left: '50%',
+          transform: `translateX(-50%) translateY(${isHovered ? '-4px' : '0px'})`,
+          opacity: isHovered ? 1 : 0,
+          transition: 'opacity 200ms ease, transform 200ms ease',
+          pointerEvents: 'none',
+          fontFamily: "'Graphik', -apple-system, sans-serif",
+          fontSize: '11px',
+          letterSpacing: 'normal',
+          WebkitTextStroke: 'unset',
+          lineHeight: '16px',
+          color: '#5B5B5E',
+          background: 'linear-gradient(180deg, #ffffff 0%, #fefefe 100%)',
+          padding: '5px 9px',
+          borderRadius: '8px',
+          boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
+          border: '1px solid rgba(235, 238, 245, 0.85)',
+          whiteSpace: 'nowrap',
+          marginBottom: '6px',
+        }}
+      >
+        Click to hear<br />pronunciation
+      </div>
     </div>
   )
 }
