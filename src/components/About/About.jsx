@@ -93,7 +93,7 @@ const About = () => {
         {/* Greeting Header - narrower 341px */}
         <header className="flex flex-col gap-[8px] mb-[20px]" style={{ width: '341px' }}>
           <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
-            Greetings wanderer, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline /></span>.<KoreanNameOverlay /></span>
+            Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline /></span>.<KoreanNameOverlay /></span>
           </h1>
           <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
             Supposed to be a jovial little junior at Yonsei University but unfortunately I am currently stuck in the hellish limbo that is military conscription.
