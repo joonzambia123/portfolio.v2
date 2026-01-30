@@ -1,5 +1,5 @@
-/* Google Font for Korean text */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400&display=swap');
+/* Google Fonts for Korean text */
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&family=Noto+Serif+KR:wght@400&display=swap');
 
 @tailwind base;
 @tailwind components;
