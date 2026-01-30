@@ -60,7 +60,7 @@ const KoreanNameOverlay = () => {
       style={{
         top: '-28px',
         right: '-10px',
-        transform: 'rotate(-4deg)',
+        transform: 'rotate(-7deg)',
         letterSpacing: '-2px',
       }}
     >
