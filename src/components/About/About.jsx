@@ -4,7 +4,7 @@ import { timelineData } from './timelineData'
 
 const About = () => {
   return (
-    <div className="w-full min-h-screen bg-[#FCFCFC] pt-[184px] pb-[200px]">
+    <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px]">
       {/* Centered content container - 403px for timeline per Figma */}
       <div className="mx-auto flex flex-col items-center" style={{ width: '403px' }}>
 

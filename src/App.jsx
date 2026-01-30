@@ -2525,7 +2525,7 @@ function App() {
       <div
         className={`fixed bottom-[50px] left-1/2 transform -translate-x-1/2 h-[64px] ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}
         style={{
-          width: `${musicPillWidth + 1 + 290}px`,
+          width: `${musicPillWidth + 1 + 292}px`,
           overflow: 'visible',
           transition: 'width 500ms cubic-bezier(0.34, 1.2, 0.64, 1), opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), transform 500ms cubic-bezier(0.4, 0, 0.2, 1)'
         }}
@@ -2667,7 +2667,7 @@ function App() {
           <div className="pill-divider w-[1px] h-full bg-[#ebeef5] flex-shrink-0"></div>
 
           {/* Right side - Buttons */}
-          <div className="h-[64px] w-[290px] flex items-center gap-[10px] px-[12px] py-[14px] relative flex-shrink-0">
+          <div className="h-[64px] w-[292px] flex items-center gap-[10px] px-[12px] py-[14px] relative flex-shrink-0">
             {/* ⌘K indicator - appears above Shortcuts button on hover */}
             {(isShortcutsHovered || isShortcutsModalExiting) && (
               <div 
@@ -2685,10 +2685,10 @@ function App() {
             )}
 
             {/* Activity and Shortcuts buttons */}
-            <div className="flex h-[37px] w-[175px]">
+            <div className="flex h-[37px] w-[177px]">
               <button
                 ref={activityButtonRef}
-                className="bottom-button h-[37px] rounded-l-[8px] w-[84px] flex items-center justify-center cursor-pointer"
+                className="bottom-button h-[37px] rounded-l-[8px] w-[85px] flex items-center justify-center cursor-pointer"
                 onMouseEnter={preloadModalComponents}
                 onClick={() => {
                   playClick();
@@ -2701,7 +2701,7 @@ function App() {
                   }
                 }}
               >
-                <p className="font-graphik text-[14px] text-[#5b5b5e]">Activity</p>
+                <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
               </button>
               <button
                 ref={shortcutsButtonRef}
