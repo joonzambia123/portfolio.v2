@@ -12,7 +12,7 @@ const Timeline = ({ milestones }) => {
   const autoRotateTimer = useRef(null)
   const fillRefs = useRef([])
 
-  const rowHeight = 31 // 20px + 11px gap
+  const rowHeight = 30 // 20px + 10px gap
   const len = milestones.length
 
   // Direct DOM fill animation — bypasses React rendering entirely
