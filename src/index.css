@@ -2380,6 +2380,18 @@ a.dotted-underline-grey:hover {
   color: #FFB800;
   text-shadow: 0 0 8px rgba(255, 184, 0, 0.4);
   transform: scale(1.05);
+  animation: secondBreakfastShine 2s ease-in-out infinite;
+}
+
+@keyframes secondBreakfastShine {
+  0%, 100% {
+    text-shadow: 0 0 6px rgba(255, 184, 0, 0.3);
+    color: #FFB800;
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 184, 0, 0.7), 0 0 40px rgba(255, 184, 0, 0.3);
+    color: #FFD54F;
+  }
 }
 
 /* ===== PERFORMANCE OPTIMIZATIONS ===== */
