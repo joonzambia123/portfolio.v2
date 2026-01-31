@@ -17,11 +17,11 @@ interface CompareData {
   }>;
 }
 
-// Get date 7 days ago (rolling window)
+// Get date 14 days ago (rolling 2-week window)
 function getWeekStart(): Date {
   const now = new Date();
   const weekStart = new Date(now);
-  weekStart.setUTCDate(now.getUTCDate() - 7);
+  weekStart.setUTCDate(now.getUTCDate() - 14);
   weekStart.setUTCHours(0, 0, 0, 0);
   return weekStart;
 }
