@@ -199,6 +199,8 @@ function App() {
   useEffect(() => {
     if (!isMobileMenuOpen) return;
     const handleClickOutside = (e) => {
+      // Ignore clicks on the hamburger button itself (it has its own toggle handler)
+      if (e.target.closest('.mobile-hamburger')) return;
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
         setIsMobileMenuOpen(false);
       }
@@ -2847,7 +2849,7 @@ function App() {
                 }}
               >
                 {isTabletOrBelow ? (
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5V8H12.5" stroke="#5b5b5e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="8" cy="8" r="6.5" stroke="#5b5b5e" strokeWidth="1.5"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="#999" strokeWidth="1"/><path d="M9 3V9H14" stroke="#999" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
                 )}
@@ -2874,7 +2876,7 @@ function App() {
                 }}
               >
                 {isTabletOrBelow ? (
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5" stroke="#5b5b5e" strokeWidth="1.5"/><path d="M4.5 7.5H5.5M7.25 7.5H8.75M10.5 7.5H11.5M5.5 9.5H10.5" stroke="#5b5b5e" strokeWidth="1" strokeLinecap="round"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="5" width="14" height="9" rx="1.5" stroke="#999" strokeWidth="1"/><path d="M5 8.5H6.5M8 8.5H10M11.5 8.5H13M6 11H12" stroke="#999" strokeWidth="1" strokeLinecap="round"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
                 )}
@@ -2898,7 +2900,7 @@ function App() {
               }}
             >
               {isTabletOrBelow ? (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="#5b5b5e" strokeWidth="1.5"/><path d="M1.5 5L8 9.5L14.5 5" stroke="#5b5b5e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="4" width="14" height="10" rx="1.5" stroke="#999" strokeWidth="1"/><path d="M2 6L9 11L16 6" stroke="#999" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>
               ) : (
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
               )}
@@ -2929,11 +2931,12 @@ function App() {
     {/* Ambient Context Card - fixed overlay, rendered outside layout */}
     {isClockExpanded && (
       <div
+        className="ambient-card-backdrop"
         style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}
         onClick={() => setIsClockExpanded(false)}
       >
         <div
-          className="ambient-card font-graphik w-[300px] rounded-[14px] overflow-hidden select-none"
+          className="ambient-card font-graphik w-[300px] max-w-[calc(100vw-32px)] rounded-[14px] overflow-hidden select-none"
           style={{
             position: 'fixed',
             top: (() => { const el = clockCardRef.current; if (!el) return 0; return el.getBoundingClientRect().top; })(),
@@ -3022,7 +3025,7 @@ function App() {
             {/* Sun Arc */}
             {ambientSun && (
               <div className="px-[2px]">
-                <svg width="276" height="52" viewBox="0 0 276 52" fill="none" className="w-full">
+                <svg viewBox="0 0 276 52" fill="none" className="w-full">
                   <path d="M 10 46 Q 138 -10 266 46" stroke="rgba(0,0,0,0.06)" strokeWidth="1" fill="none" />
                   <line x1="10" y1="46" x2="266" y2="46" stroke="rgba(0,0,0,0.04)" strokeWidth="1" />
                   {ambientSun.isUp && (() => {

@@ -853,3 +853,104 @@ shadow and transition patterns documented there.
 ```
 
 That's it. The CLAUDE.md file is automatically loaded as project context, so the design system rules will be available. The prompt just ensures the agent prioritizes reading and following them before writing code.
+
+---
+
+## Multi-Session / Multi-Agent Conflict Prevention
+
+When multiple Claude Code sessions (or a session + manual edits) are working on the same repo simultaneously, follow these rules to avoid merge conflicts and lost work.
+
+### Before Starting Work
+
+1. **Check for uncommitted changes**: Run `git status` and `git diff --stat` at the start of every session. If there are uncommitted changes from another session, **stop and ask the user** before proceeding.
+2. **Identify hot files**: The following files are high-conflict zones because they're large and frequently edited:
+   - `src/App.jsx` (~3000 lines) — main app component
+   - `src/index.css` (~900+ lines) — all styles
+   - `src/components/SlideUpModal.jsx` — modal system
+3. **Ask about concurrent work**: If the task involves editing a hot file, ask: "Are you editing this file in another session right now?"
+
+### During Work
+
+4. **Use feature branches for large changes**: Any change touching 3+ files or requiring 5+ edits should go on a branch:
+   ```bash
+   git checkout -b feature/description-here
+   ```
+5. **Commit incrementally**: Don't batch all changes into one final commit. Commit after each logical unit of work (e.g., "Add hamburger menu", "Add responsive CSS", "Update modal for mobile"). This makes conflicts easier to resolve.
+6. **Prefer CSS over JSX for responsive changes**: When adding responsive behavior, prefer CSS media queries in `index.css` over conditional JSX in `App.jsx`. CSS changes are additive (append to a media query block) and rarely conflict. JSX edits in a 3000-line file are conflict-prone.
+7. **Prefer new files over editing shared files**: If adding a new hook, component, or utility, create a new file instead of inlining it into `App.jsx`. Example: `useMediaQuery` hook lives in `src/hooks/useMediaQuery.js`, not inside App.jsx.
+
+### Before Committing
+
+8. **Re-check for external changes**: Before committing, run `git diff` to verify the changes are what you expect. If the file was modified externally (linter, other session), re-read it before editing.
+9. **Build before commit**: Always run `npm run build` and verify it passes before committing.
+
+### When Conflicts Happen
+
+10. **Don't force-resolve blindly**: If `git merge` or `git rebase` shows conflicts, read both versions carefully. The "other" version may contain important work from another session.
+11. **Prefer the branch approach**: If you know the other session is still active, commit to a branch and merge later when the other session is done.
+
+### Quick Reference: Safe Parallel Editing
+
+| File | Safe to edit in parallel? | Strategy |
+|------|--------------------------|----------|
+| `src/App.jsx` | No — high conflict risk | Use branch, or coordinate with other session |
+| `src/index.css` | Mostly safe if appending | Add new rules at the end of media query blocks |
+| `src/components/*.jsx` | Safe if different components | Each component is its own file |
+| `src/hooks/*.js` | Safe — create new files | New hooks = new files, no conflict |
+| `CLAUDE.md` | Safe if appending | Add new sections at the end |
+| `tailwind.config.js` | Low risk | Small file, rarely edited |
+| `cms-data/*.json` | Safe | Independent data files |
+
+---
+
+## Post-Commit Responsive Audit
+
+After any commit that adds or modifies UI components, run a responsive audit before deploying. This prevents new features from breaking the mobile/tablet experience.
+
+### When to Audit
+
+- After ANY commit touching `src/App.jsx`, `src/index.css`, or any component in `src/components/`
+- After merging another session's changes
+- Before deploying to production
+
+### Audit Checklist
+
+1. **Search for hardcoded widths**: Grep for `w-\[\d+px\]` and `width:.*px` in the changed files. Any width > 300px is a potential overflow on mobile (375px viewport - 32px padding = 343px usable).
+2. **Check for fixed positioning**: Components using `position: fixed` + `getBoundingClientRect()` need viewport boundary checks on mobile. The card could be positioned off-screen if the anchor element moves.
+3. **Verify mobile media queries exist**: Every new visual component must have rules in the `@media (max-width: 813px)` block in `index.css`. If it doesn't, add them.
+4. **Test the build**: Run `npm run build` to verify no compilation errors.
+
+### Responsive Rules Quick Reference
+
+| Rule | Implementation |
+|------|---------------|
+| Max content width on mobile | `max-width: 375px; margin: 0 auto; padding: 0 24px` (tablet) / `padding: 0 16px` (phone) |
+| Fixed widths → fluid | Replace `w-[Xpx]` with `w-[Xpx] max-w-[calc(100vw-32px)]` |
+| Modals on mobile | Centered overlay (`left-1/2 top-1/2` + `translate(-50%, -50%)`) with backdrop |
+| Bottom pill on mobile | Icon-only buttons, `max-width: calc(100vw - 32px)`, `isTabletOrBelow` not `isMobileBreakpoint` |
+| Nav on mobile | Hamburger menu drawer, center nav links hidden |
+| Home page on mobile | Reordered (time→heading→video→bio), center-aligned, `display: contents` on left column |
+
+### Breakpoints
+
+| Name | Width | CSS |
+|------|-------|-----|
+| Desktop | ≥814px | Default styles (no media query) |
+| Tablet | 481–813px | `@media (max-width: 813px)` |
+| Phone | ≤480px | `@media (max-width: 480px)` |
+
+### Files That Need Responsive Rules
+
+When adding a new component, ensure it has responsive CSS in the appropriate media query block in `index.css`. The responsive CSS lives in these blocks:
+
+```
+/* Tablet + mobile (≤813px) */
+@media (max-width: 813px) {
+  /* Add rules here for any new component */
+}
+
+/* Phone only (≤480px) */
+@media (max-width: 480px) {
+  /* Add phone-specific overrides here */
+}
+```

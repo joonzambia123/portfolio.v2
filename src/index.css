@@ -412,11 +412,11 @@ background-color: #E8F6FF;
 
   /* === HOME PAGE MOBILE LAYOUT === */
 
-  /* Stack vertically, center, constrain to desktop text column width */
+  /* Stack vertically, center, preserve desktop text column width */
   .main-content-wrapper {
     flex-direction: column !important;
     align-items: center !important;
-    max-width: 375px !important;
+    max-width: 500px !important;
     margin: 0 auto !important;
     padding: 0 24px !important;
     gap: 0 !important;
@@ -429,13 +429,13 @@ background-color: #E8F6FF;
 
   /* Reorder: time → heading → video → bio */
   .home-time-component { order: 1; margin: 0 auto 15px; }
-  .home-heading { order: 2; width: 100% !important; text-align: center; margin-bottom: 24px; }
+  .home-heading { order: 2; text-align: center; margin-bottom: 24px; }
   .home-video-frame { order: 3; margin-top: 0 !important; max-width: 100% !important; }
   .home-bio { order: 4; text-align: left; margin-top: 28px; }
 
-  /* Reduced vertical padding */
+  /* Vertical padding — more top space so clock clears nav bar comfortably */
   main.page-enter {
-    padding-top: 100px !important;
+    padding-top: 120px !important;
     padding-bottom: 100px !important;
   }
 
@@ -476,6 +476,22 @@ background-color: #E8F6FF;
     font-size: 13px !important;
     flex-shrink: 1;
     min-width: 0;
+  }
+
+  /* === AMBIENT CONTEXT CARD (mobile) === */
+  .ambient-card-backdrop {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  .ambient-card {
+    left: 50% !important;
+    top: 50% !important;
+    transform-origin: center center !important;
+    animation: ambientCardInMobile 300ms cubic-bezier(0.34, 1.2, 0.64, 1) forwards !important;
+  }
+
+  .ambient-card .h-\[100px\] {
+    height: 80px !important;
   }
 }
 
@@ -763,6 +779,17 @@ background-color: #E8F6FF;
 @keyframes ambientContentIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes ambientCardInMobile {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 /* Skeuomorphic nav pill container - matches bottom pill style */
