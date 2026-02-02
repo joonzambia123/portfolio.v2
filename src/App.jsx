@@ -2849,7 +2849,7 @@ function App() {
                 }}
               >
                 {isTabletOrBelow ? (
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="#999" strokeWidth="1"/><path d="M9 3V9H14" stroke="#999" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><circle cx="12" cy="12" r="9" stroke="#aaa" strokeWidth="1.5"/><path d="M12 6V12H17" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
                 )}
@@ -2876,7 +2876,7 @@ function App() {
                 }}
               >
                 {isTabletOrBelow ? (
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="5" width="14" height="9" rx="1.5" stroke="#999" strokeWidth="1"/><path d="M5 8.5H6.5M8 8.5H10M11.5 8.5H13M6 11H12" stroke="#999" strokeWidth="1" strokeLinecap="round"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="6" width="18" height="12" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M7 10.5H9M11 10.5H13M15 10.5H17M8 14H16" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
                 )}
@@ -2900,7 +2900,7 @@ function App() {
               }}
             >
               {isTabletOrBelow ? (
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="4" width="14" height="10" rx="1.5" stroke="#999" strokeWidth="1"/><path d="M2 6L9 11L16 6" stroke="#999" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M3 7L12 14L21 7" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               ) : (
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
               )}
