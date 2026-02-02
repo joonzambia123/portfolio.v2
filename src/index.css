@@ -560,6 +560,15 @@ background-color: #E8F6FF;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid #EAEAEA;
+  position: relative;
+  z-index: 30;
+}
+
+/* Face detection zone is mouse-only; disable on touch devices to prevent blocking drawer taps */
+@media (max-width: 813px) {
+  .face-detection-zone {
+    pointer-events: none !important;
+  }
 }
 
 .mobile-nav-drawer.open {
