@@ -2383,183 +2383,43 @@ function App() {
               ref={clockCardRef}
               className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded' : 'component-hidden'}`}
             >
-              {!isClockExpanded ? (
-                /* Collapsed: Clock Pill */
-                <div
-                  onClick={() => setIsClockExpanded(true)}
-                  className="bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
-                  style={{
-                    boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
-                  }}
-                >
-                  <div className="overflow-clip relative shrink-0 size-[20px]">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
-                      {Array.from({ length: 60 }).map((_, i) => {
-                        const angle = (i * 6 - 90) * (Math.PI / 180);
-                        const isHourMarker = i % 5 === 0;
-                        const outerRadius = 9.5;
-                        const innerRadius = isHourMarker ? 8.5 : 9;
-                        return (
-                          <line key={`minute-${i}`} x1={10 + Math.cos(angle) * innerRadius} y1={10 + Math.sin(angle) * innerRadius} x2={10 + Math.cos(angle) * outerRadius} y2={10 + Math.sin(angle) * outerRadius} stroke="#C3C3C3" strokeWidth={isHourMarker ? "0.8" : "0.4"} strokeLinecap="round" />
-                        );
-                      })}
-                      <line x1="10" y1="10" x2="10" y2="6" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`} />
-                      <line x1="10" y1="10" x2="10" y2="3.5" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`} />
-                      <line x1="10" y1="10" x2="10" y2="2.5" stroke="#FF0000" strokeWidth="0.6" strokeLinecap="round" transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`} />
-                      <circle cx="10" cy="10" r="0.8" fill="#111112"/>
-                    </svg>
+              {/* Original Clock Pill */}
+              <div
+                onClick={() => setIsClockExpanded(true)}
+                className="bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
+                style={{
+                  boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
+                  opacity: isClockExpanded ? 0 : 1,
+                  transition: 'opacity 150ms ease',
+                  pointerEvents: isClockExpanded ? 'none' : 'auto',
+                }}
+              >
+                <div className="overflow-clip relative shrink-0 size-[20px]">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
+                    {Array.from({ length: 60 }).map((_, i) => {
+                      const angle = (i * 6 - 90) * (Math.PI / 180);
+                      const isHourMarker = i % 5 === 0;
+                      const outerRadius = 9.5;
+                      const innerRadius = isHourMarker ? 8.5 : 9;
+                      return (
+                        <line key={`minute-${i}`} x1={10 + Math.cos(angle) * innerRadius} y1={10 + Math.sin(angle) * innerRadius} x2={10 + Math.cos(angle) * outerRadius} y2={10 + Math.sin(angle) * outerRadius} stroke="#C3C3C3" strokeWidth={isHourMarker ? "0.8" : "0.4"} strokeLinecap="round" />
+                      );
+                    })}
+                    <line x1="10" y1="10" x2="10" y2="6" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`} />
+                    <line x1="10" y1="10" x2="10" y2="3.5" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`} />
+                    <line x1="10" y1="10" x2="10" y2="2.5" stroke="#FF0000" strokeWidth="0.6" strokeLinecap="round" transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`} />
+                    <circle cx="10" cy="10" r="0.8" fill="#111112"/>
+                  </svg>
+                </div>
+                <div className="flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap">
+                  <div className="flex flex-col justify-center text-[#5b5b5e]">
+                    <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
                   </div>
-                  <div className="flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap">
-                    <div className="flex flex-col justify-center text-[#5b5b5e]">
-                      <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
-                    </div>
-                    <div className="flex flex-col justify-center text-[#c3c3c3]">
-                      <p className="leading-[normal]">{getCopy('clock_location')}</p>
-                    </div>
+                  <div className="flex flex-col justify-center text-[#c3c3c3]">
+                    <p className="leading-[normal]">{getCopy('clock_location')}</p>
                   </div>
                 </div>
-              ) : (
-                /* Expanded: Ambient Context Card */
-                <div
-                  className="ambient-card font-graphik w-[300px] rounded-[14px] overflow-hidden select-none"
-                  style={{
-                    background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
-                    border: '1px solid rgba(235, 238, 245, 0.85)',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.02)',
-                  }}
-                >
-                  <div className="ambient-card-content p-[12px] flex flex-col gap-[10px]">
-                    {/* Mini Map */}
-                    <div
-                      className="w-full h-[100px] rounded-[8px] overflow-hidden flex items-center justify-center"
-                      style={{ background: '#1e1e1f' }}
-                    >
-                      {import.meta.env.VITE_STADIA_API_KEY ? (
-                        <img
-                          src={`https://tiles.stadiamaps.com/static/alidade_smooth_dark.png?center=${clockCoords.lng},${clockCoords.lat}&zoom=12&size=276x100&api_key=${import.meta.env.VITE_STADIA_API_KEY}`}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="text-[12px] text-[#969494] tracking-wide">
-                          {clockCoords.lat.toFixed(3)}°{clockCoords.lat >= 0 ? 'N' : 'S'}, {Math.abs(clockCoords.lng).toFixed(3)}°{clockCoords.lng >= 0 ? 'E' : 'W'}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Weather */}
-                    <div className="flex items-baseline gap-[8px] px-[2px]">
-                      {ambientWeather ? (
-                        <>
-                          <span className="text-[22px] font-medium text-[#1a1a1a] leading-none">{ambientWeather.temperature}°</span>
-                          <span className="text-[14px] text-[#999] leading-none">{ambientWeather.condition}</span>
-                        </>
-                      ) : (
-                        <span className="text-[14px] text-[#c3c3c3] leading-none">Loading weather...</span>
-                      )}
-                    </div>
-
-                    {/* Sun Arc */}
-                    {ambientSun && (
-                      <div className="px-[2px]">
-                        <svg width="276" height="52" viewBox="0 0 276 52" fill="none" className="w-full">
-                          {/* Arc path from left to right */}
-                          <path
-                            d="M 10 46 Q 138 -10 266 46"
-                            stroke="rgba(0,0,0,0.06)"
-                            strokeWidth="1"
-                            fill="none"
-                          />
-                          {/* Horizon line */}
-                          <line x1="10" y1="46" x2="266" y2="46" stroke="rgba(0,0,0,0.04)" strokeWidth="1" />
-                          {/* Sun dot - position along the arc */}
-                          {ambientSun.isUp && (() => {
-                            const t = ambientSun.progress;
-                            // Quadratic bezier point: P = (1-t)²P0 + 2(1-t)tP1 + t²P2
-                            const x = (1-t)*(1-t)*10 + 2*(1-t)*t*138 + t*t*266;
-                            const y = (1-t)*(1-t)*46 + 2*(1-t)*t*(-10) + t*t*46;
-                            return (
-                              <circle cx={x} cy={y} r="3.5" fill="#1a1a1a" />
-                            );
-                          })()}
-                        </svg>
-                        <div className="flex justify-between px-[2px] mt-[2px]">
-                          <span className="text-[11px] text-[#999] uppercase tracking-wide">{ambientSun.sunriseFormatted}</span>
-                          <span className="text-[11px] text-[#999] uppercase tracking-wide">{ambientSun.sunsetFormatted}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Moon Phase */}
-                    {ambientMoon && (
-                      <div className="flex items-center gap-[8px] px-[2px]">
-                        {/* Moon circle - CSS-rendered phase */}
-                        <div
-                          className="w-[16px] h-[16px] rounded-full shrink-0"
-                          style={{
-                            background: (() => {
-                              const phase = ambientMoon.phase;
-                              const lit = '#e6eaee';
-                              const dark = '#c3c3c3';
-                              if (phase < 0.03 || phase > 0.97) return dark; // New moon
-                              if (phase > 0.47 && phase < 0.53) return lit; // Full moon
-                              // Approximate with a gradient
-                              if (phase < 0.5) {
-                                // Waxing: lit on right
-                                const pct = Math.round(phase * 200);
-                                return `linear-gradient(90deg, ${dark} ${100 - pct}%, ${lit} ${100 - pct}%)`;
-                              } else {
-                                // Waning: lit on left
-                                const pct = Math.round((1 - phase) * 200);
-                                return `linear-gradient(90deg, ${lit} ${pct}%, ${dark} ${pct}%)`;
-                              }
-                            })(),
-                            border: '1px solid rgba(0,0,0,0.06)',
-                          }}
-                        />
-                        <span className="text-[14px] text-[#999] leading-none">{ambientMoon.phaseName}</span>
-                      </div>
-                    )}
-
-                    {/* Divider */}
-                    <div className="h-[1px] w-full" style={{ background: 'rgba(235, 238, 245, 0.85)' }} />
-
-                    {/* Clock Pill (click to collapse) */}
-                    <div
-                      onClick={() => setIsClockExpanded(false)}
-                      className="flex gap-[6px] h-[31px] items-center pt-[6px] pr-[8px] pb-[6px] pl-[6px] rounded-[8px] w-fit cursor-pointer"
-                      style={{
-                        transition: 'background 200ms ease',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <div className="overflow-clip relative shrink-0 size-[18px]">
-                        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
-                          {Array.from({ length: 60 }).map((_, i) => {
-                            const angle = (i * 6 - 90) * (Math.PI / 180);
-                            const isHourMarker = i % 5 === 0;
-                            const outerRadius = 9.5;
-                            const innerRadius = isHourMarker ? 8.5 : 9;
-                            return (
-                              <line key={`em-${i}`} x1={10 + Math.cos(angle) * innerRadius} y1={10 + Math.sin(angle) * innerRadius} x2={10 + Math.cos(angle) * outerRadius} y2={10 + Math.sin(angle) * outerRadius} stroke="#C3C3C3" strokeWidth={isHourMarker ? "0.8" : "0.4"} strokeLinecap="round" />
-                            );
-                          })}
-                          <line x1="10" y1="10" x2="10" y2="6" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`} />
-                          <line x1="10" y1="10" x2="10" y2="3.5" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`} />
-                          <line x1="10" y1="10" x2="10" y2="2.5" stroke="#FF0000" strokeWidth="0.6" strokeLinecap="round" transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`} />
-                          <circle cx="10" cy="10" r="0.8" fill="#111112"/>
-                        </svg>
-                      </div>
-                      <div className="flex gap-[6px] items-center leading-[0] text-[13px] whitespace-nowrap">
-                        <span className="text-[#5b5b5e] leading-[normal]">{clockTimeString || '2:02 PM'}</span>
-                        <span className="text-[#c3c3c3] leading-[normal]">{getCopy('clock_location')}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
             <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded' : 'component-hidden'}`}>
               {getCopy('hero_headline')}
@@ -2952,7 +2812,7 @@ function App() {
           <div className="pill-divider w-[1px] h-full bg-[#ebeef5] flex-shrink-0"></div>
 
           {/* Right side - Buttons */}
-          <div className={`pill-buttons-section h-[64px] flex items-center px-[12px] py-[14px] relative flex-shrink-0 ${isMobileBreakpoint ? 'gap-[6px] w-auto' : 'gap-[10px] w-[292px]'}`}>
+          <div className={`pill-buttons-section h-[64px] flex items-center px-[12px] py-[14px] relative flex-shrink-0 ${isTabletOrBelow ? 'gap-[6px] w-auto' : 'gap-[10px] w-[292px]'}`}>
             {/* ⌘K indicator - desktop only */}
             {!isTabletOrBelow && (isShortcutsHovered || isShortcutsModalExiting) && (
               <div
@@ -2970,10 +2830,10 @@ function App() {
             )}
 
             {/* Activity and Shortcuts buttons */}
-            <div className={`flex h-[37px] ${isMobileBreakpoint ? 'w-auto gap-[6px]' : 'w-[177px]'}`}>
+            <div className={`flex h-[37px] ${isTabletOrBelow ? 'w-auto gap-[6px]' : 'w-[177px]'}`}>
               <button
                 ref={activityButtonRef}
-                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isMobileBreakpoint ? 'w-[37px] rounded-[8px]' : 'rounded-l-[8px] w-[85px]'}`}
+                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isTabletOrBelow ? 'w-[37px] rounded-[8px]' : 'rounded-l-[8px] w-[85px]'}`}
                 onMouseEnter={preloadModalComponents}
                 onClick={() => {
                   playClick();
@@ -2986,7 +2846,7 @@ function App() {
                   }
                 }}
               >
-                {isMobileBreakpoint ? (
+                {isTabletOrBelow ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5V8H12.5" stroke="#5b5b5e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="8" cy="8" r="6.5" stroke="#5b5b5e" strokeWidth="1.5"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
@@ -2994,7 +2854,7 @@ function App() {
               </button>
               <button
                 ref={shortcutsButtonRef}
-                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''} ${isMobileBreakpoint ? 'w-[37px] rounded-[8px]' : 'rounded-r-[8px] w-[92px]'}`}
+                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''} ${isTabletOrBelow ? 'w-[37px] rounded-[8px]' : 'rounded-r-[8px] w-[92px]'}`}
                 onMouseEnter={() => {
                   preloadModalComponents();
                   if (shortcutsModalTimeoutRef.current) {
@@ -3013,7 +2873,7 @@ function App() {
                   }, 200);
                 }}
               >
-                {isMobileBreakpoint ? (
+                {isTabletOrBelow ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5" stroke="#5b5b5e" strokeWidth="1.5"/><path d="M4.5 7.5H5.5M7.25 7.5H8.75M10.5 7.5H11.5M5.5 9.5H10.5" stroke="#5b5b5e" strokeWidth="1" strokeLinecap="round"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
@@ -3024,7 +2884,7 @@ function App() {
             {/* Contact button */}
             <button
               ref={contactButtonRef}
-              className={`bottom-button h-[37px] rounded-[8px] flex items-center justify-center cursor-pointer ${isMobileBreakpoint ? 'w-[37px]' : 'w-[81px]'}`}
+              className={`bottom-button h-[37px] rounded-[8px] flex items-center justify-center cursor-pointer ${isTabletOrBelow ? 'w-[37px]' : 'w-[81px]'}`}
               onMouseEnter={preloadModalComponents}
               onClick={() => {
                 playClick();
@@ -3037,7 +2897,7 @@ function App() {
                 }
               }}
             >
-              {isMobileBreakpoint ? (
+              {isTabletOrBelow ? (
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="#5b5b5e" strokeWidth="1.5"/><path d="M1.5 5L8 9.5L14.5 5" stroke="#5b5b5e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               ) : (
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
@@ -3065,6 +2925,142 @@ function App() {
       </Suspense>
     </div>
     {import.meta.env.DEV && <Agentation />}
+
+    {/* Ambient Context Card - fixed overlay, rendered outside layout */}
+    {isClockExpanded && (
+      <div
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}
+        onClick={() => setIsClockExpanded(false)}
+      >
+        <div
+          className="ambient-card font-graphik w-[300px] rounded-[14px] overflow-hidden select-none"
+          style={{
+            position: 'fixed',
+            top: (() => { const el = clockCardRef.current; if (!el) return 0; return el.getBoundingClientRect().top; })(),
+            left: (() => { const el = clockCardRef.current; if (!el) return 0; return el.getBoundingClientRect().left; })(),
+            background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
+            border: '1px solid rgba(235, 238, 245, 0.85)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.12), 0 8px 32px rgba(0,0,0,0.06), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.02)',
+            transformOrigin: 'top left',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="ambient-card-content p-[12px] flex flex-col gap-[10px]">
+            {/* Clock Row at top */}
+            <div
+              onClick={() => setIsClockExpanded(false)}
+              className="flex gap-[6px] items-center h-[31px] rounded-[8px] w-fit cursor-pointer"
+              style={{ transition: 'background 200ms ease' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <div className="overflow-clip relative shrink-0 size-[18px]">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
+                  {Array.from({ length: 60 }).map((_, i) => {
+                    const angle = (i * 6 - 90) * (Math.PI / 180);
+                    const isHourMarker = i % 5 === 0;
+                    const outerRadius = 9.5;
+                    const innerRadius = isHourMarker ? 8.5 : 9;
+                    return (
+                      <line key={`em-${i}`} x1={10 + Math.cos(angle) * innerRadius} y1={10 + Math.sin(angle) * innerRadius} x2={10 + Math.cos(angle) * outerRadius} y2={10 + Math.sin(angle) * outerRadius} stroke="#C3C3C3" strokeWidth={isHourMarker ? "0.8" : "0.4"} strokeLinecap="round" />
+                    );
+                  })}
+                  <line x1="10" y1="10" x2="10" y2="6" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`} />
+                  <line x1="10" y1="10" x2="10" y2="3.5" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`} />
+                  <line x1="10" y1="10" x2="10" y2="2.5" stroke="#FF0000" strokeWidth="0.6" strokeLinecap="round" transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`} />
+                  <circle cx="10" cy="10" r="0.8" fill="#111112"/>
+                </svg>
+              </div>
+              <div className="flex gap-[6px] items-center leading-[0] text-[13px] whitespace-nowrap">
+                <span className="text-[#5b5b5e] leading-[normal]">{clockTimeString || '2:02 PM'}</span>
+                <span className="text-[#c3c3c3] leading-[normal]">{getCopy('clock_location')}</span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-[1px] w-full" style={{ background: 'rgba(235, 238, 245, 0.85)' }} />
+
+            {/* Mini Map */}
+            <div className="w-full h-[100px] rounded-[8px] overflow-hidden relative" style={{ background: '#1e1e1f' }}>
+              {(() => {
+                const zoom = 12;
+                const latRad = clockCoords.lat * Math.PI / 180;
+                const n = Math.pow(2, zoom);
+                const centerX = ((clockCoords.lng + 180) / 360) * n;
+                const centerY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+                const baseTileX = Math.floor(centerX);
+                const baseTileY = Math.floor(centerY);
+                const offsetX = (centerX - baseTileX) * 256;
+                const offsetY = (centerY - baseTileY) * 256;
+                const shiftX = 138 - offsetX;
+                const shiftY = 50 - offsetY;
+                const tiles = [];
+                for (let dy = -1; dy <= 1; dy++) {
+                  for (let dx = -1; dx <= 1; dx++) {
+                    tiles.push(
+                      <img key={`${dx}-${dy}`} src={`https://a.basemaps.cartocdn.com/dark_all/${zoom}/${baseTileX + dx}/${baseTileY + dy}@2x.png`} alt="" style={{ position: 'absolute', left: `${shiftX + dx * 256}px`, top: `${shiftY + dy * 256}px`, width: '256px', height: '256px' }} draggable={false} />
+                    );
+                  }
+                }
+                return tiles;
+              })()}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[6px] h-[6px] rounded-full bg-[#e6eaee] z-10" style={{ boxShadow: '0 0 4px rgba(230,234,238,0.4)' }} />
+            </div>
+
+            {/* Weather */}
+            <div className="flex items-baseline gap-[8px] px-[2px]">
+              {ambientWeather ? (
+                <>
+                  <span className="text-[22px] font-medium text-[#1a1a1a] leading-none">{ambientWeather.temperature}°</span>
+                  <span className="text-[14px] text-[#999] leading-none">{ambientWeather.condition}</span>
+                </>
+              ) : (
+                <span className="text-[14px] text-[#c3c3c3] leading-none">Loading weather...</span>
+              )}
+            </div>
+
+            {/* Sun Arc */}
+            {ambientSun && (
+              <div className="px-[2px]">
+                <svg width="276" height="52" viewBox="0 0 276 52" fill="none" className="w-full">
+                  <path d="M 10 46 Q 138 -10 266 46" stroke="rgba(0,0,0,0.06)" strokeWidth="1" fill="none" />
+                  <line x1="10" y1="46" x2="266" y2="46" stroke="rgba(0,0,0,0.04)" strokeWidth="1" />
+                  {ambientSun.isUp && (() => {
+                    const t = ambientSun.progress;
+                    const x = (1-t)*(1-t)*10 + 2*(1-t)*t*138 + t*t*266;
+                    const y = (1-t)*(1-t)*46 + 2*(1-t)*t*(-10) + t*t*46;
+                    return <circle cx={x} cy={y} r="3.5" fill="#1a1a1a" />;
+                  })()}
+                </svg>
+                <div className="flex justify-between px-[2px] mt-[2px]">
+                  <span className="text-[11px] text-[#999] uppercase tracking-wide">{ambientSun.sunriseFormatted}</span>
+                  <span className="text-[11px] text-[#999] uppercase tracking-wide">{ambientSun.sunsetFormatted}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Moon Phase */}
+            {ambientMoon && (
+              <div className="flex items-center gap-[8px] px-[2px]">
+                <div className="w-[16px] h-[16px] rounded-full shrink-0" style={{
+                  background: (() => {
+                    const phase = ambientMoon.phase;
+                    const lit = '#e6eaee';
+                    const dark = '#c3c3c3';
+                    if (phase < 0.03 || phase > 0.97) return dark;
+                    if (phase > 0.47 && phase < 0.53) return lit;
+                    if (phase < 0.5) { const pct = Math.round(phase * 200); return `linear-gradient(90deg, ${dark} ${100-pct}%, ${lit} ${100-pct}%)`; }
+                    else { const pct = Math.round((1-phase) * 200); return `linear-gradient(90deg, ${lit} ${pct}%, ${dark} ${pct}%)`; }
+                  })(),
+                  border: '1px solid rgba(0,0,0,0.06)',
+                }} />
+                <span className="text-[14px] text-[#999] leading-none">{ambientMoon.phaseName}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
     </>
   )
 }

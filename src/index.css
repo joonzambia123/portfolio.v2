@@ -380,7 +380,7 @@ background-color: #E8F6FF;
   }
 
   /* Hide center nav links on mobile */
-  .light-nav-bar > div.absolute {
+  .light-nav-bar > nav.absolute {
     display: none !important;
   }
 
@@ -397,7 +397,7 @@ background-color: #E8F6FF;
   }
 
   /* Hide center nav links on mobile */
-  .dark-nav-bar > div.absolute {
+  .dark-nav-bar > nav.absolute {
     display: none !important;
   }
 
@@ -412,36 +412,34 @@ background-color: #E8F6FF;
 
   /* === HOME PAGE MOBILE LAYOUT === */
 
-  /* Center-align wrapper */
+  /* Stack vertically, center, constrain to desktop text column width */
   .main-content-wrapper {
+    flex-direction: column !important;
     align-items: center !important;
+    max-width: 375px !important;
+    margin: 0 auto !important;
+    padding: 0 24px !important;
+    gap: 0 !important;
   }
 
-  /* Left column becomes display:contents so children are direct flex items for reordering */
+  /* Flatten left column so children can reorder */
   .home-left-column {
     display: contents !important;
   }
 
-  /* Reorder: time(1) → heading(2) → video(3) → bio(4) */
-  .home-time-component { order: 1; margin-left: auto; margin-right: auto; }
-  .home-heading { order: 2; width: 100% !important; text-align: center; }
-  .home-video-frame { order: 3; margin-top: 0 !important; }
-  .home-bio { order: 4; text-align: left; }
+  /* Reorder: time → heading → video → bio */
+  .home-time-component { order: 1; margin: 0 auto 15px; }
+  .home-heading { order: 2; width: 100% !important; text-align: center; margin-bottom: 24px; }
+  .home-video-frame { order: 3; margin-top: 0 !important; max-width: 100% !important; }
+  .home-bio { order: 4; text-align: left; margin-top: 28px; }
 
-  /* Video frame height - taller for mobile, portrait-like */
-  .home-video-frame {
-    height: min(65vh, 520px) !important;
-    min-height: 300px !important;
-    max-height: none !important;
-  }
-
-  /* Main content reduced vertical padding */
+  /* Reduced vertical padding */
   main.page-enter {
     padding-top: 100px !important;
     padding-bottom: 100px !important;
   }
 
-  /* === BOTTOM NAV PILL TABLET === */
+  /* === BOTTOM NAV PILL === */
 
   .bottom-pill-outer {
     bottom: 24px !important;
@@ -449,10 +447,9 @@ background-color: #E8F6FF;
     width: auto !important;
   }
 
-  /* Music pill: constrain and allow truncation */
   .music-pill-wrapper {
     width: auto !important;
-    max-width: 50vw;
+    max-width: 45vw;
     flex-shrink: 1 !important;
     min-width: 0;
   }
@@ -461,40 +458,35 @@ background-color: #E8F6FF;
     overflow: hidden;
   }
 
-  /* Bottom pill container: prevent overflow */
   .bottom-pill-container {
     width: 100% !important;
-    overflow: hidden !important;
   }
 
   .pill-buttons-section {
-    flex-shrink: 0;
+    flex-shrink: 1 !important;
+    min-width: 0;
+    width: auto !important;
+    gap: 6px !important;
+    overflow: hidden;
   }
 
-  /* About page padding handled via Tailwind classes in About.jsx */
+  .pill-buttons-section button {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    font-size: 13px !important;
+    flex-shrink: 1;
+    min-width: 0;
+  }
 }
 
 /* Phone-specific styles (≤ 480px) */
 @media (max-width: 480px) {
   .main-content-wrapper {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+    padding: 0 16px !important;
   }
 
-  /* Video frame: slightly shorter to show body text hint */
-  .video-frame-hover[class*="h-[470px]"] {
-    height: min(60vh, 480px) !important;
-  }
-
-  /* Bottom pill: compact mode */
   .bottom-pill-outer {
     bottom: calc(16px + var(--safe-area-bottom, 0px)) !important;
-    max-width: calc(100vw - 32px) !important;
-  }
-
-  /* Music pill: further shrink on phone */
-  .music-pill-wrapper {
-    max-width: 45vw;
   }
 }
 
@@ -745,6 +737,32 @@ background-color: #E8F6FF;
   transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
               transform 500ms cubic-bezier(0.4, 0, 0.2, 1),
               visibility 0ms;
+}
+
+/* Ambient Context Card - fixed overlay animation */
+.ambient-card {
+  animation: ambientCardIn 300ms cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+}
+
+.ambient-card-content {
+  animation: ambientContentIn 200ms ease 120ms forwards;
+  opacity: 0;
+}
+
+@keyframes ambientCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes ambientContentIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Skeuomorphic nav pill container - matches bottom pill style */
