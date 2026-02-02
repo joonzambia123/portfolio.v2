@@ -277,61 +277,74 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, chil
   // Contact modal has a different design (no header)
   const isContactModal = type === 'contact';
 
-  // Mobile: Centered overlay
+  // Mobile: Same slide-up popover as desktop, but anchored to pill center
   if (isMobile) {
     return (
       <AnimatePresence mode="wait">
         {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="backdrop"
-              className="fixed inset-0 z-[199] bg-black/30"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={onClose}
-            />
-            {/* Centered modal */}
-            <motion.div
-              ref={popoverRef}
-              key={`modal-${type}`}
-              className="fixed z-[200] left-1/2 top-1/2"
-              style={{ x: '-50%', y: '-50%' }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              {isContactModal ? (
-                <div className="contact-modal-outer rounded-[18px] flex justify-center">
+          <motion.div
+            ref={popoverRef}
+            key={type}
+            className="fixed z-[200]"
+            style={{
+              bottom: 'calc(24px + 64px + 10px)',
+              left: '50%',
+              x: '-50%',
+              maxWidth: 'calc(100vw - 32px)'
+            }}
+            initial={isContactModal
+              ? { opacity: 0, y: 24 }
+              : { opacity: 0, y: 32, filter: 'blur(2px)' }
+            }
+            animate={isContactModal
+              ? { opacity: 1, y: 0 }
+              : { opacity: 1, y: 0, filter: 'blur(0px)' }
+            }
+            exit={isContactModal
+              ? { opacity: 0, y: 16 }
+              : { opacity: 0, y: 20, filter: 'blur(2px)' }
+            }
+            transition={isContactModal
+              ? {
+                  type: 'spring',
+                  stiffness: 400,
+                  damping: 35,
+                  mass: 0.8
+                }
+              : {
+                  type: 'tween',
+                  duration: 0.25,
+                  ease: [0.25, 0.46, 0.45, 0.94]
+                }
+            }
+          >
+            {isContactModal ? (
+              <div className="contact-modal-outer rounded-[18px] flex justify-center">
+                {children}
+              </div>
+            ) : (
+              <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden border border-black/[0.04]">
+                <div className="px-5 pt-4 pb-3 border-b border-black/[0.06]">
+                  <div className="flex items-center justify-between gap-8">
+                    <h2 className="font-graphik text-[15px] font-medium text-[#1a1a1a]">
+                      {getTitle()}
+                    </h2>
+                    <button
+                      onClick={onClose}
+                      className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M9 3L3 9M3 3L9 9" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="p-5 overflow-y-auto" style={{ maxHeight: 'calc(70vh - 60px)' }}>
                   {children}
                 </div>
-              ) : (
-                <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden border border-black/[0.04] max-h-[70vh] max-w-[calc(100vw-48px)]">
-                  <div className="px-5 pt-4 pb-3 border-b border-black/[0.06]">
-                    <div className="flex items-center justify-between gap-8">
-                      <h2 className="font-graphik text-[15px] font-medium text-[#1a1a1a]">
-                        {getTitle()}
-                      </h2>
-                      <button
-                        onClick={onClose}
-                        className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <path d="M9 3L3 9M3 3L9 9" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-5 overflow-y-auto" style={{ maxHeight: 'calc(70vh - 60px)' }}>
-                    {children}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </>
+              </div>
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
     );
