@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLastFm } from './hooks/useLastFm'
 import { useGitHubStats } from './hooks/useGitHubStats'
 import { useSounds } from './hooks/useSounds'
+import { useMediaQuery } from './hooks/useMediaQuery'
+import { useAmbientData } from './hooks/useAmbientData'
 import { Agentation } from 'agentation'
 import About from './components/About/About'
 
@@ -156,17 +158,58 @@ function App() {
   const navigate = useNavigate()
   const [clockTimeString, setClockTimeString] = useState('');
   const [clockTime, setClockTime] = useState({ hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
-  
+  const [isClockExpanded, setIsClockExpanded] = useState(false);
+  const clockCardRef = useRef(null);
+
   // Loader state - shows coordinates while videos preload
   const [isLoading, setIsLoading] = useState(true);
   const [currentCoordIndex, setCurrentCoordIndex] = useState(0);
   const [coordFading, setCoordFading] = useState(false);
   const [loaderMessage, setLoaderMessage] = useState(''); // Encouraging messages after 5 seconds
-  const videoCacheRef = useRef(new Set()); // Track which videos are fully cached
+  const videoCacheRef = useRef(new Map()); // Map<videoSrc, blobUrl> for instant playback
   const adjacentVideosReadyRef = useRef(0); // Track how many adjacent videos are ready during loader
   const fontsLoadedRef = useRef(false); // Track if fonts are loaded
   const [fontsReady, setFontsReady] = useState(false); // State to trigger re-render when fonts load
   const loaderMinTimeRef = useRef(false); // Minimum loader display time
+
+  // Responsive breakpoints
+  const isTabletOrBelow = useMediaQuery('(max-width: 813px)');
+  const isMobileBreakpoint = useMediaQuery('(max-width: 480px)');
+
+  // Mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef(null);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu on Escape key
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileMenuOpen]);
+
+  // Close mobile menu on outside click
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   // Search input state
   const [searchFocused, setSearchFocused] = useState(false);
@@ -501,14 +544,13 @@ function App() {
   const [videoLoading, setVideoLoading] = useState(false); // Loading state during video transitions
   const firstVideoReadyRef = useRef(false); // Track if first video is ready for loader
 
-  // Safari video buffer pool - keeps videos in memory for instant playback
-  const safariVideoPoolRef = useRef(new Map()); // Map<videoSrc, HTMLVideoElement>
-  const safariPoolOrderRef = useRef([]); // Track order for LRU eviction
-  const MAX_SAFARI_POOL_SIZE = 5;
-
   // Video warm-up tracking - briefly plays each video to initialize decoder
   const warmupCompleteRef = useRef(false);
   const warmupCountRef = useRef(0);
+
+  // Page persistence - prevent video reset on route toggle
+  const hasInitializedHomeRef = useRef(false);
+  const scrollPositionsRef = useRef({ home: 0, about: 0 });
 
   const [loadedComponents, setLoadedComponents] = useState({
     timeComponent: false,
@@ -601,6 +643,52 @@ function App() {
     
     const normalizedCity = cityName.toLowerCase().trim();
     return cityMap[normalizedCity] || 'UTC';
+  };
+
+  // City to coordinates mapping - derives lat/lng from CMS city name
+  const getCoordsFromCity = (cityName) => {
+    if (!cityName) return { lat: 0, lng: 0 };
+    const coordsMap = {
+      'saigon': { lat: 10.777, lng: 106.699 },
+      'ho chi minh': { lat: 10.777, lng: 106.699 },
+      'ho chi minh city': { lat: 10.777, lng: 106.699 },
+      'hcmc': { lat: 10.777, lng: 106.699 },
+      'tokyo': { lat: 35.682, lng: 139.692 },
+      'japan': { lat: 35.682, lng: 139.692 },
+      'kagoshima': { lat: 31.597, lng: 130.557 },
+      'seoul': { lat: 37.566, lng: 126.978 },
+      'korea': { lat: 37.566, lng: 126.978 },
+      'beijing': { lat: 39.904, lng: 116.407 },
+      'shanghai': { lat: 31.230, lng: 121.474 },
+      'hong kong': { lat: 22.320, lng: 114.169 },
+      'singapore': { lat: 1.352, lng: 103.820 },
+      'bangkok': { lat: 13.756, lng: 100.502 },
+      'jakarta': { lat: -6.175, lng: 106.845 },
+      'manila': { lat: 14.599, lng: 120.984 },
+      'mumbai': { lat: 19.076, lng: 72.878 },
+      'delhi': { lat: 28.614, lng: 77.209 },
+      'dubai': { lat: 25.205, lng: 55.270 },
+      'london': { lat: 51.507, lng: -0.128 },
+      'paris': { lat: 48.857, lng: 2.352 },
+      'berlin': { lat: 52.520, lng: 13.405 },
+      'rome': { lat: 41.902, lng: 12.496 },
+      'madrid': { lat: 40.417, lng: -3.704 },
+      'amsterdam': { lat: 52.370, lng: 4.895 },
+      'moscow': { lat: 55.756, lng: 37.617 },
+      'new york': { lat: 40.713, lng: -74.006 },
+      'los angeles': { lat: 34.052, lng: -118.244 },
+      'san francisco': { lat: 37.775, lng: -122.419 },
+      'chicago': { lat: 41.878, lng: -87.630 },
+      'toronto': { lat: 43.653, lng: -79.383 },
+      'vancouver': { lat: 49.283, lng: -123.121 },
+      'mexico city': { lat: 19.433, lng: -99.133 },
+      'sao paulo': { lat: -23.551, lng: -46.634 },
+      'buenos aires': { lat: -34.604, lng: -58.382 },
+      'sydney': { lat: -33.869, lng: 151.209 },
+      'melbourne': { lat: -37.814, lng: 144.963 },
+      'auckland': { lat: -36.849, lng: 174.764 },
+    };
+    return coordsMap[cityName.toLowerCase().trim()] || { lat: 0, lng: 0 };
   };
 
   // Helper to get copy by key - use safeWebsiteCopy if available
@@ -752,15 +840,12 @@ function App() {
     isTransitioningRef.current = isTransitioning;
   }, [isTransitioning]);
 
-  // Cleanup Safari buffer pool on unmount
+  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
-      safariVideoPoolRef.current.forEach((video) => {
-        video.src = '';
-        video.remove();
+      videoCacheRef.current.forEach((blobUrl) => {
+        URL.revokeObjectURL(blobUrl);
       });
-      safariVideoPoolRef.current.clear();
-      safariPoolOrderRef.current = [];
     };
   }, []);
 
@@ -977,49 +1062,27 @@ function App() {
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
 
-  // Preload video into Safari buffer pool for instant playback
-  const preloadVideoToPool = useCallback((videoSrc) => {
-    if (!videoSrc) return;
-
+  // Warm up adjacent video by silently playing one frame (forces Safari decoder init)
+  const warmUpAdjacentVideo = useCallback((videoEl) => {
+    if (!videoEl) return;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     if (!isSafari) return;
+    // Already decoded enough data
+    if (videoEl.readyState >= 4) return;
 
-    // Already in pool - move to end of LRU order
-    if (safariVideoPoolRef.current.has(videoSrc)) {
-      const order = safariPoolOrderRef.current;
-      const idx = order.indexOf(videoSrc);
-      if (idx > -1) {
-        order.splice(idx, 1);
-        order.push(videoSrc);
-      }
-      return;
-    }
+    videoEl.muted = true;
+    videoEl.currentTime = 0;
 
-    // Evict oldest if at capacity
-    if (safariVideoPoolRef.current.size >= MAX_SAFARI_POOL_SIZE) {
-      const oldestSrc = safariPoolOrderRef.current.shift();
-      if (oldestSrc) {
-        const oldVideo = safariVideoPoolRef.current.get(oldestSrc);
-        if (oldVideo) {
-          oldVideo.src = '';
-          oldVideo.remove();
-        }
-        safariVideoPoolRef.current.delete(oldestSrc);
-      }
-    }
+    const onTimeUpdate = () => {
+      videoEl.removeEventListener('timeupdate', onTimeUpdate);
+      videoEl.pause();
+      videoEl.currentTime = 0;
+    };
 
-    // Create hidden video element
-    const video = document.createElement('video');
-    video.preload = 'auto';
-    video.muted = true;
-    video.playsInline = true;
-    video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px';
-    video.src = encodeVideoSrc(videoSrc);
-    document.body.appendChild(video);
-    video.load();
-
-    safariVideoPoolRef.current.set(videoSrc, video);
-    safariPoolOrderRef.current.push(videoSrc);
+    videoEl.addEventListener('timeupdate', onTimeUpdate, { once: true });
+    videoEl.play().catch(() => {
+      videoEl.removeEventListener('timeupdate', onTimeUpdate);
+    });
   }, []);
 
   // Preload video on hover for faster transitions
@@ -1035,6 +1098,8 @@ function App() {
     const targetVideoEl = videoElementsRef.current[targetIndex];
     if (targetVideoEl) {
       targetVideoEl.preload = 'auto';
+      // Also warm up the video for faster switching on Safari
+      warmUpAdjacentVideo(targetVideoEl);
     }
   };
 
@@ -1076,9 +1141,8 @@ function App() {
       }
     }
 
-    // Small delay to ensure next video has started playing before we switch
-    // This prevents the "flash" of poster/black frame
-    const switchDelay = isSafari ? 30 : 10;
+    // Dynamic delay: if next video is pre-decoded (readyState >= 3), switch faster
+    const switchDelay = (nextVideo && nextVideo.readyState >= 3) ? 5 : (isSafari ? 30 : 10);
 
     setTimeout(() => {
       // Now update index - this will swap z-index making next video visible
@@ -1101,6 +1165,17 @@ function App() {
       document.documentElement.classList.add('safari');
     }
   }, []);
+
+  // Save/restore scroll position when toggling between pages
+  useEffect(() => {
+    if (location.pathname === '/') {
+      scrollPositionsRef.current.about = window.scrollY;
+      window.scrollTo(0, scrollPositionsRef.current.home);
+    } else if (location.pathname === '/about') {
+      scrollPositionsRef.current.home = window.scrollY;
+      window.scrollTo(0, scrollPositionsRef.current.about);
+    }
+  }, [location.pathname]);
 
   // Trigger component load animations in sequence - only after loader finishes
   useEffect(() => {
@@ -1255,6 +1330,38 @@ function App() {
     return () => clearInterval(interval);
   }, [websiteCopy]); // Re-run when CMS data changes
 
+  // Ambient data for expanded clock card
+  const clockCity = getCopy('clock_location') || 'Saigon';
+  const clockCoords = getCoordsFromCity(clockCity);
+  const clockTimezone = getTimezoneFromCity(clockCity);
+  const { weather: ambientWeather, sun: ambientSun, moon: ambientMoon } = useAmbientData({
+    lat: clockCoords.lat,
+    lng: clockCoords.lng,
+    timezone: clockTimezone,
+    enabled: isClockExpanded,
+  });
+
+  // Close expanded clock on click outside
+  useEffect(() => {
+    if (!isClockExpanded) return;
+    const handleClickOutside = (e) => {
+      if (clockCardRef.current && !clockCardRef.current.contains(e.target)) {
+        setIsClockExpanded(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isClockExpanded]);
+
+  // Close expanded clock on Escape
+  useEffect(() => {
+    if (!isClockExpanded) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsClockExpanded(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isClockExpanded]);
 
   // Font loading check - ensure fonts are loaded before loader animation
   useEffect(() => {
@@ -1289,14 +1396,30 @@ function App() {
     firstVideoReadyRef.current = false; // Reset on new video data
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    // Fetch video fully into HTTP cache - this is the TRUE indicator of readiness
+    // Fetch video fully and create blob URL for instant playback
     const fetchVideoToCache = async (videoSrc, onComplete) => {
       try {
+        if (videoCacheRef.current.has(videoSrc)) {
+          onComplete(true);
+          return true;
+        }
         const encodedSrc = encodeVideoSrc(videoSrc);
         const response = await fetch(encodedSrc);
         if (response.ok) {
-          await response.blob(); // Force FULL download into cache
-          videoCacheRef.current.add(videoSrc);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          videoCacheRef.current.set(videoSrc, blobUrl);
+
+          // Update non-active video elements with blob URL for instant switching
+          const idx = videoData.findIndex(v => getVideoSrc(v) === videoSrc);
+          if (idx !== -1 && idx !== videoIndex) {
+            const videoEl = videoElementsRef.current[idx];
+            if (videoEl) {
+              videoEl.src = blobUrl;
+              videoEl.load();
+            }
+          }
+
           onComplete(true);
           return true;
         }
@@ -1307,37 +1430,6 @@ function App() {
       return false;
     };
 
-    // Safari: Also create buffer pool video element after fetch completes
-    const createBufferPoolVideo = (videoSrc) => {
-      if (safariVideoPoolRef.current.has(videoSrc)) return;
-
-      // Evict oldest if at capacity
-      if (safariVideoPoolRef.current.size >= MAX_SAFARI_POOL_SIZE) {
-        const oldestSrc = safariPoolOrderRef.current.shift();
-        if (oldestSrc) {
-          const oldVideo = safariVideoPoolRef.current.get(oldestSrc);
-          if (oldVideo) {
-            oldVideo.src = '';
-            oldVideo.remove();
-          }
-          safariVideoPoolRef.current.delete(oldestSrc);
-        }
-      }
-
-      // Create persistent hidden video element
-      const video = document.createElement('video');
-      video.preload = 'auto';
-      video.muted = true;
-      video.playsInline = true;
-      video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px';
-      video.src = encodeVideoSrc(videoSrc);
-      document.body.appendChild(video);
-      video.load(); // Should load from HTTP cache now
-
-      safariVideoPoolRef.current.set(videoSrc, video);
-      safariPoolOrderRef.current.push(videoSrc);
-    };
-
     // Preload first video - fetch MUST complete before we consider it ready
     const firstVideoSrc = getVideoSrc(videoData[0]);
 
@@ -1345,10 +1437,6 @@ function App() {
     fetchVideoToCache(firstVideoSrc, (success) => {
       if (success) {
         firstVideoReadyRef.current = true;
-        // Safari: Create buffer pool video after fetch completes
-        if (isSafari) {
-          createBufferPoolVideo(firstVideoSrc);
-        }
       }
     });
 
@@ -1362,7 +1450,6 @@ function App() {
         fetchVideoToCache(nextVideoSrc, (success) => {
           if (success) {
             adjacentVideosReadyRef.current += 1;
-            if (isSafari) createBufferPoolVideo(nextVideoSrc);
           }
         });
       }, 100);
@@ -1373,7 +1460,6 @@ function App() {
           fetchVideoToCache(prevVideoSrc, (success) => {
             if (success) {
               adjacentVideosReadyRef.current += 1;
-              if (isSafari) createBufferPoolVideo(prevVideoSrc);
             }
           });
         }, 200);
@@ -1523,7 +1609,7 @@ function App() {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     let isCancelled = false;
 
-    // Preload a single video via fetch (for browser caching)
+    // Preload a single video via fetch and create blob URL
     const preloadVideo = async (video) => {
       if (isCancelled) return;
       try {
@@ -1535,12 +1621,18 @@ function App() {
         const encodedSrc = encodeVideoSrc(videoSrc);
         const response = await fetch(encodedSrc);
         if (response.ok && !isCancelled) {
-          await response.blob();
-          videoCacheRef.current.add(videoSrc);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          videoCacheRef.current.set(videoSrc, blobUrl);
 
-          // Safari: Also add to buffer pool for instant playback
-          if (isSafari) {
-            preloadVideoToPool(videoSrc);
+          // Update the corresponding non-active video element with blob URL
+          const idx = videoData.findIndex(v => getVideoSrc(v) === videoSrc);
+          if (idx !== -1 && idx !== videoIndex) {
+            const videoEl = videoElementsRef.current[idx];
+            if (videoEl) {
+              videoEl.src = blobUrl;
+              videoEl.load();
+            }
           }
         }
       } catch (e) {
@@ -1791,17 +1883,8 @@ function App() {
     const nextIndex = (videoIndex + 1) % videoData.length;
     const prevIndex = (videoIndex - 1 + videoData.length) % videoData.length;
 
-    // Safari: Preload adjacent videos into buffer pool for instant playback
+    // Safari: Trigger adjacent video elements to start buffering
     if (isSafari) {
-      // Add to buffer pool for instant switching
-      if (videoData[nextIndex]) {
-        preloadVideoToPool(getVideoSrc(videoData[nextIndex]));
-      }
-      if (videoData[prevIndex]) {
-        preloadVideoToPool(getVideoSrc(videoData[prevIndex]));
-      }
-
-      // Also trigger video elements to start buffering
       [nextIndex, prevIndex].forEach(idx => {
         const videoEl = videoElementsRef.current[idx];
         if (videoEl && videoEl.readyState < 3) {
@@ -1822,21 +1905,33 @@ function App() {
         if (isCurrent || isAdjacent) {
           videoEl.preload = 'auto';
         } else {
-          // Non-adjacent videos: just keep metadata
           videoEl.preload = 'metadata';
         }
       });
     }
 
-    // All browsers: Trigger background fetch for adjacent videos if not cached
-    // This ensures the video data is in browser cache
+    // All browsers: Fetch adjacent videos and create blob URLs if not cached
     [nextIndex, prevIndex].forEach(idx => {
       if (videoData[idx]) {
         const videoSrc = getVideoSrc(videoData[idx]);
         if (!videoCacheRef.current.has(videoSrc)) {
           const encodedSrc = encodeVideoSrc(videoSrc);
-          fetch(encodedSrc).then(res => res.ok && res.blob()).then(() => {
-            videoCacheRef.current.add(videoSrc);
+          fetch(encodedSrc).then(res => {
+            if (res.ok) return res.blob();
+            throw new Error('fetch failed');
+          }).then((blob) => {
+            const blobUrl = URL.createObjectURL(blob);
+            videoCacheRef.current.set(videoSrc, blobUrl);
+            // Update non-active video element with blob URL
+            if (idx !== videoIndex) {
+              const videoEl = videoElementsRef.current[idx];
+              if (videoEl) {
+                videoEl.src = blobUrl;
+                videoEl.load();
+                // Warm up the video after blob loads for instant switching
+                setTimeout(() => warmUpAdjacentVideo(videoEl), 200);
+              }
+            }
           }).catch(() => {});
         }
       }
@@ -1844,76 +1939,87 @@ function App() {
   }, [isLoading, videoIndex, videoData]);
 
   // Ensure videos play on mount - runs when loader finishes AND videoData is ready
-  // Also re-runs when navigating back to home page
+  // On first init: full setup. On return from About: just resume playback (no reset).
   useEffect(() => {
-    // Wait for loader to finish and video data to be available
     if (isLoading || videoData.length === 0) return;
-
-    // Only run on home page
     if (location.pathname !== '/') return;
 
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    // Wait a frame for the DOM to update after conditional render change
+    // FIRST TIME: Full initialization (loader just finished)
+    if (!hasInitializedHomeRef.current) {
+      hasInitializedHomeRef.current = true;
+
+      requestAnimationFrame(() => {
+        video1IndexRef.current = 0;
+        video2IndexRef.current = 1;
+        setVideoIndex(0);
+        setActiveVideo(1);
+
+        const firstVideo = videoElementsRef.current[0] || videoRef1.current;
+
+        if (firstVideo) {
+          firstVideo.style.visibility = 'visible';
+          firstVideo.style.opacity = '1';
+          firstVideo.muted = true;
+          firstVideo.currentTime = 0;
+
+          const playPromise = firstVideo.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              setTimeout(() => firstVideo.play().catch(() => {}), 100);
+            });
+          }
+        }
+
+        videoElementsRef.current.forEach((videoEl, idx) => {
+          if (idx !== 0 && videoEl) {
+            videoEl.style.visibility = 'hidden';
+            videoEl.style.opacity = '0';
+            videoEl.pause();
+          }
+        });
+
+        // Safari: Preload all other videos for instant switching
+        if (isSafari) {
+          videoData.forEach((video, idx) => {
+            if (idx === 0) return;
+            setTimeout(() => {
+              const videoEl = videoElementsRef.current[idx];
+              if (videoEl) {
+                videoEl.preload = 'auto';
+                videoEl.load();
+              }
+            }, idx * 200);
+          });
+        }
+      });
+      return;
+    }
+
+    // RETURNING FROM ABOUT: Just resume the current video (no index reset, no re-preloading)
     requestAnimationFrame(() => {
-      // Reset indices
-      video1IndexRef.current = 0;
-      video2IndexRef.current = 1;
-      setVideoIndex(0);
-      setActiveVideo(1);
-
-      // Get the first video element
-      const firstVideo = videoElementsRef.current[0] || videoRef1.current;
-
-      if (firstVideo) {
-        // First video is GUARANTEED ready from warm-up (buffered during loader)
-        firstVideo.style.visibility = 'visible';
-        firstVideo.style.opacity = '1';
-        firstVideo.muted = true;
-        firstVideo.currentTime = 0;
-
-        // Play immediately - video should be fully buffered
-        console.log('Playing first video (buffered during loader)');
-        const playPromise = firstVideo.play();
+      const currentVideo = videoElementsRef.current[videoIndex];
+      if (currentVideo) {
+        const playPromise = currentVideo.play();
         if (playPromise !== undefined) {
           playPromise.catch(() => {
-            // Retry once on failure
-            setTimeout(() => firstVideo.play().catch(() => {}), 100);
+            setTimeout(() => currentVideo.play().catch(() => {}), 100);
           });
         }
       }
-
-      // Hide all other videos initially
-      videoElementsRef.current.forEach((videoEl, idx) => {
-        if (idx !== 0 && videoEl) {
-          videoEl.style.visibility = 'hidden';
-          videoEl.style.opacity = '0';
-          videoEl.pause();
-        }
-      });
-
-      // Safari: Aggressively preload ALL other videos immediately after first video starts
-      // This ensures instant switching when user clicks arrows
-      if (isSafari) {
-        videoData.forEach((video, idx) => {
-          if (idx === 0) return; // Skip first video, it's already playing
-
-          // Stagger preloads slightly to avoid overwhelming Safari
-          setTimeout(() => {
-            // Add to buffer pool for instant playback
-            preloadVideoToPool(getVideoSrc(video));
-
-            // Also trigger the video element to start buffering
-            const videoEl = videoElementsRef.current[idx];
-            if (videoEl) {
-              videoEl.preload = 'auto';
-              videoEl.load();
-            }
-          }, idx * 200); // 200ms stagger between each video
-        });
-      }
     });
   }, [isLoading, videoData, location.pathname]);
+
+  // Pause home video when navigating away to free decoder resources
+  useEffect(() => {
+    if (location.pathname !== '/') {
+      const currentVideo = videoElementsRef.current[videoIndex];
+      if (currentVideo) {
+        currentVideo.pause();
+      }
+    }
+  }, [location.pathname]);
 
   // Show loading state only if we have no data at all (allow partial rendering)
   const hasAnyData = videoData.length > 0 || Object.keys(websiteCopy).length > 0;
@@ -2136,149 +2242,329 @@ function App() {
             </button>
           </nav>
 
-          {/* Right - Search Input */}
-          <div
-            className={`nav-search-button relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between cursor-pointer group transition-all duration-[250ms] ease-[cubic-bezier(0.34,1.2,0.64,1)] ${searchFocused ? 'w-[280px] bg-white border-[#d8d8d8] shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_0.5px_0_rgba(255,255,255,0.6)]' : 'w-[197px] bg-[#f7f7f7] border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.5),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.03),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.02)] hover:-translate-y-[0.5px]'}`}
-            onClick={() => {
-              if (!searchFocused) {
+          {/* Right - Search Input (hidden on mobile) */}
+          {!isTabletOrBelow && (
+            <div
+              className={`nav-search-button relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between cursor-pointer group transition-all duration-[250ms] ease-[cubic-bezier(0.34,1.2,0.64,1)] ${searchFocused ? 'w-[280px] bg-white border-[#d8d8d8] shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_0.5px_0_rgba(255,255,255,0.6)]' : 'w-[197px] bg-[#f7f7f7] border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.5),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.03),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.02)] hover:-translate-y-[0.5px]'}`}
+              onClick={() => {
+                if (!searchFocused) {
+                  playClick();
+                  setSearchFocused(true);
+                  setTimeout(() => searchInputRef.current?.focus(), 10);
+                }
+              }}
+              role="search"
+              aria-label="Search - Ask me anything"
+            >
+              {searchFocused ? (
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onBlur={() => {
+                    if (!searchQuery) setSearchFocused(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearchQuery('');
+                      setSearchFocused(false);
+                    }
+                  }}
+                  placeholder="Ask me anything..."
+                  className="flex-1 bg-transparent font-graphik text-[14px] text-[#333] placeholder-[#8f8f8f] outline-none"
+                  autoFocus
+                />
+              ) : (
+                <span className="font-graphik text-[14px] text-[#8f8f8f] group-hover:text-[#666] whitespace-nowrap transition-colors duration-[180ms]">Ask me anything...</span>
+              )}
+              <span className={`bg-[#eeeeee] border border-[#e0e0e0] shadow-[0_0.5px_1px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.4),inset_0_-0.5px_0_rgba(0,0,0,0.02)] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center transition-all duration-[180ms] flex-shrink-0 ${searchFocused ? '' : 'group-hover:bg-[#e9e9e9] group-hover:border-[#d8d8d8]'}`}>
+                <span className={`font-graphik text-[12px] text-[#888] transition-colors duration-[180ms] ${searchFocused ? '' : 'group-hover:text-[#666]'}`}>⌘J</span>
+              </span>
+            </div>
+          )}
+
+          {/* Hamburger Menu Button (mobile only) */}
+          {isTabletOrBelow && (
+            <button
+              className="mobile-hamburger w-[37px] h-[37px] flex items-center justify-center rounded-[8px] cursor-pointer bg-[#f7f7f7] border border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] transition-all duration-150"
+              onClick={() => {
                 playClick();
-                setSearchFocused(true);
-                setTimeout(() => searchInputRef.current?.focus(), 10);
-              }
-            }}
-            role="search"
-            aria-label="Search - Ask me anything"
-          >
-            {searchFocused ? (
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onBlur={() => {
-                  if (!searchQuery) setSearchFocused(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setSearchQuery('');
-                    setSearchFocused(false);
-                  }
-                }}
-                placeholder="Ask me anything..."
-                className="flex-1 bg-transparent font-graphik text-[14px] text-[#333] placeholder-[#8f8f8f] outline-none"
-                autoFocus
-              />
-            ) : (
-              <span className="font-graphik text-[14px] text-[#8f8f8f] group-hover:text-[#666] whitespace-nowrap transition-colors duration-[180ms]">Ask me anything...</span>
-            )}
-            <span className={`bg-[#eeeeee] border border-[#e0e0e0] shadow-[0_0.5px_1px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.4),inset_0_-0.5px_0_rgba(0,0,0,0.02)] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center transition-all duration-[180ms] flex-shrink-0 ${searchFocused ? '' : 'group-hover:bg-[#e9e9e9] group-hover:border-[#d8d8d8]'}`}>
-              <span className={`font-graphik text-[12px] text-[#888] transition-colors duration-[180ms] ${searchFocused ? '' : 'group-hover:text-[#666]'}`}>⌘J</span>
-            </span>
-          </div>
+                setIsMobileMenuOpen(prev => !prev);
+              }}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMobileMenuOpen}
+            >
+              <div className={`hamburger-icon ${isMobileMenuOpen ? 'open' : ''}`}>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+          )}
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {isTabletOrBelow && (
+          <div
+            ref={mobileMenuRef}
+            className={`mobile-nav-drawer ${isMobileMenuOpen ? 'open' : ''}`}
+          >
+            <nav className="flex flex-col px-[16px] pt-[8px] pb-[16px] gap-[4px]" aria-label="Mobile navigation">
+              <Link
+                to="/about"
+                className={`mobile-nav-link font-graphik text-[15px] py-[12px] px-[12px] rounded-[8px] transition-colors ${location.pathname === '/about' ? 'text-[#333] bg-[#f3f3f3]' : 'text-[#5b5b5e]'}`}
+                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+              >
+                About
+              </Link>
+              <button
+                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+              >
+                Projects
+              </button>
+              <button
+                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+              >
+                Gallery
+              </button>
+              <button
+                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+              >
+                Notes
+              </button>
+              <button
+                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+              >
+                Extra
+              </button>
+
+              {/* Search in drawer */}
+              <div className="mt-[8px] pt-[12px] border-t border-[#eaeaea]">
+                <div
+                  className="relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between bg-[#f7f7f7] border-[#eaeaea] w-full"
+                  role="search"
+                >
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Ask me anything..."
+                    className="flex-1 bg-transparent font-graphik text-[14px] text-[#333] placeholder-[#8f8f8f] outline-none"
+                  />
+                  <span className="bg-[#eeeeee] border border-[#e0e0e0] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center flex-shrink-0">
+                    <span className="font-graphik text-[12px] text-[#888]">{isMac ? '⌘J' : '⌃J'}</span>
+                  </span>
+                </div>
+              </div>
+            </nav>
+          </div>
+        )}
+
         {/* Bottom border line */}
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#EAEAEA]"></div>
       </div>
 
-      {/* Main Content - Routes */}
-      <Routes>
-        <Route path="/about" element={<div key="about" className="page-enter"><About /></div>} />
-        <Route path="*" element={
-          <main key="home" id="main-content" className="page-enter w-full min-h-screen flex items-center justify-center py-[120px] mt-[-10px]">
+      {/* Main Content - Both pages always mounted, toggled via display */}
+      <div style={{ display: location.pathname === '/about' ? 'block' : 'none' }}>
+        <div className="page-enter"><About /></div>
+      </div>
+
+      <main id="main-content" className="page-enter w-full min-h-screen items-center justify-center py-[120px] mt-[-10px]" style={{ display: location.pathname === '/' ? 'flex' : 'none' }}>
         <div className="flex gap-[50px] items-start text-left main-content-wrapper">
-          {/* Left Column - Text Content */}
-          <div className="flex flex-col w-[375px]">
-            {/* Time Component */}
+          {/* Left Column - Text Content (display:contents on mobile for reordering) */}
+          <div className="flex flex-col w-[375px] home-left-column">
+            {/* Time Component - Expandable Ambient Context Card */}
             <div
-              className={`bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] mb-[15px] w-fit cursor-pointer select-none ${loadedComponents.timeComponent ? 'component-loaded' : 'component-hidden'}`}
+              ref={clockCardRef}
+              className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded' : 'component-hidden'}`}
             >
-              <div className="overflow-clip relative shrink-0 size-[20px]">
-                <svg 
-                  width="20" 
-                  height="20" 
-                  viewBox="0 0 20 20" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="block max-w-none size-full"
+              {!isClockExpanded ? (
+                /* Collapsed: Clock Pill */
+                <div
+                  onClick={() => setIsClockExpanded(true)}
+                  className="bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
+                  style={{
+                    boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
+                  }}
                 >
-                  {/* Minute markers (60 small dashes) */}
-                  {Array.from({ length: 60 }).map((_, i) => {
-                    const angle = (i * 6 - 90) * (Math.PI / 180);
-                    const isHourMarker = i % 5 === 0;
-                    const outerRadius = 9.5;
-                    const innerRadius = isHourMarker ? 8.5 : 9;
-                    const x1 = 10 + Math.cos(angle) * innerRadius;
-                    const y1 = 10 + Math.sin(angle) * innerRadius;
-                    const x2 = 10 + Math.cos(angle) * outerRadius;
-                    const y2 = 10 + Math.sin(angle) * outerRadius;
-                    
-                    return (
-                      <line
-                        key={`minute-${i}`}
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
-                        stroke="#C3C3C3"
-                        strokeWidth={isHourMarker ? "0.8" : "0.4"}
-                        strokeLinecap="round"
-                      />
-                    );
-                  })}
-                  
-                  {/* Hour hand (shorter, thinner) */}
-                  <line
-                    x1="10"
-                    y1="10"
-                    x2="10"
-                    y2="6"
-                    stroke="#111112"
-                    strokeWidth="0.8"
-                    strokeLinecap="round"
-                    transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`}
-                  />
-                  
-                  {/* Minute hand (longer, thinner) */}
-                  <line
-                    x1="10"
-                    y1="10"
-                    x2="10"
-                    y2="3.5"
-                    stroke="#111112"
-                    strokeWidth="0.8"
-                    strokeLinecap="round"
-                    transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`}
-                  />
-                  
-                  {/* Second hand (thin, red, long) */}
-                  <line
-                    x1="10"
-                    y1="10"
-                    x2="10"
-                    y2="2.5"
-                    stroke="#FF0000"
-                    strokeWidth="0.6"
-                    strokeLinecap="round"
-                    transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`}
-                  />
-                  
-                  {/* Center pivot dot (smaller) */}
-                  <circle cx="10" cy="10" r="0.8" fill="#111112"/>
-                </svg>
-              </div>
-              <div className="flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap">
-                <div className="flex flex-col justify-center text-[#5b5b5e]">
-                  <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
+                  <div className="overflow-clip relative shrink-0 size-[20px]">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
+                      {Array.from({ length: 60 }).map((_, i) => {
+                        const angle = (i * 6 - 90) * (Math.PI / 180);
+                        const isHourMarker = i % 5 === 0;
+                        const outerRadius = 9.5;
+                        const innerRadius = isHourMarker ? 8.5 : 9;
+                        return (
+                          <line key={`minute-${i}`} x1={10 + Math.cos(angle) * innerRadius} y1={10 + Math.sin(angle) * innerRadius} x2={10 + Math.cos(angle) * outerRadius} y2={10 + Math.sin(angle) * outerRadius} stroke="#C3C3C3" strokeWidth={isHourMarker ? "0.8" : "0.4"} strokeLinecap="round" />
+                        );
+                      })}
+                      <line x1="10" y1="10" x2="10" y2="6" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`} />
+                      <line x1="10" y1="10" x2="10" y2="3.5" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`} />
+                      <line x1="10" y1="10" x2="10" y2="2.5" stroke="#FF0000" strokeWidth="0.6" strokeLinecap="round" transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`} />
+                      <circle cx="10" cy="10" r="0.8" fill="#111112"/>
+                    </svg>
+                  </div>
+                  <div className="flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap">
+                    <div className="flex flex-col justify-center text-[#5b5b5e]">
+                      <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
+                    </div>
+                    <div className="flex flex-col justify-center text-[#c3c3c3]">
+                      <p className="leading-[normal]">{getCopy('clock_location')}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col justify-center text-[#c3c3c3]">
-                  <p className="leading-[normal]">{getCopy('clock_location')}</p>
+              ) : (
+                /* Expanded: Ambient Context Card */
+                <div
+                  className="ambient-card font-graphik w-[300px] rounded-[14px] overflow-hidden select-none"
+                  style={{
+                    background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
+                    border: '1px solid rgba(235, 238, 245, 0.85)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.02)',
+                  }}
+                >
+                  <div className="ambient-card-content p-[12px] flex flex-col gap-[10px]">
+                    {/* Mini Map */}
+                    <div
+                      className="w-full h-[100px] rounded-[8px] overflow-hidden flex items-center justify-center"
+                      style={{ background: '#1e1e1f' }}
+                    >
+                      {import.meta.env.VITE_STADIA_API_KEY ? (
+                        <img
+                          src={`https://tiles.stadiamaps.com/static/alidade_smooth_dark.png?center=${clockCoords.lng},${clockCoords.lat}&zoom=12&size=276x100&api_key=${import.meta.env.VITE_STADIA_API_KEY}`}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className="text-[12px] text-[#969494] tracking-wide">
+                          {clockCoords.lat.toFixed(3)}°{clockCoords.lat >= 0 ? 'N' : 'S'}, {Math.abs(clockCoords.lng).toFixed(3)}°{clockCoords.lng >= 0 ? 'E' : 'W'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Weather */}
+                    <div className="flex items-baseline gap-[8px] px-[2px]">
+                      {ambientWeather ? (
+                        <>
+                          <span className="text-[22px] font-medium text-[#1a1a1a] leading-none">{ambientWeather.temperature}°</span>
+                          <span className="text-[14px] text-[#999] leading-none">{ambientWeather.condition}</span>
+                        </>
+                      ) : (
+                        <span className="text-[14px] text-[#c3c3c3] leading-none">Loading weather...</span>
+                      )}
+                    </div>
+
+                    {/* Sun Arc */}
+                    {ambientSun && (
+                      <div className="px-[2px]">
+                        <svg width="276" height="52" viewBox="0 0 276 52" fill="none" className="w-full">
+                          {/* Arc path from left to right */}
+                          <path
+                            d="M 10 46 Q 138 -10 266 46"
+                            stroke="rgba(0,0,0,0.06)"
+                            strokeWidth="1"
+                            fill="none"
+                          />
+                          {/* Horizon line */}
+                          <line x1="10" y1="46" x2="266" y2="46" stroke="rgba(0,0,0,0.04)" strokeWidth="1" />
+                          {/* Sun dot - position along the arc */}
+                          {ambientSun.isUp && (() => {
+                            const t = ambientSun.progress;
+                            // Quadratic bezier point: P = (1-t)²P0 + 2(1-t)tP1 + t²P2
+                            const x = (1-t)*(1-t)*10 + 2*(1-t)*t*138 + t*t*266;
+                            const y = (1-t)*(1-t)*46 + 2*(1-t)*t*(-10) + t*t*46;
+                            return (
+                              <circle cx={x} cy={y} r="3.5" fill="#1a1a1a" />
+                            );
+                          })()}
+                        </svg>
+                        <div className="flex justify-between px-[2px] mt-[2px]">
+                          <span className="text-[11px] text-[#999] uppercase tracking-wide">{ambientSun.sunriseFormatted}</span>
+                          <span className="text-[11px] text-[#999] uppercase tracking-wide">{ambientSun.sunsetFormatted}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Moon Phase */}
+                    {ambientMoon && (
+                      <div className="flex items-center gap-[8px] px-[2px]">
+                        {/* Moon circle - CSS-rendered phase */}
+                        <div
+                          className="w-[16px] h-[16px] rounded-full shrink-0"
+                          style={{
+                            background: (() => {
+                              const phase = ambientMoon.phase;
+                              const lit = '#e6eaee';
+                              const dark = '#c3c3c3';
+                              if (phase < 0.03 || phase > 0.97) return dark; // New moon
+                              if (phase > 0.47 && phase < 0.53) return lit; // Full moon
+                              // Approximate with a gradient
+                              if (phase < 0.5) {
+                                // Waxing: lit on right
+                                const pct = Math.round(phase * 200);
+                                return `linear-gradient(90deg, ${dark} ${100 - pct}%, ${lit} ${100 - pct}%)`;
+                              } else {
+                                // Waning: lit on left
+                                const pct = Math.round((1 - phase) * 200);
+                                return `linear-gradient(90deg, ${lit} ${pct}%, ${dark} ${pct}%)`;
+                              }
+                            })(),
+                            border: '1px solid rgba(0,0,0,0.06)',
+                          }}
+                        />
+                        <span className="text-[14px] text-[#999] leading-none">{ambientMoon.phaseName}</span>
+                      </div>
+                    )}
+
+                    {/* Divider */}
+                    <div className="h-[1px] w-full" style={{ background: 'rgba(235, 238, 245, 0.85)' }} />
+
+                    {/* Clock Pill (click to collapse) */}
+                    <div
+                      onClick={() => setIsClockExpanded(false)}
+                      className="flex gap-[6px] h-[31px] items-center pt-[6px] pr-[8px] pb-[6px] pl-[6px] rounded-[8px] w-fit cursor-pointer"
+                      style={{
+                        transition: 'background 200ms ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div className="overflow-clip relative shrink-0 size-[18px]">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
+                          {Array.from({ length: 60 }).map((_, i) => {
+                            const angle = (i * 6 - 90) * (Math.PI / 180);
+                            const isHourMarker = i % 5 === 0;
+                            const outerRadius = 9.5;
+                            const innerRadius = isHourMarker ? 8.5 : 9;
+                            return (
+                              <line key={`em-${i}`} x1={10 + Math.cos(angle) * innerRadius} y1={10 + Math.sin(angle) * innerRadius} x2={10 + Math.cos(angle) * outerRadius} y2={10 + Math.sin(angle) * outerRadius} stroke="#C3C3C3" strokeWidth={isHourMarker ? "0.8" : "0.4"} strokeLinecap="round" />
+                            );
+                          })}
+                          <line x1="10" y1="10" x2="10" y2="6" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`} />
+                          <line x1="10" y1="10" x2="10" y2="3.5" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`} />
+                          <line x1="10" y1="10" x2="10" y2="2.5" stroke="#FF0000" strokeWidth="0.6" strokeLinecap="round" transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`} />
+                          <circle cx="10" cy="10" r="0.8" fill="#111112"/>
+                        </svg>
+                      </div>
+                      <div className="flex gap-[6px] items-center leading-[0] text-[13px] whitespace-nowrap">
+                        <span className="text-[#5b5b5e] leading-[normal]">{clockTimeString || '2:02 PM'}</span>
+                        <span className="text-[#c3c3c3] leading-[normal]">{getCopy('clock_location')}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-            <h1 className={`font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded' : 'component-hidden'}`}>
+            <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded' : 'component-hidden'}`}>
               {getCopy('hero_headline')}
             </h1>
-            <div className={`font-graphik leading-[25px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded' : 'component-hidden'}`}>
+            <div className={`home-bio font-graphik leading-[25px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded' : 'component-hidden'}`}>
               <p className="mb-[10px]">
                 {renderCopy('bio_intro')}
               </p>
@@ -2299,7 +2585,7 @@ function App() {
 
           {/* Right Column - Video Card */}
             <div
-              className={`group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
+              className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
               onMouseEnter={() => {
                 if (isMobileOrTablet) return; // No hover on mobile
                 // Set ref FIRST to prevent race condition with jiggle interval
@@ -2518,14 +2804,13 @@ function App() {
           </div>
         </div>
       </main>
-        } />
-      </Routes>
 
       {/* Bottom Component - Born Slippy, Activity, Shortcuts, Contact */}
       <div
-        className={`fixed bottom-[50px] left-1/2 transform -translate-x-1/2 h-[64px] ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}
+        className={`bottom-pill-outer fixed bottom-[50px] left-1/2 transform -translate-x-1/2 h-[64px] ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}
         style={{
-          width: `${musicPillWidth + 1 + 292}px`,
+          width: isTabletOrBelow ? undefined : `${musicPillWidth + 1 + 292}px`,
+          maxWidth: isTabletOrBelow ? 'calc(100vw - 32px)' : undefined,
           overflow: 'visible',
           transition: 'width 500ms cubic-bezier(0.34, 1.2, 0.64, 1), opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), transform 500ms cubic-bezier(0.4, 0, 0.2, 1)'
         }}
@@ -2667,10 +2952,10 @@ function App() {
           <div className="pill-divider w-[1px] h-full bg-[#ebeef5] flex-shrink-0"></div>
 
           {/* Right side - Buttons */}
-          <div className="h-[64px] w-[292px] flex items-center gap-[10px] px-[12px] py-[14px] relative flex-shrink-0">
-            {/* ⌘K indicator - appears above Shortcuts button on hover */}
-            {(isShortcutsHovered || isShortcutsModalExiting) && (
-              <div 
+          <div className={`pill-buttons-section h-[64px] flex items-center px-[12px] py-[14px] relative flex-shrink-0 ${isMobileBreakpoint ? 'gap-[6px] w-auto' : 'gap-[10px] w-[292px]'}`}>
+            {/* ⌘K indicator - desktop only */}
+            {!isTabletOrBelow && (isShortcutsHovered || isShortcutsModalExiting) && (
+              <div
                 className={`shortcuts-modal absolute z-[100] ${isShortcutsModalExiting ? 'exiting' : ''}`}
                 onAnimationEnd={() => {
                   if (isShortcutsModalExiting) {
@@ -2685,10 +2970,10 @@ function App() {
             )}
 
             {/* Activity and Shortcuts buttons */}
-            <div className="flex h-[37px] w-[177px]">
+            <div className={`flex h-[37px] ${isMobileBreakpoint ? 'w-auto gap-[6px]' : 'w-[177px]'}`}>
               <button
                 ref={activityButtonRef}
-                className="bottom-button h-[37px] rounded-l-[8px] w-[85px] flex items-center justify-center cursor-pointer"
+                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isMobileBreakpoint ? 'w-[37px] rounded-[8px]' : 'rounded-l-[8px] w-[85px]'}`}
                 onMouseEnter={preloadModalComponents}
                 onClick={() => {
                   playClick();
@@ -2701,11 +2986,15 @@ function App() {
                   }
                 }}
               >
-                <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
+                {isMobileBreakpoint ? (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5V8H12.5" stroke="#5b5b5e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="8" cy="8" r="6.5" stroke="#5b5b5e" strokeWidth="1.5"/></svg>
+                ) : (
+                  <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
+                )}
               </button>
               <button
                 ref={shortcutsButtonRef}
-                className={`bottom-button h-[37px] rounded-r-[8px] w-[92px] flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''}`}
+                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''} ${isMobileBreakpoint ? 'w-[37px] rounded-[8px]' : 'rounded-r-[8px] w-[92px]'}`}
                 onMouseEnter={() => {
                   preloadModalComponents();
                   if (shortcutsModalTimeoutRef.current) {
@@ -2724,14 +3013,18 @@ function App() {
                   }, 200);
                 }}
               >
-                <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
+                {isMobileBreakpoint ? (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5" stroke="#5b5b5e" strokeWidth="1.5"/><path d="M4.5 7.5H5.5M7.25 7.5H8.75M10.5 7.5H11.5M5.5 9.5H10.5" stroke="#5b5b5e" strokeWidth="1" strokeLinecap="round"/></svg>
+                ) : (
+                  <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
+                )}
               </button>
             </div>
 
             {/* Contact button */}
             <button
               ref={contactButtonRef}
-              className="bottom-button h-[37px] rounded-[8px] w-[81px] flex items-center justify-center cursor-pointer"
+              className={`bottom-button h-[37px] rounded-[8px] flex items-center justify-center cursor-pointer ${isMobileBreakpoint ? 'w-[37px]' : 'w-[81px]'}`}
               onMouseEnter={preloadModalComponents}
               onClick={() => {
                 playClick();
@@ -2744,7 +3037,11 @@ function App() {
                 }
               }}
             >
-              <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
+              {isMobileBreakpoint ? (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="#5b5b5e" strokeWidth="1.5"/><path d="M1.5 5L8 9.5L14.5 5" stroke="#5b5b5e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
+              )}
             </button>
           </div>
         </div>

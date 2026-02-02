@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { useSounds } from '../hooks/useSounds';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 // Contact modal icons - defined outside component to prevent recreation on each render
 
@@ -204,6 +205,7 @@ const TwitterIcon = ({ hovered }) => (
 const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, children }) => {
   const [position, setPosition] = useState({ left: 0 });
   const popoverRef = useRef(null);
+  const isMobile = useMediaQuery('(max-width: 813px)');
 
   // Calculate position based on anchor button
   useEffect(() => {
@@ -275,6 +277,71 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, chil
   // Contact modal has a different design (no header)
   const isContactModal = type === 'contact';
 
+  // Mobile: Bottom sheet pattern
+  if (isMobile) {
+    return (
+      <AnimatePresence mode="wait">
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="backdrop"
+              className="fixed inset-0 z-[199] bg-black/30"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={onClose}
+            />
+            {/* Bottom Sheet */}
+            <motion.div
+              ref={popoverRef}
+              key={`sheet-${type}`}
+              className="fixed z-[200] bottom-0 left-0 right-0"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{
+                type: 'spring',
+                stiffness: 400,
+                damping: 40,
+                mass: 0.8
+              }}
+            >
+              <div className="bg-white rounded-t-[20px] shadow-[0_-4px_24px_rgba(0,0,0,0.12)] max-h-[70vh] overflow-y-auto"
+                style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
+              >
+                {/* Drag handle */}
+                <div className="flex justify-center pt-[10px] pb-[6px]">
+                  <div className="w-[36px] h-[4px] rounded-full bg-[#d4d4d4]"></div>
+                </div>
+                {/* Header */}
+                <div className="px-5 pt-2 pb-3 flex items-center justify-between">
+                  <h2 className="font-graphik text-[15px] font-medium text-[#1a1a1a]">
+                    {getTitle()}
+                  </h2>
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M9 3L3 9M3 3L9 9" stroke="#999" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+                {/* Content */}
+                <div className="px-5 pb-4">
+                  {children}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // Desktop: Original popover positioned above bottom pill
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -287,7 +354,7 @@ const SlideUpModal = ({ isOpen, onClose, type, anchorRef, darkMode = false, chil
             left: position.left,
             x: '-50%'
           }}
-          initial={isContactModal 
+          initial={isContactModal
             ? { opacity: 0, y: 24 }
             : { opacity: 0, y: 32, filter: 'blur(2px)' }
           }

@@ -11,6 +11,10 @@ export default {
         'matter': ['Matter', 'system-ui', '-apple-system', 'sans-serif'],
         'calluna': ['Calluna', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
       },
+      screens: {
+        'xs': '481px',
+        'desktop': '814px',
+      },
     },
   },
   plugins: [],

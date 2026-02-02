@@ -282,12 +282,12 @@ const HandwrittenAnnotation = () => {
 
 const About = () => {
   return (
-    <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px]">
-      {/* Centered content container - 403px for timeline per Figma */}
-      <div className="mx-auto flex flex-col items-center" style={{ width: '403px' }}>
+    <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px] max-[813px]:pt-[120px] max-[813px]:pb-[120px]">
+      {/* Centered content container - 403px max, responsive */}
+      <div className="mx-auto flex flex-col items-center w-full max-w-[403px] px-6 desktop:px-0">
 
-        {/* Greeting Header - narrower 341px */}
-        <header className="flex flex-col gap-[8px] mb-[20px]" style={{ width: '341px' }}>
+        {/* Greeting Header - narrower 341px max */}
+        <header className="flex flex-col gap-[8px] mb-[20px] w-full max-w-[341px]">
           <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
             Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline /></span>.<KoreanNameOverlay /></span>
           </h1>
@@ -297,13 +297,13 @@ const About = () => {
         </header>
 
         {/* Timeline Section - full 403px width, with annotation */}
-        <div className="relative" style={{ width: '403px' }}>
+        <div className="relative w-full max-w-[403px]">
           <Timeline milestones={timelineData} />
           <HandwrittenAnnotation />
         </div>
 
-        {/* Closing text - narrower 341px */}
-        <section className="mt-[25px]" style={{ width: '341px' }}>
+        {/* Closing text - narrower 341px max */}
+        <section className="mt-[25px] w-full max-w-[341px]">
           <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
             Outside of work, I collect hobbies the way some people collect stamps — earnestly, and with no clear endgame. Some are competitive, some are creative, and some are just an excuse to leave the house before noon.
           </p>
