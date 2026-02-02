@@ -458,6 +458,11 @@ background-color: #E8F6FF;
     overflow: hidden;
   }
 
+  /* Force marquee text to respect the shrunk pill width on mobile */
+  .music-pill-wrapper .music-text-container > div {
+    max-width: calc(45vw - 100px) !important;
+  }
+
   .bottom-pill-container {
     width: 100% !important;
   }
@@ -476,6 +481,11 @@ background-color: #E8F6FF;
     font-size: 13px !important;
     flex-shrink: 1;
     min-width: 0;
+  }
+
+  /* On mobile, buttons are separate (with gap), so keep all borders */
+  .bottom-button:has(+ .bottom-button) {
+    border-right: 1px solid rgba(235, 238, 245, 0.85) !important;
   }
 
   /* === AMBIENT CONTEXT CARD (mobile) === */
