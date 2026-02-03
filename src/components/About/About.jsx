@@ -4,18 +4,21 @@ import Timeline from './Timeline'
 import { timelineData } from './timelineData'
 
 // Brush stroke underline for "Joon"
-const BrushUnderline = ({ isVisible }) => {
+const BrushUnderline = ({ isVisible, hasBeenSeen }) => {
   const [isDrawn, setIsDrawn] = useState(false)
 
   useEffect(() => {
     if (!isVisible) {
-      setIsDrawn(false)
+      if (!hasBeenSeen) setIsDrawn(false)
       return
     }
-    // Delay relative to page visibility, not mount
+    if (hasBeenSeen) {
+      setIsDrawn(true)
+      return
+    }
     const timer = setTimeout(() => setIsDrawn(true), 1200)
     return () => clearTimeout(timer)
-  }, [isVisible])
+  }, [isVisible, hasBeenSeen])
 
   return (
     <svg
@@ -35,7 +38,7 @@ const BrushUnderline = ({ isVisible }) => {
         style={{
           strokeDasharray: 70,
           strokeDashoffset: isDrawn ? 0 : 70,
-          transition: 'stroke-dashoffset 700ms cubic-bezier(0.22, 1, 0.36, 1)',
+          transition: hasBeenSeen ? 'none' : 'stroke-dashoffset 700ms cubic-bezier(0.22, 1, 0.36, 1)',
         }}
       />
     </svg>
@@ -46,20 +49,23 @@ const BrushUnderline = ({ isVisible }) => {
 // Per-character diagonal brush-sweep reveal using clip-path
 const PRONUNCIATION_AUDIO = '/audio/name pronunciation.m4a'
 
-const KoreanNameOverlay = ({ isVisible }) => {
+const KoreanNameOverlay = ({ isVisible, hasBeenSeen }) => {
   const [isRevealed, setIsRevealed] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const audioRef = useRef(null)
 
   useEffect(() => {
     if (!isVisible) {
-      setIsRevealed(false)
+      if (!hasBeenSeen) setIsRevealed(false)
       return
     }
-    // Appears after the underline finishes drawing (~1200 + 700 = 1900ms)
+    if (hasBeenSeen) {
+      setIsRevealed(true)
+      return
+    }
     const timer = setTimeout(() => setIsRevealed(true), 2100)
     return () => clearTimeout(timer)
-  }, [isVisible])
+  }, [isVisible, hasBeenSeen])
 
   const handleClick = () => {
     if (!audioRef.current) {
@@ -99,7 +105,7 @@ const KoreanNameOverlay = ({ isVisible }) => {
             WebkitTextStroke: '0.4px #007AFF',
             opacity: 0.85,
             clipPath: isRevealed ? 'polygon(0% 0%, 120% 0%, 120% 120%, 0% 120%)' : 'polygon(0% 0%, 0% 0%, 0% 0%, 0% 100%)',
-            transition: `clip-path 450ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}`,
+            transition: hasBeenSeen ? 'none' : `clip-path 450ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}`,
           }}
         >
           {char}
@@ -140,9 +146,10 @@ const KoreanNameOverlay = ({ isVisible }) => {
 
 // Handwritten annotation: "my own little time machine..."
 // Sequence: arrowhead draws → line draws → text letter-by-letter → dots
+// On revisit: everything shown immediately, no animation replay
 const CHAR_DELAY = 55 // ms per character
 
-const HandwrittenAnnotation = ({ isVisible }) => {
+const HandwrittenAnnotation = ({ isVisible, hasBeenSeen }) => {
   const [arrowDrawn, setArrowDrawn] = useState(false)
   const [lineDrawn, setLineDrawn] = useState(false)
   const [textStarted, setTextStarted] = useState(false)
@@ -154,13 +161,23 @@ const HandwrittenAnnotation = ({ isVisible }) => {
 
   useEffect(() => {
     if (!isVisible) {
-      setArrowDrawn(false)
-      setLineDrawn(false)
-      setTextStarted(false)
-      setDotsVisible(false)
+      if (!hasBeenSeen) {
+        setArrowDrawn(false)
+        setLineDrawn(false)
+        setTextStarted(false)
+        setDotsVisible(false)
+      }
       return
     }
-    // All delays relative to visibility — Korean text finishes ~3000ms
+    // On revisit: snap everything to final state immediately
+    if (hasBeenSeen) {
+      setArrowDrawn(true)
+      setLineDrawn(true)
+      setTextStarted(true)
+      setDotsVisible(3)
+      return
+    }
+    // First visit: full sequential animation
     const arrowTimer = setTimeout(() => setArrowDrawn(true), 3200)
     const lineTimer = setTimeout(() => setLineDrawn(true), 3450)
     const textTimer = setTimeout(() => setTextStarted(true), 4250)
@@ -176,7 +193,7 @@ const HandwrittenAnnotation = ({ isVisible }) => {
       clearTimeout(dot2Timer)
       clearTimeout(dot3Timer)
     }
-  }, [isVisible])
+  }, [isVisible, hasBeenSeen])
 
   const renderChars = (text, startIndex) =>
     text.split('').map((char, i) => (
@@ -184,7 +201,7 @@ const HandwrittenAnnotation = ({ isVisible }) => {
         key={i}
         style={{
           opacity: textStarted ? 0.85 : 0,
-          transition: `opacity 120ms ease ${(startIndex + i) * CHAR_DELAY}ms`,
+          transition: hasBeenSeen ? 'none' : `opacity 120ms ease ${(startIndex + i) * CHAR_DELAY}ms`,
         }}
       >
         {char}
@@ -217,7 +234,7 @@ const HandwrittenAnnotation = ({ isVisible }) => {
           style={{
             strokeDasharray: 12,
             strokeDashoffset: arrowDrawn ? 0 : 12,
-            transition: 'stroke-dashoffset 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+            transition: hasBeenSeen ? 'none' : 'stroke-dashoffset 180ms cubic-bezier(0.22, 1, 0.36, 1)',
           }}
         />
         <path
@@ -230,7 +247,7 @@ const HandwrittenAnnotation = ({ isVisible }) => {
           style={{
             strokeDasharray: 12,
             strokeDashoffset: arrowDrawn ? 0 : 12,
-            transition: 'stroke-dashoffset 180ms cubic-bezier(0.22, 1, 0.36, 1) 60ms',
+            transition: hasBeenSeen ? 'none' : 'stroke-dashoffset 180ms cubic-bezier(0.22, 1, 0.36, 1) 60ms',
           }}
         />
         {/* Main curved line — draws after arrowhead */}
@@ -244,7 +261,7 @@ const HandwrittenAnnotation = ({ isVisible }) => {
           style={{
             strokeDasharray: 250,
             strokeDashoffset: lineDrawn ? 0 : 250,
-            transition: 'stroke-dashoffset 800ms cubic-bezier(0.22, 1, 0.36, 1)',
+            transition: hasBeenSeen ? 'none' : 'stroke-dashoffset 800ms cubic-bezier(0.22, 1, 0.36, 1)',
           }}
         />
       </svg>
@@ -282,7 +299,7 @@ const HandwrittenAnnotation = ({ isVisible }) => {
               position: 'relative',
               top: '0px',
               opacity: dotsVisible >= dot ? 0.85 : 0,
-              transition: 'opacity 120ms ease',
+              transition: hasBeenSeen ? 'none' : 'opacity 120ms ease',
             }}
           >
             <circle cx={cx} cy={cy} r={r} />
@@ -294,7 +311,24 @@ const HandwrittenAnnotation = ({ isVisible }) => {
 }
 
 const About = ({ isVisible = false }) => {
-  // Staggered section reveal — resets when navigating away
+  // Track whether the user has seen the full animation sequence at least once
+  const hasBeenSeenRef = useRef(false)
+  const [hasBeenSeen, setHasBeenSeen] = useState(false)
+
+  // Mark as seen after the first visit completes
+  useEffect(() => {
+    if (!isVisible) return
+    if (hasBeenSeenRef.current) return
+    // Mark as seen after the full animation sequence would have finished (~10s)
+    // This ensures the first visit plays fully before switching to instant mode
+    const timer = setTimeout(() => {
+      hasBeenSeenRef.current = true
+      setHasBeenSeen(true)
+    }, 10000)
+    return () => clearTimeout(timer)
+  }, [isVisible])
+
+  // Staggered section reveal — simpler on revisit
   const [loadedSections, setLoadedSections] = useState({
     header: false,
     timeline: false,
@@ -303,10 +337,29 @@ const About = ({ isVisible = false }) => {
 
   useEffect(() => {
     if (!isVisible) {
-      setLoadedSections({ header: false, timeline: false, closing: false })
+      if (!hasBeenSeen) {
+        setLoadedSections({ header: false, timeline: false, closing: false })
+      }
       return
     }
-    // Staggered reveal: 300ms initial, 120ms stagger between sections
+    if (hasBeenSeen) {
+      // Revisit: faster stagger, no waiting for elaborate animations
+      const t1 = setTimeout(() => {
+        setLoadedSections(prev => ({ ...prev, header: true }))
+      }, 150)
+      const t2 = setTimeout(() => {
+        setLoadedSections(prev => ({ ...prev, timeline: true }))
+      }, 250)
+      const t3 = setTimeout(() => {
+        setLoadedSections(prev => ({ ...prev, closing: true }))
+      }, 350)
+      return () => {
+        clearTimeout(t1)
+        clearTimeout(t2)
+        clearTimeout(t3)
+      }
+    }
+    // First visit: standard stagger
     const t1 = setTimeout(() => {
       setLoadedSections(prev => ({ ...prev, header: true }))
     }, 300)
@@ -321,7 +374,7 @@ const About = ({ isVisible = false }) => {
       clearTimeout(t2)
       clearTimeout(t3)
     }
-  }, [isVisible])
+  }, [isVisible, hasBeenSeen])
 
   return (
     <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px] max-[813px]:pt-[120px] max-[813px]:pb-[120px]">
@@ -331,7 +384,7 @@ const About = ({ isVisible = false }) => {
         {/* Greeting Header - narrower 341px max */}
         <header className={`flex flex-col gap-[8px] mb-[20px] w-full max-w-[341px] ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
-            Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline isVisible={isVisible} /></span>.<KoreanNameOverlay isVisible={isVisible} /></span>
+            Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline isVisible={isVisible} hasBeenSeen={hasBeenSeen} /></span>.<KoreanNameOverlay isVisible={isVisible} hasBeenSeen={hasBeenSeen} /></span>
           </h1>
           <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
             I make things for screens and occasionally the real world. When I'm not pushing pixels or arguing with TypeScript, I'm out somewhere with a camera.
@@ -341,7 +394,7 @@ const About = ({ isVisible = false }) => {
         {/* Timeline Section - full 403px width, with annotation */}
         <div className={`relative w-full max-w-[403px] ${loadedSections.timeline ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <Timeline milestones={timelineData} isVisible={isVisible} />
-          <HandwrittenAnnotation isVisible={isVisible} />
+          <HandwrittenAnnotation isVisible={isVisible} hasBeenSeen={hasBeenSeen} />
         </div>
 
         {/* Closing text - narrower 341px max */}

@@ -2717,7 +2717,7 @@ body {
 /* Force hardware acceleration for fixed positioned elements */
 .top-nav-container,
 .fixed {
-  transform: translateZ(0);
+  will-change: transform;
   backface-visibility: hidden;
 }
 
