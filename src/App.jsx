@@ -1179,45 +1179,44 @@ function App() {
     }
   }, [location.pathname]);
 
-  // Trigger component load animations in sequence — two overlapping groups
-  // Group 1: Left column cascade (time → h1 → bio)
-  // Group 2: Right column + frame (video enters mid-cascade from opposite side)
-  // Group 3: Peripherals (nav drops in from top, pill rises from bottom)
+  // Trigger component load animations in sequence
+  // Left column cascades first, then video frame anchors the sequence,
+  // nav and pill frame the viewport edges
   useEffect(() => {
     if (isLoading) return;
 
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    // Shorter initial delay — loader already handled perceived wait time
     const startDelay = isSafari ? 400 : 300;
     const stagger = isSafari ? 120 : 100;
+
+    // Nav drops in early so the page feels grounded
+    setTimeout(() => {
+      setLoadedComponents(prev => ({ ...prev, navBar: true }));
+    }, startDelay);
 
     // Left column cascade
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, timeComponent: true }));
-    }, startDelay);
-
-    setTimeout(() => {
-      setLoadedComponents(prev => ({ ...prev, h1: true }));
     }, startDelay + stagger);
 
     setTimeout(() => {
-      setLoadedComponents(prev => ({ ...prev, bodyParagraphs: true }));
+      setLoadedComponents(prev => ({ ...prev, h1: true }));
     }, startDelay + stagger * 2);
 
-    // Video frame enters mid-cascade from the right — creates visual diagonal
     setTimeout(() => {
-      setLoadedComponents(prev => ({ ...prev, videoFrame: true }));
-    }, startDelay + Math.round(stagger * 1.5));
-
-    // Nav and pill frame the content — arrive last
-    setTimeout(() => {
-      setLoadedComponents(prev => ({ ...prev, navBar: true }));
+      setLoadedComponents(prev => ({ ...prev, bodyParagraphs: true }));
     }, startDelay + stagger * 3);
 
+    // Video frame enters last — the hero moment
+    setTimeout(() => {
+      setLoadedComponents(prev => ({ ...prev, videoFrame: true }));
+    }, startDelay + stagger * 4);
+
+    // Bottom pill rises after video settles
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, bottomComponent: true }));
-    }, startDelay + stagger * 3 + 80);
+    }, startDelay + stagger * 4 + 120);
   }, [isLoading]);
 
   // Trigger subtle jiggle animation: initial 8s after loading completes, then every 5s. Stops permanently once user hovers.
