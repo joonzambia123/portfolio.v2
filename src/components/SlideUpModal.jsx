@@ -626,19 +626,13 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const handleCopyEmail = async () => {
     playClick();
 
-    // On mobile/tablet, just open email app
-    if (isMobileOrTablet) {
-      window.location.href = 'mailto:changjoonseo126@gmail.com';
-      return;
-    }
-
-    // On desktop, copy to clipboard
     try {
       await navigator.clipboard.writeText('changjoonseo126@gmail.com');
       setCopiedEmail(true);
       setTimeout(() => setCopiedEmail(false), 1500);
     } catch (err) {
-      // Debug: console.error('Failed to copy email:', err);
+      // Fallback for browsers that block clipboard API
+      window.location.href = 'mailto:changjoonseo126@gmail.com';
     }
   };
 
@@ -656,7 +650,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
 
   // Get the email description text based on state
   const getEmailDescription = () => {
-    if (copiedEmail) return 'Send me a digital raven';
+    if (copiedEmail) return isMobileOrTablet ? 'Address copied!' : 'Send me a digital raven';
     if (emailHover && !isMobileOrTablet) return 'Copy address';
     return 'changjoonseo126@gmail.com';
   };
