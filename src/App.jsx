@@ -1181,15 +1181,15 @@ function App() {
 
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    const startDelay = isSafari ? 400 : 300;
-    const stagger = isSafari ? 120 : 100;
+    const startDelay = isSafari ? 450 : 350;
+    const stagger = isSafari ? 150 : 130;
 
-    // Nav drops in early so the page feels grounded
+    // Nav drops in first so the page feels grounded
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, navBar: true }));
     }, startDelay);
 
-    // Left column cascade
+    // Left column cascade — gentle stagger
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, timeComponent: true }));
     }, startDelay + stagger);
@@ -1202,15 +1202,15 @@ function App() {
       setLoadedComponents(prev => ({ ...prev, bodyParagraphs: true }));
     }, startDelay + stagger * 3);
 
-    // Video frame enters last — the hero moment
+    // Video frame enters last — deliberate pause after left column settles
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, videoFrame: true }));
-    }, startDelay + stagger * 4);
+    }, startDelay + stagger * 3 + 400);
 
-    // Bottom pill rises after video settles
+    // Bottom pill rises after video begins its entrance
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, bottomComponent: true }));
-    }, startDelay + stagger * 4 + 120);
+    }, startDelay + stagger * 3 + 580);
   }, [isLoading]);
 
   // Trigger subtle jiggle animation: initial 8s after loading completes, then every 5s. Stops permanently once user hovers.
