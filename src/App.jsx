@@ -289,17 +289,10 @@ function App() {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
 
-    // When hovering or clicked, show happy expression (even during sleep time)
+    // When hovering or clicked, perish with xx eyes
     if (isHomeButtonHovered || isFaceClicked) {
-      setFaceExpression('(^_^)');
-
-      // Rare blinks - every 3-5 seconds
-      const happyInterval = setInterval(() => {
-        setFaceExpression('(^‿^)');
-        setTimeout(() => setFaceExpression('(^_^)'), 150);
-      }, 3000 + Math.random() * 2000);
-
-      return () => clearInterval(happyInterval);
+      setFaceExpression('(x_x)');
+      return;
     }
 
     // When mouse is near face (but not hovering button), show startled expression
@@ -2098,10 +2091,10 @@ function App() {
               ref={faceZoneRef}
               className="face-detection-zone absolute pointer-events-auto z-10"
               style={{
-                left: '-60px',
-                top: '-60px',
-                width: 'max(350px, 22vw)',
-                height: 'max(280px, 20vh)',
+                left: '-80px',
+                top: '-80px',
+                width: 'max(420px, 26vw)',
+                height: 'max(340px, 24vh)',
               }}
               onMouseEnter={() => setIsMouseNearFace(true)}
               onMouseLeave={() => setIsMouseNearFace(false)}
