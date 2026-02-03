@@ -4,6 +4,7 @@ interface GitHubEvent {
   payload: {
     head?: string;
     before?: string;
+    size?: number; // number of commits in push
   };
   repo: {
     name: string;
@@ -17,14 +18,22 @@ interface CompareData {
   }>;
 }
 
-// Get date 14 days ago (rolling 2-week window)
+// Rolling 7-day window
 function getWeekStart(): Date {
   const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setUTCDate(now.getUTCDate() - 14);
-  weekStart.setUTCHours(0, 0, 0, 0);
-  return weekStart;
+  return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 }
+
+const GITHUB_HEADERS = (token: string) => ({
+  Authorization: `Bearer ${token}`,
+  Accept: "application/vnd.github+json",
+  "User-Agent": "Portfolio-Stats",
+});
+
+const JSON_HEADERS = {
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+};
 
 export default async function handler() {
   const githubToken = process.env.GITHUB_TOKEN;
@@ -32,82 +41,111 @@ export default async function handler() {
 
   if (!githubToken || !githubUsername) {
     return new Response(
-      JSON.stringify({ added: 0, deleted: 0, error: "Missing config" }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Missing config" }),
+      { status: 500, headers: JSON_HEADERS }
     );
   }
 
   try {
     const weekStart = getWeekStart();
 
-    // Fetch user's events
+    // Fetch user events — abort after 8 seconds to stay within Netlify limits
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
     const eventsRes = await fetch(
       `https://api.github.com/users/${githubUsername}/events?per_page=100`,
       {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-          Accept: "application/vnd.github+json",
-          "User-Agent": "Portfolio-Stats",
-        },
+        headers: GITHUB_HEADERS(githubToken),
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeout);
 
     if (!eventsRes.ok) {
-      throw new Error(`Events API: ${eventsRes.status}`);
+      const rateLimitRemaining = eventsRes.headers.get("x-ratelimit-remaining");
+      throw new Error(
+        `Events API ${eventsRes.status}` +
+        (rateLimitRemaining === "0" ? " (rate limited)" : "")
+      );
     }
 
     const events: GitHubEvent[] = await eventsRes.json();
 
-    // Filter push events from this week
+    // Filter push events within the rolling window
     const pushEvents = events.filter((e) => {
       if (e.type !== "PushEvent") return false;
       return new Date(e.created_at) >= weekStart;
     });
 
-    // Get last commit time from the most recent push event (any time, not just this week)
+    // Last commit time from the most recent push event (any time)
     const allPushEvents = events.filter((e) => e.type === "PushEvent");
     const lastCommitAt = allPushEvents.length > 0 ? allPushEvents[0].created_at : null;
 
     let added = 0;
     let deleted = 0;
     let pushCount = 0;
+    let failedComparisons = 0;
 
-    // Use Compare API to get stats for each push
-    for (const event of pushEvents) {
-      const before = event.payload.before;
-      const head = event.payload.head;
+    // Cap at 15 Compare calls to avoid rate limits and timeouts
+    const eventsToProcess = pushEvents.slice(0, 15);
 
-      if (!before || !head) continue;
+    // Process Compare calls concurrently (max 5 at a time) for speed
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < eventsToProcess.length; i += BATCH_SIZE) {
+      const batch = eventsToProcess.slice(i, i + BATCH_SIZE);
 
-      // Skip if before is all zeros (first commit)
-      if (before === "0000000000000000000000000000000000000000") continue;
+      const results = await Promise.allSettled(
+        batch.map(async (event) => {
+          const before = event.payload.before;
+          const head = event.payload.head;
 
-      try {
-        const compareRes = await fetch(
-          `https://api.github.com/repos/${event.repo.name}/compare/${before}...${head}`,
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              Accept: "application/vnd.github+json",
-              "User-Agent": "Portfolio-Stats",
-            },
-          }
-        );
+          if (!before || !head) return null;
+          if (before === "0000000000000000000000000000000000000000") return null;
 
-        if (compareRes.ok) {
-          const data: CompareData = await compareRes.json();
-          if (data.files) {
-            for (const file of data.files) {
-              added += file.additions || 0;
-              deleted += file.deletions || 0;
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 5000);
+
+          const compareRes = await fetch(
+            `https://api.github.com/repos/${event.repo.name}/compare/${before}...${head}`,
+            {
+              headers: GITHUB_HEADERS(githubToken),
+              signal: ctrl.signal,
             }
-            pushCount++;
+          );
+          clearTimeout(t);
+
+          if (!compareRes.ok) return null;
+
+          const data: CompareData = await compareRes.json();
+          if (!data.files) return null;
+
+          let a = 0, d = 0;
+          for (const file of data.files) {
+            a += file.additions || 0;
+            d += file.deletions || 0;
           }
+          return { added: a, deleted: d };
+        })
+      );
+
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          added += result.value.added;
+          deleted += result.value.deleted;
+          pushCount++;
+        } else if (result.status === "rejected") {
+          failedComparisons++;
         }
-      } catch {
-        // Skip failed comparisons
       }
     }
+
+    // If most comparisons failed, the data is unreliable — signal partial failure
+    const totalAttempted = eventsToProcess.filter(
+      (e) => e.payload.before && e.payload.head &&
+             e.payload.before !== "0000000000000000000000000000000000000000"
+    ).length;
+    const isPartial = totalAttempted > 0 && failedComparisons > totalAttempted / 2;
 
     return new Response(
       JSON.stringify({
@@ -115,20 +153,23 @@ export default async function handler() {
         deleted,
         weekStart: weekStart.toISOString(),
         pushCount,
-        lastCommitAt
+        lastCommitAt,
+        ...(isPartial ? { partial: true } : {}),
       }),
       {
         status: 200,
         headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=120, stale-while-revalidate=3600"
+          ...JSON_HEADERS,
+          // Cache for 30 min, serve stale for up to 6 hours while revalidating
+          "Cache-Control": "public, max-age=1800, stale-while-revalidate=21600",
         },
       }
     );
   } catch (error) {
+    // Return 502 so the client knows to use cached data
     return new Response(
-      JSON.stringify({ added: 0, deleted: 0, error: String(error) }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: String(error) }),
+      { status: 502, headers: JSON_HEADERS }
     );
   }
 }

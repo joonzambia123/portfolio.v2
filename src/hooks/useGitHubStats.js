@@ -41,10 +41,15 @@ export function useGitHubStats() {
       const response = await fetch('/.netlify/functions/get-github-stats');
 
       if (!response.ok) {
-        throw new Error('Failed to fetch GitHub stats');
+        throw new Error(`API returned ${response.status}`);
       }
 
       const data = await response.json();
+
+      // If the API returned an error field, treat as failure
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       const freshStats = {
         added: data.added || 0,
@@ -52,10 +57,14 @@ export function useGitHubStats() {
         pushCount: data.pushCount || 0,
         weekStart: data.weekStart,
         lastCommitAt: data.lastCommitAt,
+        partial: data.partial || false,
       };
 
-      setStats(freshStats);
-      setCachedStats(freshStats);
+      // Only update cache if we got real data (not all zeros from a partial failure)
+      if (!data.partial || freshStats.added > 0 || freshStats.deleted > 0) {
+        setStats(freshStats);
+        setCachedStats(freshStats);
+      }
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -68,8 +77,8 @@ export function useGitHubStats() {
   useEffect(() => {
     fetchStats();
 
-    // Refresh every 2 minutes (aligned with edge cache)
-    const interval = setInterval(fetchStats, 2 * 60 * 1000);
+    // Refresh every 30 minutes (aligned with edge cache TTL)
+    const interval = setInterval(fetchStats, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
