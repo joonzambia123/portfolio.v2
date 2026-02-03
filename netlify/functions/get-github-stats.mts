@@ -18,10 +18,10 @@ interface CompareData {
   }>;
 }
 
-// Rolling 7-day window
+// Rolling 2-week window
 function getWeekStart(): Date {
   const now = new Date();
-  return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  return new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 }
 
 const GITHUB_HEADERS = (token: string) => ({
