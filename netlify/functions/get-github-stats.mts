@@ -84,68 +84,78 @@ export default async function handler() {
 
     let added = 0;
     let deleted = 0;
-    let pushCount = 0;
+    const pushCount = pushEvents.length;
     let failedComparisons = 0;
 
-    // Cap at 15 Compare calls to avoid rate limits and timeouts
-    const eventsToProcess = pushEvents.slice(0, 15);
+    // Collapse consecutive pushes to the same repo into one Compare call.
+    // Instead of comparing each push individually (97 API calls for 97 pushes),
+    // we compare the earliest before → latest head per repo (often just 1 call).
+    interface CollapseGroup {
+      repo: string;
+      before: string;
+      head: string;
+      count: number;
+    }
 
-    // Process Compare calls concurrently (max 5 at a time) for speed
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < eventsToProcess.length; i += BATCH_SIZE) {
-      const batch = eventsToProcess.slice(i, i + BATCH_SIZE);
+    const groups: CollapseGroup[] = [];
+    // Process oldest-first so we can extend ranges forward
+    for (const event of [...pushEvents].reverse()) {
+      const repo = event.repo.name;
+      const before = event.payload.before;
+      const head = event.payload.head;
 
-      const results = await Promise.allSettled(
-        batch.map(async (event) => {
-          const before = event.payload.before;
-          const head = event.payload.head;
+      if (!before || !head) continue;
+      if (before === "0000000000000000000000000000000000000000") continue;
 
-          if (!before || !head) return null;
-          if (before === "0000000000000000000000000000000000000000") return null;
-
-          const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 5000);
-
-          const compareRes = await fetch(
-            `https://api.github.com/repos/${event.repo.name}/compare/${before}...${head}`,
-            {
-              headers: GITHUB_HEADERS(githubToken),
-              signal: ctrl.signal,
-            }
-          );
-          clearTimeout(t);
-
-          if (!compareRes.ok) return null;
-
-          const data: CompareData = await compareRes.json();
-          if (!data.files) return null;
-
-          let a = 0, d = 0;
-          for (const file of data.files) {
-            a += file.additions || 0;
-            d += file.deletions || 0;
-          }
-          return { added: a, deleted: d };
-        })
-      );
-
-      for (const result of results) {
-        if (result.status === "fulfilled" && result.value) {
-          added += result.value.added;
-          deleted += result.value.deleted;
-          pushCount++;
-        } else if (result.status === "rejected") {
-          failedComparisons++;
-        }
+      const last = groups[groups.length - 1];
+      if (last && last.repo === repo) {
+        // Extend the range — keep original before, update head
+        last.head = head;
+        last.count++;
+      } else {
+        groups.push({ repo, before, head, count: 1 });
       }
     }
 
-    // If most comparisons failed, the data is unreliable — signal partial failure
-    const totalAttempted = eventsToProcess.filter(
-      (e) => e.payload.before && e.payload.head &&
-             e.payload.before !== "0000000000000000000000000000000000000000"
-    ).length;
-    const isPartial = totalAttempted > 0 && failedComparisons > totalAttempted / 2;
+    // Fetch stats for each collapsed group concurrently
+    const results = await Promise.allSettled(
+      groups.map(async (group) => {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 8000);
+
+        const compareRes = await fetch(
+          `https://api.github.com/repos/${group.repo}/compare/${group.before}...${group.head}`,
+          {
+            headers: GITHUB_HEADERS(githubToken),
+            signal: ctrl.signal,
+          }
+        );
+        clearTimeout(t);
+
+        if (!compareRes.ok) return null;
+
+        const data: CompareData = await compareRes.json();
+        if (!data.files) return null;
+
+        let a = 0, d = 0;
+        for (const file of data.files) {
+          a += file.additions || 0;
+          d += file.deletions || 0;
+        }
+        return { added: a, deleted: d };
+      })
+    );
+
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value) {
+        added += result.value.added;
+        deleted += result.value.deleted;
+      } else if (result.status === "rejected") {
+        failedComparisons++;
+      }
+    }
+
+    const isPartial = groups.length > 0 && failedComparisons > groups.length / 2;
 
     return new Response(
       JSON.stringify({
