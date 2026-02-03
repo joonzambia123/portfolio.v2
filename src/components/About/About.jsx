@@ -311,21 +311,21 @@ const HandwrittenAnnotation = ({ isVisible, hasBeenSeen }) => {
 }
 
 const About = ({ isVisible = false }) => {
-  // Track whether the user has seen the full animation sequence at least once
+  // Track whether the user has visited the about page at least once.
+  // Once they navigate away after their first visit, all subsequent visits
+  // show decorative elements (brush, Korean, handwritten) in their final state.
   const hasBeenSeenRef = useRef(false)
   const [hasBeenSeen, setHasBeenSeen] = useState(false)
+  const visitedRef = useRef(false)
 
-  // Mark as seen after the first visit completes
   useEffect(() => {
-    if (!isVisible) return
-    if (hasBeenSeenRef.current) return
-    // Mark as seen after the full animation sequence would have finished (~10s)
-    // This ensures the first visit plays fully before switching to instant mode
-    const timer = setTimeout(() => {
+    if (isVisible) {
+      visitedRef.current = true
+    } else if (visitedRef.current && !hasBeenSeenRef.current) {
+      // User is leaving after their first visit — mark as seen
       hasBeenSeenRef.current = true
       setHasBeenSeen(true)
-    }, 10000)
-    return () => clearTimeout(timer)
+    }
   }, [isVisible])
 
   // Staggered section reveal — simpler on revisit

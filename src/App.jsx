@@ -2088,7 +2088,6 @@ function App() {
           backgroundColor: isScrolled ? 'rgba(252, 252, 252, 0.85)' : 'transparent',
           backdropFilter: isScrolled ? 'blur(12px)' : 'none',
           WebkitBackdropFilter: isScrolled ? 'blur(12px)' : 'none',
-          transition: 'background-color 300ms ease, backdrop-filter 300ms ease'
         }}
       >
         <div className="light-nav-bar h-[62px] w-full px-[15px] flex items-center justify-between">
