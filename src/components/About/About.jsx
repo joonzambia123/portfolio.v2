@@ -4,13 +4,18 @@ import Timeline from './Timeline'
 import { timelineData } from './timelineData'
 
 // Brush stroke underline for "Joon"
-const BrushUnderline = () => {
+const BrushUnderline = ({ isVisible }) => {
   const [isDrawn, setIsDrawn] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsDrawn(true), 1500)
+    if (!isVisible) {
+      setIsDrawn(false)
+      return
+    }
+    // Delay relative to page visibility, not mount
+    const timer = setTimeout(() => setIsDrawn(true), 1200)
     return () => clearTimeout(timer)
-  }, [])
+  }, [isVisible])
 
   return (
     <svg
@@ -41,16 +46,20 @@ const BrushUnderline = () => {
 // Per-character diagonal brush-sweep reveal using clip-path
 const PRONUNCIATION_AUDIO = '/audio/name pronunciation.m4a'
 
-const KoreanNameOverlay = () => {
-  const [isVisible, setIsVisible] = useState(false)
+const KoreanNameOverlay = ({ isVisible }) => {
+  const [isRevealed, setIsRevealed] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const audioRef = useRef(null)
 
   useEffect(() => {
-    // Appears after the underline finishes drawing (~1500 + 700 = 2200ms)
-    const timer = setTimeout(() => setIsVisible(true), 2400)
+    if (!isVisible) {
+      setIsRevealed(false)
+      return
+    }
+    // Appears after the underline finishes drawing (~1200 + 700 = 1900ms)
+    const timer = setTimeout(() => setIsRevealed(true), 2100)
     return () => clearTimeout(timer)
-  }, [])
+  }, [isVisible])
 
   const handleClick = () => {
     if (!audioRef.current) {
@@ -89,7 +98,7 @@ const KoreanNameOverlay = () => {
             color: '#007AFF',
             WebkitTextStroke: '0.4px #007AFF',
             opacity: 0.85,
-            clipPath: isVisible ? 'polygon(0% 0%, 120% 0%, 120% 120%, 0% 120%)' : 'polygon(0% 0%, 0% 0%, 0% 0%, 0% 100%)',
+            clipPath: isRevealed ? 'polygon(0% 0%, 120% 0%, 120% 120%, 0% 120%)' : 'polygon(0% 0%, 0% 0%, 0% 0%, 0% 100%)',
             transition: `clip-path 450ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}`,
           }}
         >
@@ -133,7 +142,7 @@ const KoreanNameOverlay = () => {
 // Sequence: arrowhead draws → line draws → text letter-by-letter → dots
 const CHAR_DELAY = 55 // ms per character
 
-const HandwrittenAnnotation = () => {
+const HandwrittenAnnotation = ({ isVisible }) => {
   const [arrowDrawn, setArrowDrawn] = useState(false)
   const [lineDrawn, setLineDrawn] = useState(false)
   const [textStarted, setTextStarted] = useState(false)
@@ -144,14 +153,18 @@ const HandwrittenAnnotation = () => {
   const totalChars = line1.length + line2.length
 
   useEffect(() => {
-    // Korean text finishes ~3450ms. Arrowhead draws first.
-    const arrowTimer = setTimeout(() => setArrowDrawn(true), 3600)
-    // Line starts drawing after arrowhead (~250ms)
-    const lineTimer = setTimeout(() => setLineDrawn(true), 3850)
-    // Text starts after line finishes drawing (~800ms)
-    const textTimer = setTimeout(() => setTextStarted(true), 4650)
-    // Dots appear one by one after all characters finish, with emphasis spacing
-    const dotsBase = 4650 + totalChars * CHAR_DELAY + 150
+    if (!isVisible) {
+      setArrowDrawn(false)
+      setLineDrawn(false)
+      setTextStarted(false)
+      setDotsVisible(false)
+      return
+    }
+    // All delays relative to visibility — Korean text finishes ~3000ms
+    const arrowTimer = setTimeout(() => setArrowDrawn(true), 3200)
+    const lineTimer = setTimeout(() => setLineDrawn(true), 3450)
+    const textTimer = setTimeout(() => setTextStarted(true), 4250)
+    const dotsBase = 4250 + totalChars * CHAR_DELAY + 150
     const dot1Timer = setTimeout(() => setDotsVisible(1), dotsBase)
     const dot2Timer = setTimeout(() => setDotsVisible(2), dotsBase + 200)
     const dot3Timer = setTimeout(() => setDotsVisible(3), dotsBase + 400)
@@ -163,7 +176,7 @@ const HandwrittenAnnotation = () => {
       clearTimeout(dot2Timer)
       clearTimeout(dot3Timer)
     }
-  }, [])
+  }, [isVisible])
 
   const renderChars = (text, startIndex) =>
     text.split('').map((char, i) => (
@@ -280,16 +293,45 @@ const HandwrittenAnnotation = () => {
   )
 }
 
-const About = () => {
+const About = ({ isVisible = false }) => {
+  // Staggered section reveal — resets when navigating away
+  const [loadedSections, setLoadedSections] = useState({
+    header: false,
+    timeline: false,
+    closing: false,
+  })
+
+  useEffect(() => {
+    if (!isVisible) {
+      setLoadedSections({ header: false, timeline: false, closing: false })
+      return
+    }
+    // Staggered reveal: 300ms initial, 120ms stagger between sections
+    const t1 = setTimeout(() => {
+      setLoadedSections(prev => ({ ...prev, header: true }))
+    }, 300)
+    const t2 = setTimeout(() => {
+      setLoadedSections(prev => ({ ...prev, timeline: true }))
+    }, 420)
+    const t3 = setTimeout(() => {
+      setLoadedSections(prev => ({ ...prev, closing: true }))
+    }, 540)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+    }
+  }, [isVisible])
+
   return (
     <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px] max-[813px]:pt-[120px] max-[813px]:pb-[120px]">
       {/* Centered content container - 403px max, responsive */}
       <div className="mx-auto flex flex-col items-center w-full max-w-[403px] px-6 desktop:px-0">
 
         {/* Greeting Header - narrower 341px max */}
-        <header className="flex flex-col gap-[8px] mb-[20px] w-full max-w-[341px]">
+        <header className={`flex flex-col gap-[8px] mb-[20px] w-full max-w-[341px] ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
-            Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline /></span>.<KoreanNameOverlay /></span>
+            Greetings tourist, I'm <span className="relative inline-block"><span className="relative inline-block">Joon<BrushUnderline isVisible={isVisible} /></span>.<KoreanNameOverlay isVisible={isVisible} /></span>
           </h1>
           <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
             I make things for screens and occasionally the real world. When I'm not pushing pixels or arguing with TypeScript, I'm out somewhere with a camera.
@@ -297,13 +339,13 @@ const About = () => {
         </header>
 
         {/* Timeline Section - full 403px width, with annotation */}
-        <div className="relative w-full max-w-[403px]">
-          <Timeline milestones={timelineData} />
-          <HandwrittenAnnotation />
+        <div className={`relative w-full max-w-[403px] ${loadedSections.timeline ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+          <Timeline milestones={timelineData} isVisible={isVisible} />
+          <HandwrittenAnnotation isVisible={isVisible} />
         </div>
 
         {/* Closing text - narrower 341px max */}
-        <section className="mt-[25px] w-full max-w-[341px]">
+        <section className={`mt-[25px] w-full max-w-[341px] ${loadedSections.closing ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
             Outside of work, I collect hobbies the way some people collect stamps — earnestly, and with no clear endgame. Some are competitive, some are creative, and some are just an excuse to leave the house before noon.
           </p>

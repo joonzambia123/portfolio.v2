@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 
 const AUTO_ROTATE_MS = 10000
 
-const Timeline = ({ milestones }) => {
+const Timeline = ({ milestones, isVisible = false }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const [pressedArrow, setPressedArrow] = useState(null)
   const [showSlowDown, setShowSlowDown] = useState(false)
@@ -40,18 +40,33 @@ const Timeline = ({ milestones }) => {
     })
   }, [activeIndex])
 
-  // Auto-rotation timer
+  // Auto-rotation timer — only runs when visible
   const startAutoRotate = useCallback(() => {
     if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current)
+    if (!isVisible) return
     autoRotateTimer.current = setTimeout(() => {
       setActiveIndex(prev => (prev + 1) % len)
     }, AUTO_ROTATE_MS)
-  }, [len])
+  }, [len, isVisible])
 
-  // Restart timer whenever activeIndex changes
+  // Restart timer when activeIndex changes or visibility changes
   useEffect(() => {
-    startAutoRotate()
-  }, [activeIndex, startAutoRotate])
+    if (isVisible) {
+      startAutoRotate()
+    } else {
+      if (autoRotateTimer.current) {
+        clearTimeout(autoRotateTimer.current)
+        autoRotateTimer.current = null
+      }
+    }
+  }, [activeIndex, startAutoRotate, isVisible])
+
+  // Reset to first slide when becoming visible
+  useEffect(() => {
+    if (isVisible) {
+      setActiveIndex(0)
+    }
+  }, [isVisible])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -95,8 +110,9 @@ const Timeline = ({ milestones }) => {
     setTimeout(() => setPressedArrow(null), 100)
   }
 
-  // Keyboard navigation
+  // Keyboard navigation — only active when page is visible
   useEffect(() => {
+    if (!isVisible) return
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowRight') {
         e.preventDefault()
@@ -113,7 +129,7 @@ const Timeline = ({ milestones }) => {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [isVisible])
 
   // Touch/swipe navigation
   const touchStartY = useRef(0)

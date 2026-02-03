@@ -1179,41 +1179,45 @@ function App() {
     }
   }, [location.pathname]);
 
-  // Trigger component load animations in sequence - only after loader finishes
+  // Trigger component load animations in sequence — two overlapping groups
+  // Group 1: Left column cascade (time → h1 → bio)
+  // Group 2: Right column + frame (video enters mid-cascade from opposite side)
+  // Group 3: Peripherals (nav drops in from top, pill rises from bottom)
   useEffect(() => {
-    // Don't start animations until loader is done
     if (isLoading) return;
-    
+
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    // Wait after loader ends - Safari needs more time
-    const startDelay = isSafari ? 1200 : 1000;
-    const stagger = isSafari ? 100 : 70; // More time between animations for Safari
-    
-    // Time component appears first
+
+    // Shorter initial delay — loader already handled perceived wait time
+    const startDelay = isSafari ? 400 : 300;
+    const stagger = isSafari ? 120 : 100;
+
+    // Left column cascade
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, timeComponent: true }));
     }, startDelay);
-    
-    // H1 appears second
+
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, h1: true }));
     }, startDelay + stagger);
-    
-    // Body paragraphs appear third
+
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, bodyParagraphs: true }));
     }, startDelay + stagger * 2);
-    
-    // Video frame appears fourth
+
+    // Video frame enters mid-cascade from the right — creates visual diagonal
     setTimeout(() => {
       setLoadedComponents(prev => ({ ...prev, videoFrame: true }));
-    }, startDelay + stagger * 3);
-    
-    // Bottom component and navbar appear last - give more time
+    }, startDelay + Math.round(stagger * 1.5));
+
+    // Nav and pill frame the content — arrive last
     setTimeout(() => {
-      setLoadedComponents(prev => ({ ...prev, bottomComponent: true, navBar: true }));
-    }, startDelay + stagger * 4 + 50);
+      setLoadedComponents(prev => ({ ...prev, navBar: true }));
+    }, startDelay + stagger * 3);
+
+    setTimeout(() => {
+      setLoadedComponents(prev => ({ ...prev, bottomComponent: true }));
+    }, startDelay + stagger * 3 + 80);
   }, [isLoading]);
 
   // Trigger subtle jiggle animation: initial 8s after loading completes, then every 5s. Stops permanently once user hovers.
@@ -2080,7 +2084,7 @@ function App() {
 
       {/* Navigation Bar - Light Mode */}
       <div
-        className={`fixed top-0 left-0 right-0 z-50 top-nav-container ${loadedComponents.navBar ? 'component-loaded' : 'component-hidden'}`}
+        className={`fixed top-0 left-0 right-0 z-50 top-nav-container ${loadedComponents.navBar ? 'component-loaded from-top' : 'component-hidden from-top'}`}
         style={{
           backgroundColor: isScrolled ? 'rgba(252, 252, 252, 0.85)' : 'transparent',
           backdropFilter: isScrolled ? 'blur(12px)' : 'none',
@@ -2373,7 +2377,7 @@ function App() {
 
       {/* Main Content - Both pages always mounted, toggled via display */}
       <div style={{ display: location.pathname === '/about' ? 'block' : 'none' }}>
-        <div className="page-enter"><About /></div>
+        <About isVisible={location.pathname === '/about'} />
       </div>
 
       <main id="main-content" className="page-enter w-full min-h-screen items-center justify-center py-[120px] mt-[-10px]" style={{ display: location.pathname === '/' ? 'flex' : 'none' }}>
@@ -2383,7 +2387,7 @@ function App() {
             {/* Time Component - Expandable Ambient Context Card */}
             <div
               ref={clockCardRef}
-              className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded' : 'component-hidden'}`}
+              className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded from-left' : 'component-hidden from-left'}`}
             >
               {/* Original Clock Pill */}
               <div
@@ -2423,10 +2427,10 @@ function App() {
                 </div>
               </div>
             </div>
-            <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded' : 'component-hidden'}`}>
+            <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
               {getCopy('hero_headline')}
             </h1>
-            <div className={`home-bio font-graphik leading-[25px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded' : 'component-hidden'}`}>
+            <div className={`home-bio font-graphik leading-[25px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
               <p className="mb-[10px]">
                 {renderCopy('bio_intro')}
               </p>
@@ -2447,7 +2451,7 @@ function App() {
 
           {/* Right Column - Video Card */}
             <div
-              className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? 'component-loaded' : 'component-hidden'} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
+              className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? `component-loaded ${isTabletOrBelow ? 'from-left' : 'from-right'}` : `component-hidden ${isTabletOrBelow ? 'from-left' : 'from-right'}`} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
               onMouseEnter={() => {
                 if (isMobileOrTablet) return; // No hover on mobile
                 // Set ref FIRST to prevent race condition with jiggle interval
@@ -2669,7 +2673,7 @@ function App() {
 
       {/* Bottom Component - Born Slippy, Activity, Shortcuts, Contact */}
       <div
-        className={`bottom-pill-outer fixed bottom-[50px] left-1/2 transform -translate-x-1/2 h-[64px] ${loadedComponents.bottomComponent ? 'component-loaded' : 'component-hidden'}`}
+        className={`bottom-pill-outer fixed bottom-[50px] left-1/2 h-[64px] ${loadedComponents.bottomComponent ? 'component-loaded from-bottom' : 'component-hidden from-bottom'}`}
         style={{
           width: isTabletOrBelow ? undefined : `${musicPillWidth + 1 + 292}px`,
           maxWidth: isTabletOrBelow ? 'calc(100vw - 32px)' : undefined,
