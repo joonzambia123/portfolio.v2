@@ -19,7 +19,7 @@ const Timeline = ({ milestones, isVisible = false }) => {
   useEffect(() => {
     fillRefs.current.forEach((el, idx) => {
       if (!el) return
-      if (idx === activeIndex) {
+      if (idx === activeIndex && isVisible) {
         // Reset to 0 instantly
         el.style.transition = 'none'
         el.style.width = '0%'
@@ -38,7 +38,7 @@ const Timeline = ({ milestones, isVisible = false }) => {
         el.style.opacity = '0'
       }
     })
-  }, [activeIndex])
+  }, [activeIndex, isVisible])
 
   // Auto-rotation timer — only runs when visible
   const startAutoRotate = useCallback(() => {
