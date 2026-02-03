@@ -1900,12 +1900,11 @@ background-color: #E8F6FF;
   border: 1px solid rgba(220, 224, 235, 0.9);
 }
 
-/* Transform applied from static parent to prevent hover flicker */
-.hover-trigger:hover > .contact-row {
+/* contact-row has a ::before hitbox extending 8px beyond bounds,
+   so direct :hover transform doesn't flicker */
+.contact-row:hover {
   transform: translateY(-1px);
 }
-
-/* ::before is now the invisible hitbox - no visual changes on hover */
 
 .contact-row:active {
   transform: translateY(0);
