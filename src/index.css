@@ -15,10 +15,6 @@
 
 /* Hover trigger wrapper - stable hover zone that prevents flicker.
    The wrapper stays static while the child animates on hover. */
-.hover-trigger {
-  display: flex;
-  align-items: stretch;
-}
 
 /* Font Face Declarations - WOFF2 for smaller file size, OTF fallback */
 @font-face {
