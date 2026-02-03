@@ -2242,8 +2242,9 @@ function App() {
 
           {/* Right - Search Input (hidden on mobile) */}
           {!isTabletOrBelow && (
+            <div className="hover-trigger">
             <div
-              className={`nav-search-button relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between cursor-pointer group transition-all duration-[250ms] ease-[cubic-bezier(0.34,1.2,0.64,1)] ${searchFocused ? 'w-[280px] bg-white border-[#d8d8d8] shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_0.5px_0_rgba(255,255,255,0.6)]' : 'w-[197px] bg-[#f7f7f7] border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.5),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.03),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.02)] hover:-translate-y-[0.5px]'}`}
+              className={`nav-search-button relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between cursor-pointer group transition-all duration-[250ms] ease-[cubic-bezier(0.34,1.2,0.64,1)] ${searchFocused ? 'w-[280px] bg-white border-[#d8d8d8] shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_0.5px_0_rgba(255,255,255,0.6)]' : 'w-[197px] bg-[#f7f7f7] border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.5),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.03),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.02)]'}`}
               onClick={() => {
                 if (!searchFocused) {
                   playClick();
@@ -2279,6 +2280,7 @@ function App() {
               <span className={`bg-[#eeeeee] border border-[#e0e0e0] shadow-[0_0.5px_1px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.4),inset_0_-0.5px_0_rgba(0,0,0,0.02)] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center transition-all duration-[180ms] flex-shrink-0 ${searchFocused ? '' : 'group-hover:bg-[#e9e9e9] group-hover:border-[#d8d8d8]'}`}>
                 <span className={`font-graphik text-[12px] text-[#888] transition-colors duration-[180ms] ${searchFocused ? '' : 'group-hover:text-[#666]'}`}>⌘J</span>
               </span>
+            </div>
             </div>
           )}
 
@@ -2382,6 +2384,7 @@ function App() {
               className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded from-left' : 'component-hidden from-left'}`}
             >
               {/* Original Clock Pill */}
+              <div className="hover-trigger w-fit">
               <div
                 onClick={() => setIsClockExpanded(true)}
                 className="bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
@@ -2417,6 +2420,7 @@ function App() {
                     <p className="leading-[normal]">{getCopy('clock_location')}</p>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
             <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
@@ -2619,6 +2623,7 @@ function App() {
                     )}
                   </div>
                   <div className={`flex items-center ${isMobileOrTablet ? 'gap-[10px]' : 'gap-[6px]'}`}>
+                    <div className="hover-trigger">
                     <button
                       className={`arrow-button flex items-center justify-center cursor-pointer ${isMobileOrTablet ? 'h-[38px] w-[40px]' : 'h-[29px] w-[30px]'}`}
                       onClick={(e) => {
@@ -2637,6 +2642,8 @@ function App() {
                         <path d="M16.7706 9.24213C16.9175 9.39721 17 9.60751 17 9.8268C17 10.0461 16.9175 10.2564 16.7706 10.4115L12.8915 14.505L16.7706 18.5985C16.9133 18.7545 16.9923 18.9634 16.9905 19.1802C16.9887 19.397 16.9063 19.6045 16.761 19.7578C16.6157 19.9111 16.4192 19.9981 16.2137 20C16.0082 20.0019 15.8103 19.9185 15.6625 19.7679L11.2294 15.0897C11.0825 14.9346 11 14.7243 11 14.505C11 14.2857 11.0825 14.0754 11.2294 13.9203L15.6625 9.24213C15.8094 9.08709 16.0087 9 16.2165 9C16.4243 9 16.6236 9.08709 16.7706 9.24213Z" fill="#4A474A" className="arrow-path"/>
                       </svg>
                     </button>
+                    </div>
+                    <div className="hover-trigger">
                     <button
                       className={`arrow-button flex items-center justify-center cursor-pointer ${isMobileOrTablet ? 'h-[38px] w-[40px]' : 'h-[29px] w-[30px]'}`}
                       onClick={(e) => {
@@ -2655,6 +2662,7 @@ function App() {
                         <path d="M12.5294 19.7579C12.3825 19.6028 12.3 19.3925 12.3 19.1732C12.3 18.9539 12.3825 18.7436 12.5294 18.5885L16.4085 14.495L12.5294 10.4015C12.3867 10.2455 12.3077 10.0366 12.3095 9.81979C12.3113 9.60296 12.3937 9.39554 12.539 9.24221C12.6843 9.08889 12.8808 9.00192 13.0863 9.00003C13.2918 8.99815 13.4897 9.0815 13.6375 9.23214L18.0706 13.9103C18.2175 14.0654 18.3 14.2757 18.3 14.495C18.3 14.7143 18.2175 14.9246 18.0706 15.0797L13.6375 19.7579C13.4906 19.9129 13.2913 20 13.0835 20C12.8757 20 12.6764 19.9129 12.5294 19.7579Z" fill="#4A474A" className="arrow-path"/>
                       </svg>
                     </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2829,9 +2837,10 @@ function App() {
 
             {/* Activity and Shortcuts buttons */}
             <div className={`flex h-[37px] ${isTabletOrBelow ? 'w-auto gap-[6px]' : 'w-[177px]'}`}>
+              <div className={`hover-trigger ${isTabletOrBelow ? '' : 'flex-1'}`}>
               <button
                 ref={activityButtonRef}
-                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isTabletOrBelow ? 'w-[37px] rounded-[8px]' : 'rounded-l-[8px] w-[85px]'}`}
+                className={`bottom-button h-[37px] w-full flex items-center justify-center cursor-pointer ${isTabletOrBelow ? 'w-[37px] rounded-[8px]' : 'rounded-l-[8px]'}`}
                 onMouseEnter={preloadModalComponents}
                 onClick={() => {
                   playClick();
@@ -2850,9 +2859,11 @@ function App() {
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Timeline</p>
                 )}
               </button>
+              </div>
+              <div className={`hover-trigger ${isTabletOrBelow ? '' : 'flex-1'}`}>
               <button
                 ref={shortcutsButtonRef}
-                className={`bottom-button h-[37px] flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''} ${isTabletOrBelow ? 'w-[37px] rounded-[8px]' : 'rounded-r-[8px] w-[92px]'}`}
+                className={`bottom-button h-[37px] w-full flex items-center justify-center cursor-pointer ${isShortcutsActive ? 'active' : ''} ${isTabletOrBelow ? 'w-[37px] rounded-[8px]' : 'rounded-r-[8px]'}`}
                 onMouseEnter={() => {
                   preloadModalComponents();
                   if (shortcutsModalTimeoutRef.current) {
@@ -2877,9 +2888,11 @@ function App() {
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
                 )}
               </button>
+              </div>
             </div>
 
             {/* Contact button */}
+            <div className="hover-trigger">
             <button
               ref={contactButtonRef}
               className={`bottom-button h-[37px] rounded-[8px] flex items-center justify-center cursor-pointer ${isTabletOrBelow ? 'w-[37px]' : 'w-[81px]'}`}
@@ -2901,6 +2914,7 @@ function App() {
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
               )}
             </button>
+            </div>
           </div>
         </div>
       </div>

@@ -696,7 +696,7 @@ export const ContactModalContent = ({ darkMode = false }) => {
       {/* Inner card with contact rows - skeuomorphic white card */}
       <div className="contact-modal-inner w-[280px] py-[15px] flex flex-col items-center gap-[10px]">
         {contactItems.map((item, index) => (
-          <div key={item.title} className="contents">
+          <div key={item.title} className="hover-trigger w-full">
             {/* Contact row */}
             {item.onClick ? (
               <button
