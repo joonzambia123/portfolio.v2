@@ -87,75 +87,65 @@ export default async function handler() {
     const pushCount = pushEvents.length;
     let failedComparisons = 0;
 
-    // Collapse consecutive pushes to the same repo into one Compare call.
-    // Instead of comparing each push individually (97 API calls for 97 pushes),
-    // we compare the earliest before → latest head per repo (often just 1 call).
-    interface CollapseGroup {
-      repo: string;
-      before: string;
-      head: string;
-      count: number;
-    }
-
-    const groups: CollapseGroup[] = [];
-    // Process oldest-first so we can extend ranges forward
-    for (const event of [...pushEvents].reverse()) {
-      const repo = event.repo.name;
-      const before = event.payload.before;
-      const head = event.payload.head;
-
-      if (!before || !head) continue;
-      if (before === "0000000000000000000000000000000000000000") continue;
-
-      const last = groups[groups.length - 1];
-      if (last && last.repo === repo) {
-        // Extend the range — keep original before, update head
-        last.head = head;
-        last.count++;
-      } else {
-        groups.push({ repo, before, head, count: 1 });
-      }
-    }
-
-    // Fetch stats for each collapsed group concurrently
-    const results = await Promise.allSettled(
-      groups.map(async (group) => {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 8000);
-
-        const compareRes = await fetch(
-          `https://api.github.com/repos/${group.repo}/compare/${group.before}...${group.head}`,
-          {
-            headers: GITHUB_HEADERS(githubToken),
-            signal: ctrl.signal,
-          }
-        );
-        clearTimeout(t);
-
-        if (!compareRes.ok) return null;
-
-        const data: CompareData = await compareRes.json();
-        if (!data.files) return null;
-
-        let a = 0, d = 0;
-        for (const file of data.files) {
-          a += file.additions || 0;
-          d += file.deletions || 0;
-        }
-        return { added: a, deleted: d };
+    // Build list of valid Compare calls needed
+    const compareCalls = pushEvents
+      .filter((e) => {
+        const b = e.payload.before;
+        const h = e.payload.head;
+        return b && h && b !== "0000000000000000000000000000000000000000";
       })
-    );
+      .map((e) => ({
+        repo: e.repo.name,
+        before: e.payload.before!,
+        head: e.payload.head!,
+      }));
 
-    for (const result of results) {
-      if (result.status === "fulfilled" && result.value) {
-        added += result.value.added;
-        deleted += result.value.deleted;
-      } else if (result.status === "rejected") {
-        failedComparisons++;
+    // Process all Compare calls in concurrent batches of 10.
+    // Each call is per-push so we capture total churn (lines touched),
+    // not just net diff. Authenticated rate limit is 5000/hr — safe.
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < compareCalls.length; i += BATCH_SIZE) {
+      const batch = compareCalls.slice(i, i + BATCH_SIZE);
+
+      const results = await Promise.allSettled(
+        batch.map(async ({ repo, before, head }) => {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 5000);
+
+          const compareRes = await fetch(
+            `https://api.github.com/repos/${repo}/compare/${before}...${head}`,
+            {
+              headers: GITHUB_HEADERS(githubToken),
+              signal: ctrl.signal,
+            }
+          );
+          clearTimeout(t);
+
+          if (!compareRes.ok) return null;
+
+          const data: CompareData = await compareRes.json();
+          if (!data.files) return null;
+
+          let a = 0, d = 0;
+          for (const file of data.files) {
+            a += file.additions || 0;
+            d += file.deletions || 0;
+          }
+          return { added: a, deleted: d };
+        })
+      );
+
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          added += result.value.added;
+          deleted += result.value.deleted;
+        } else if (result.status === "rejected") {
+          failedComparisons++;
+        }
       }
     }
 
-    const isPartial = groups.length > 0 && failedComparisons > groups.length / 2;
+    const isPartial = compareCalls.length > 0 && failedComparisons > compareCalls.length / 2;
 
     return new Response(
       JSON.stringify({
