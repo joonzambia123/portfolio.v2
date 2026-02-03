@@ -289,9 +289,10 @@ function App() {
     // Wait until site is fully loaded before starting animations
     if (isLoading) return;
 
-    // When hovering or clicked, perish with xx eyes
+    // When hovering or clicked, perish with xx eyes and drift back to center
     if (isHomeButtonHovered || isFaceClicked) {
       setFaceExpression('(x_x)');
+      setFaceTransform({ scaleY: 1, scaleX: 1, translateX: 0, translateY: 0 });
       return;
     }
 
@@ -2134,7 +2135,7 @@ function App() {
                     className="flex items-center justify-center leading-none"
                     style={{
                       transform: `translateX(${faceTransform.translateX}px) translateY(${faceTransform.translateY}px) scaleX(${faceTransform.scaleX}) scaleY(${faceTransform.scaleY})`,
-                      transition: isMouseNearFace ? 'none' : 'transform 800ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      transition: (isMouseNearFace && !isHomeButtonHovered) ? 'none' : 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                   >
                     <span className="font-graphik text-[12px] text-[#8f8f8f] leading-none">
