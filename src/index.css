@@ -732,6 +732,8 @@ background-color: #E8F6FF;
 .component-hidden {
   opacity: 0;
   will-change: opacity, transform;
+  transition: opacity 450ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .component-hidden.from-left {
@@ -749,6 +751,9 @@ background-color: #E8F6FF;
 .component-hidden.from-top {
   transform: translateY(-20px) scale(0.98);
   visibility: hidden;
+  transition: opacity 450ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              visibility 0ms;
 }
 
 .component-loaded {
