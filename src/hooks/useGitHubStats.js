@@ -1,13 +1,38 @@
 import { useState, useEffect } from 'react';
 
+const CACHE_KEY = 'github-stats-cache';
+
+// Read cached stats from localStorage
+function getCachedStats() {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+    return JSON.parse(cached);
+  } catch {
+    return null;
+  }
+}
+
+// Write stats to localStorage
+function setCachedStats(stats) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      ...stats,
+      cachedAt: Date.now(),
+    }));
+  } catch {
+    // localStorage full or unavailable — ignore
+  }
+}
+
 // GitHub stats hook to fetch weekly commit statistics
+// Falls back to last cached stats when the API is unreachable
 export function useGitHubStats() {
-  const [stats, setStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState(() => getCachedStats());
+  const [isLoading, setIsLoading] = useState(!getCachedStats());
   const [error, setError] = useState(null);
 
   const fetchStats = async () => {
-    // Only show loading on initial fetch
     if (!stats) {
       setIsLoading(true);
     }
@@ -21,18 +46,20 @@ export function useGitHubStats() {
 
       const data = await response.json();
 
-      setStats({
+      const freshStats = {
         added: data.added || 0,
         deleted: data.deleted || 0,
         pushCount: data.pushCount || 0,
         weekStart: data.weekStart,
         lastCommitAt: data.lastCommitAt,
-      });
+      };
 
+      setStats(freshStats);
+      setCachedStats(freshStats);
       setError(null);
     } catch (err) {
       setError(err.message);
-      // Keep existing stats on error
+      // Keep existing stats on error (either fresh or cached)
     } finally {
       setIsLoading(false);
     }
