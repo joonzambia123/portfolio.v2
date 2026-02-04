@@ -537,7 +537,7 @@ background-color: #E8F6FF;
 }
 
 .hamburger-svg.open .hamburger-top {
-  transform: translateY(5px) rotate(45deg) scaleX(0.75);
+  transform: translateY(5px) rotate(45deg);
 }
 
 .hamburger-svg.open .hamburger-mid {
@@ -546,7 +546,7 @@ background-color: #E8F6FF;
 }
 
 .hamburger-svg.open .hamburger-bottom {
-  transform: translateY(-5px) rotate(-45deg) scaleX(0.75);
+  transform: translateY(-5px) rotate(-45deg);
 }
 
 /* === MOBILE NAV DRAWER === */

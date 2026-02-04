@@ -2287,7 +2287,7 @@ function App() {
           {/* Hamburger Menu Button (mobile only) */}
           {isTabletOrBelow && (
             <button
-              className="mobile-hamburger w-[37px] h-[37px] flex items-center justify-center rounded-[8px] cursor-pointer bg-[#f7f7f7] border border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.025)] active:scale-[0.96] transition-all duration-150"
+              className="mobile-hamburger bottom-button w-[37px] h-[37px] flex items-center justify-center rounded-[8px] cursor-pointer active:scale-[0.96]"
               onClick={() => {
                 playClick();
                 setIsMobileMenuOpen(prev => !prev);
@@ -2296,9 +2296,9 @@ function App() {
               aria-expanded={isMobileMenuOpen}
             >
               <svg className={`hamburger-svg ${isMobileMenuOpen ? 'open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" shapeRendering="geometricPrecision" aria-hidden="true">
-                <line className="hamburger-top" x1="5" y1="7" x2="19" y2="7" />
-                <line className="hamburger-mid" x1="5" y1="12" x2="19" y2="12" />
-                <line className="hamburger-bottom" x1="5" y1="17" x2="19" y2="17" />
+                <line className="hamburger-top" x1="6" y1="7" x2="18" y2="7" />
+                <line className="hamburger-mid" x1="6" y1="12" x2="18" y2="12" />
+                <line className="hamburger-bottom" x1="6" y1="17" x2="18" y2="17" />
               </svg>
             </button>
           )}
