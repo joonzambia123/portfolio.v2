@@ -2295,11 +2295,9 @@ function App() {
               aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isMobileMenuOpen}
             >
-              <svg className={`hamburger-svg ${isMobileMenuOpen ? 'open' : ''}`} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" shapeRendering="geometricPrecision" aria-hidden="true">
-                <g className="hamburger-line hamburger-top"><line x1="4" y1="7" x2="20" y2="7" /></g>
-                <g className="hamburger-line hamburger-mid"><line x1="4" y1="12" x2="20" y2="12" /></g>
-                <g className="hamburger-line hamburger-bot"><line x1="4" y1="17" x2="20" y2="17" /></g>
-              </svg>
+              <div className={`hamburger-bars ${isMobileMenuOpen ? 'open' : ''}`} aria-hidden="true">
+                <span /><span /><span />
+              </div>
             </button>
           )}
         </div>

@@ -529,25 +529,36 @@ background-color: #E8F6FF;
 }
 
 /* === HAMBURGER ICON === */
-.hamburger-line {
+.hamburger-bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 17px;
+  height: 17px;
+  gap: 3.5px;
+}
+
+.hamburger-bars span {
+  display: block;
+  width: 13px;
+  height: 1.5px;
+  background: #aaa;
+  border-radius: 1px;
   transition: transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+              opacity 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.hamburger-svg.open .hamburger-top {
+.hamburger-bars.open span:first-child {
   transform: translateY(5px) rotate(45deg);
-  transform-origin: 12px 12px;
 }
 
-.hamburger-svg.open .hamburger-mid {
+.hamburger-bars.open span:nth-child(2) {
   opacity: 0;
-  transform: scaleX(0);
-  transform-origin: 12px 12px;
 }
 
-.hamburger-svg.open .hamburger-bot {
+.hamburger-bars.open span:last-child {
   transform: translateY(-5px) rotate(-45deg);
-  transform-origin: 12px 12px;
 }
 
 /* === MOBILE NAV DRAWER === */
