@@ -528,27 +528,6 @@ background-color: #E8F6FF;
   }
 }
 
-/* === HAMBURGER ICON (SVG) === */
-.hamburger-svg line {
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  transform-box: view-box;
-  transform-origin: 12px 12px;
-}
-
-.hamburger-svg.open .hamburger-top {
-  transform: translateY(5px) rotate(45deg);
-}
-
-.hamburger-svg.open .hamburger-mid {
-  opacity: 0;
-  transform: scaleX(0);
-}
-
-.hamburger-svg.open .hamburger-bottom {
-  transform: translateY(-5px) rotate(-45deg);
-}
-
 /* === MOBILE NAV DRAWER === */
 .mobile-nav-drawer {
   display: grid;
