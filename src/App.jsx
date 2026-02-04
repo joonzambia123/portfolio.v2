@@ -2287,7 +2287,7 @@ function App() {
           {/* Hamburger Menu Button (mobile only) */}
           {isTabletOrBelow && (
             <button
-              className="mobile-hamburger bottom-button w-[37px] h-[37px] flex items-center justify-center rounded-[8px] cursor-pointer active:scale-[0.96] relative"
+              className="mobile-hamburger bottom-button w-[37px] h-[37px] flex items-center justify-center rounded-[8px] cursor-pointer active:scale-[0.96]"
               onClick={() => {
                 playClick();
                 setIsMobileMenuOpen(prev => !prev);
@@ -2295,14 +2295,10 @@ function App() {
               aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isMobileMenuOpen}
             >
-              <svg className={`hamburger-icon ${isMobileMenuOpen ? 'hamburger-hidden' : 'hamburger-visible'}`} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" shapeRendering="geometricPrecision" aria-hidden="true">
-                <line x1="4" y1="7" x2="20" y2="7" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="4" y1="17" x2="20" y2="17" />
-              </svg>
-              <svg className={`hamburger-icon ${isMobileMenuOpen ? 'hamburger-visible' : 'hamburger-hidden'}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" shapeRendering="geometricPrecision" aria-hidden="true">
-                <line x1="6" y1="6" x2="18" y2="18" />
-                <line x1="18" y1="6" x2="6" y2="18" />
+              <svg className={`hamburger-svg ${isMobileMenuOpen ? 'open' : ''}`} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" shapeRendering="geometricPrecision" aria-hidden="true">
+                <g className="hamburger-line hamburger-top"><line x1="4" y1="7" x2="20" y2="7" /></g>
+                <g className="hamburger-line hamburger-mid"><line x1="4" y1="12" x2="20" y2="12" /></g>
+                <g className="hamburger-line hamburger-bot"><line x1="4" y1="17" x2="20" y2="17" /></g>
               </svg>
             </button>
           )}

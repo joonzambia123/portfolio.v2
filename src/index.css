@@ -529,20 +529,25 @@ background-color: #E8F6FF;
 }
 
 /* === HAMBURGER ICON === */
-.hamburger-icon {
-  position: absolute;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+.hamburger-line {
+  transition: transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hamburger-visible {
-  opacity: 1;
-  transform: rotate(0deg);
+.hamburger-svg.open .hamburger-top {
+  transform: translateY(5px) rotate(45deg);
+  transform-origin: 12px 12px;
 }
 
-.hamburger-hidden {
+.hamburger-svg.open .hamburger-mid {
   opacity: 0;
-  transform: rotate(-90deg);
+  transform: scaleX(0);
+  transform-origin: 12px 12px;
+}
+
+.hamburger-svg.open .hamburger-bot {
+  transform: translateY(-5px) rotate(-45deg);
+  transform-origin: 12px 12px;
 }
 
 /* === MOBILE NAV DRAWER === */
