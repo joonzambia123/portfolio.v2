@@ -277,8 +277,8 @@
     {
       "id": 18,
       "type": "video",
-      "src": "/videos/compressed/premium/Jeju2_Premium.mp4",
-      "srcSafari": "/videos/compressed/safari/Jeju2_Safari.mp4",
+      "src": "/videos/compressed/premium/Jeju2v2_Premium.mp4",
+      "srcSafari": "/videos/compressed/safari/Jeju2v2_Safari.mp4",
       "location": "Jeju, Korea",
       "coordinates": "33.4996°N, 126.5312°E",
       "coordinatesUrl": "https://www.google.com/maps?q=33.4996,126.5312",
