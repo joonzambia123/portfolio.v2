@@ -49,28 +49,40 @@ export default async function handler() {
   try {
     const weekStart = getWeekStart();
 
-    // Fetch user events — abort after 8 seconds to stay within Netlify limits
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    // Fetch user events with pagination — up to 3 pages (300 events max)
+    const allEvents: GitHubEvent[] = [];
+    for (let page = 1; page <= 3; page++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const eventsRes = await fetch(
-      `https://api.github.com/users/${githubUsername}/events?per_page=100`,
-      {
-        headers: GITHUB_HEADERS(githubToken),
-        signal: controller.signal,
-      }
-    );
-    clearTimeout(timeout);
-
-    if (!eventsRes.ok) {
-      const rateLimitRemaining = eventsRes.headers.get("x-ratelimit-remaining");
-      throw new Error(
-        `Events API ${eventsRes.status}` +
-        (rateLimitRemaining === "0" ? " (rate limited)" : "")
+      const eventsRes = await fetch(
+        `https://api.github.com/users/${githubUsername}/events?per_page=100&page=${page}`,
+        {
+          headers: GITHUB_HEADERS(githubToken),
+          signal: controller.signal,
+        }
       );
+      clearTimeout(timeout);
+
+      if (!eventsRes.ok) {
+        const rateLimitRemaining = eventsRes.headers.get("x-ratelimit-remaining");
+        throw new Error(
+          `Events API ${eventsRes.status}` +
+          (rateLimitRemaining === "0" ? " (rate limited)" : "")
+        );
+      }
+
+      const pageEvents: GitHubEvent[] = await eventsRes.json();
+      if (pageEvents.length === 0) break;
+
+      allEvents.push(...pageEvents);
+
+      // If the oldest event on this page is before our window, no need for more pages
+      const oldestOnPage = new Date(pageEvents[pageEvents.length - 1].created_at);
+      if (oldestOnPage < weekStart) break;
     }
 
-    const events: GitHubEvent[] = await eventsRes.json();
+    const events = allEvents;
 
     // Filter push events within the rolling window
     const pushEvents = events.filter((e) => {
