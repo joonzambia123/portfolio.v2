@@ -2885,7 +2885,7 @@ function App() {
                 }}
               >
                 {isTabletOrBelow ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="2" y="5" width="20" height="14" rx="2.5" stroke="#aaa" strokeWidth="1.5"/><path d="M6 9.5H8M10.5 9.5H12.5M15 9.5H17M7.5 13.5H16.5" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M7 9.5H9M10.5 9.5H12.5M14.5 9.5H16.5M8 13.5H16" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
                 )}
@@ -2911,7 +2911,7 @@ function App() {
               }}
             >
               {isTabletOrBelow ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="2" y="4" width="20" height="16" rx="2.5" stroke="#aaa" strokeWidth="1.5"/><path d="M2 6.5L12 14.5L22 6.5" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M3 7L12 14L21 7" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               ) : (
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
               )}
