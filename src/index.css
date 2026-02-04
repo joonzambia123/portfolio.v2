@@ -532,6 +532,7 @@ background-color: #E8F6FF;
 .hamburger-svg line {
   transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
               opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform-box: view-box;
   transform-origin: 12px 12px;
 }
 
@@ -562,6 +563,10 @@ background-color: #E8F6FF;
 
 .mobile-nav-drawer > .mobile-nav-drawer-inner {
   overflow: hidden;
+}
+
+.mobile-nav-drawer > .mobile-nav-drawer-inner > nav {
+  border-bottom: 1px solid #EAEAEA;
 }
 
 .mobile-nav-drawer.open {
