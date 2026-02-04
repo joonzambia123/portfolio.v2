@@ -2287,7 +2287,7 @@ function App() {
           {/* Hamburger Menu Button (mobile only) */}
           {isTabletOrBelow && (
             <button
-              className="mobile-hamburger w-[37px] h-[37px] flex items-center justify-center rounded-[8px] cursor-pointer bg-[#f7f7f7] border border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] transition-all duration-150"
+              className="mobile-hamburger w-[37px] h-[37px] flex items-center justify-center rounded-[8px] cursor-pointer bg-[#f7f7f7] border border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.025)] active:scale-[0.96] transition-all duration-150"
               onClick={() => {
                 playClick();
                 setIsMobileMenuOpen(prev => !prev);
@@ -2295,11 +2295,11 @@ function App() {
               aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isMobileMenuOpen}
             >
-              <div className={`hamburger-icon ${isMobileMenuOpen ? 'open' : ''}`}>
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+              <svg className={`hamburger-svg ${isMobileMenuOpen ? 'open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" shapeRendering="geometricPrecision" aria-hidden="true">
+                <line className="hamburger-top" x1="4" y1="7" x2="20" y2="7" />
+                <line className="hamburger-mid" x1="4" y1="12" x2="20" y2="12" />
+                <line className="hamburger-bottom" x1="4" y1="17" x2="20" y2="17" />
+              </svg>
             </button>
           )}
         </div>
@@ -2310,58 +2310,60 @@ function App() {
             ref={mobileMenuRef}
             className={`mobile-nav-drawer ${isMobileMenuOpen ? 'open' : ''}`}
           >
-            <nav className="flex flex-col px-[16px] pt-[8px] pb-[16px] gap-[4px]" aria-label="Mobile navigation">
-              <Link
-                to="/about"
-                className={`mobile-nav-link font-graphik text-[15px] py-[12px] px-[12px] rounded-[8px] transition-colors ${location.pathname === '/about' ? 'text-[#333] bg-[#f3f3f3]' : 'text-[#5b5b5e]'}`}
-                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
-              >
-                About
-              </Link>
-              <button
-                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
-                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
-              >
-                Projects
-              </button>
-              <button
-                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
-                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
-              >
-                Gallery
-              </button>
-              <button
-                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
-                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
-              >
-                Notes
-              </button>
-              <button
-                className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
-                onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
-              >
-                Extra
-              </button>
-
-              {/* Search in drawer */}
-              <div className="mt-[8px] pt-[12px] border-t border-[#eaeaea]">
-                <div
-                  className="relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between bg-[#f7f7f7] border-[#eaeaea] w-full"
-                  role="search"
+            <div className="mobile-nav-drawer-inner">
+              <nav className="flex flex-col px-[16px] pt-[8px] pb-[16px] gap-[4px]" aria-label="Mobile navigation">
+                <Link
+                  to="/about"
+                  className={`mobile-nav-link font-graphik text-[15px] py-[12px] px-[12px] rounded-[8px] transition-colors ${location.pathname === '/about' ? 'text-[#333] bg-[#f3f3f3]' : 'text-[#5b5b5e]'}`}
+                  onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
                 >
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Ask me anything..."
-                    className="flex-1 bg-transparent font-graphik text-[14px] text-[#333] placeholder-[#8f8f8f] outline-none"
-                  />
-                  <span className="bg-[#eeeeee] border border-[#e0e0e0] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center flex-shrink-0">
-                    <span className="font-graphik text-[12px] text-[#888]">{isMac ? '⌘J' : '⌃J'}</span>
-                  </span>
+                  About
+                </Link>
+                <button
+                  className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                  onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+                >
+                  Projects
+                </button>
+                <button
+                  className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                  onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+                >
+                  Gallery
+                </button>
+                <button
+                  className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                  onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+                >
+                  Notes
+                </button>
+                <button
+                  className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
+                  onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
+                >
+                  Extra
+                </button>
+
+                {/* Search in drawer */}
+                <div className="mobile-nav-search mt-[8px] pt-[12px] border-t border-[#eaeaea]">
+                  <div
+                    className="relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between bg-[#f7f7f7] border-[#eaeaea] w-full"
+                    role="search"
+                  >
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Ask me anything..."
+                      className="flex-1 bg-transparent font-graphik text-[14px] text-[#333] placeholder-[#8f8f8f] outline-none"
+                    />
+                    <span className="bg-[#eeeeee] border border-[#e0e0e0] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center flex-shrink-0">
+                      <span className="font-graphik text-[12px] text-[#888]">{isMac ? '⌘J' : '⌃J'}</span>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </nav>
+              </nav>
+            </div>
           </div>
         )}
 
@@ -2818,7 +2820,7 @@ function App() {
           <div className="pill-divider w-[1px] h-full bg-[#ebeef5] flex-shrink-0"></div>
 
           {/* Right side - Buttons */}
-          <div className={`pill-buttons-section h-[64px] flex items-center px-[12px] py-[14px] relative flex-shrink-0 ${isTabletOrBelow ? 'gap-[6px] w-auto' : 'gap-[10px] w-[292px]'}`}>
+          <div className={`pill-buttons-section h-[64px] flex items-center px-[12px] py-[14px] relative flex-shrink-0 ${isTabletOrBelow ? 'w-auto' : 'w-[292px]'}`}>
             {/* ⌘K indicator - desktop only */}
             {!isTabletOrBelow && (isShortcutsHovered || isShortcutsModalExiting) && (
               <div
@@ -2836,7 +2838,7 @@ function App() {
             )}
 
             {/* Activity and Shortcuts buttons */}
-            <div className={`flex h-[37px] ${isTabletOrBelow ? 'w-auto gap-[6px]' : 'w-[177px]'}`}>
+            <div className={`pill-buttons-inner flex h-[37px] ${isTabletOrBelow ? 'w-auto' : 'w-[177px]'}`}>
               <div className={`hover-trigger ${isTabletOrBelow ? '' : 'flex-1'}`}>
               <button
                 ref={activityButtonRef}
@@ -2883,7 +2885,7 @@ function App() {
                 }}
               >
                 {isTabletOrBelow ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="6" width="18" height="12" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M7 10.5H9M11 10.5H13M15 10.5H17M8 14H16" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="6" width="18" height="12" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M7 10.5H9M11 10.5H13M15 10.5H17M8 14H16" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 ) : (
                   <p className="font-graphik text-[14px] text-[#5b5b5e]">Shortcuts</p>
                 )}
@@ -2909,7 +2911,7 @@ function App() {
               }}
             >
               {isTabletOrBelow ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M3 7L12 14L21 7" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#aaa" strokeWidth="1.5"/><path d="M3 7L12 14L21 7" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               ) : (
                 <p className="font-graphik text-[14px] text-[#5b5b5e]">Contact</p>
               )}
