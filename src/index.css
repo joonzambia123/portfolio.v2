@@ -1569,14 +1569,10 @@ background-color: #E8F6FF;
   80% { height: 6px; }
 }
 
-/* Music pill dynamic width transition - uses CSS custom property for reliable sizing.
-   pointer-events:none on wrapper so its padding doesn't capture hover directly.
-   The button (pointer-events:auto) still propagates :hover up to the wrapper,
-   so .music-pill-wrapper:hover only fires when the button itself is hovered. */
+/* Music pill dynamic width transition - uses CSS custom property for reliable sizing */
 .music-pill-wrapper {
   width: var(--music-pill-width, 205px);
   transition: width 500ms cubic-bezier(0.34, 1.2, 0.64, 1);
-  pointer-events: none;
 }
 
 .music-pill-wrapper .music-text-container {
@@ -1587,23 +1583,37 @@ background-color: #E8F6FF;
   transition: max-width 500ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
-/* Skeuomorphic music player button - matches bottom buttons style */
+/* Music player button - transparent click/hover target that never moves */
 .music-player-button {
-  pointer-events: auto;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(252, 252, 252, 0) 100%);
-  border: 1px solid rgba(235, 238, 245, 0);
   position: relative;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  border-radius: 8px;
   overflow: visible;
   outline: none;
+  background: transparent;
+  border: none;
+}
+
+/* Inner visual container - this is what animates and shows hover styles.
+   The button itself stays put so hover is never lost at edges/corners. */
+.music-button-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 10px;
+  padding-left: 6px;
+  padding-right: 16px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(252, 252, 252, 0) 100%);
+  border: 1px solid rgba(235, 238, 245, 0);
+  position: relative;
   transition: all 250ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
-.music-player-button::before {
+.music-button-inner::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1617,8 +1627,8 @@ background-color: #E8F6FF;
   transition: all 250ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
-/* Hover styles on the button itself (bg, shadow, border) */
-.music-player-button:hover {
+/* Hover styles - button:hover drives inner visual changes */
+.music-player-button:hover .music-button-inner {
   background: linear-gradient(180deg, #fafafa 0%, #f5f5f6 100%);
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.04),
@@ -1626,19 +1636,15 @@ background-color: #E8F6FF;
     inset 0 0.5px 0 rgba(255, 255, 255, 0.6),
     inset 0 -0.5px 0 rgba(0, 0, 0, 0.01);
   border: 1px solid rgba(235, 238, 245, 0.85);
-}
-
-/* Transform applied from static parent to prevent hover flicker */
-.music-pill-wrapper:hover .music-player-button {
   transform: translateY(-1.5px);
 }
 
-.music-player-button:hover::before {
+.music-player-button:hover .music-button-inner::before {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
   opacity: 1;
 }
 
-.music-player-button:active {
+.music-player-button:active .music-button-inner {
   background: linear-gradient(180deg, #f0f0f2 0%, #f5f5f6 100%);
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.05),
@@ -1648,11 +1654,7 @@ background-color: #E8F6FF;
   transition: all 80ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.music-player-button:active::before {
-  opacity: 0.5;
-}
-
-.music-player-button:active::before {
+.music-player-button:active .music-button-inner::before {
   opacity: 0.5;
 }
 

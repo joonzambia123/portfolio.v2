@@ -2814,7 +2814,7 @@ function App() {
           >
             <button
               ref={musicButtonRef}
-              className="music-player-button h-[48px] w-full flex items-center gap-[10px] pl-[6px] pr-[16px] cursor-pointer group/vinyl"
+              className="music-player-button h-[48px] w-full cursor-pointer group/vinyl"
               onClick={(e) => {
                 e.preventDefault();
                 playClick();
@@ -2845,6 +2845,7 @@ function App() {
                 }, 200);
               }}
             >
+            <div className="music-button-inner">
             <div className="vinyl-container relative shrink-0 w-[40px] h-[40px]">
               {/* Floating music notes - appear on hover */}
               <div className="music-notes-container absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
@@ -2904,6 +2905,7 @@ function App() {
                 {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
               </MarqueeText>
             </div>
+          </div>
           </button>
           </div>
 
