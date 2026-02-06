@@ -2809,7 +2809,7 @@ function App() {
           )}
           
           <div
-            className="music-pill-wrapper h-[64px] flex items-center pl-[6px] pr-[12px] relative flex-shrink-0"
+            className="music-pill-wrapper h-[48px] flex items-center pl-[6px] pr-[12px] relative flex-shrink-0 self-center"
             style={{ '--music-pill-width': `${musicPillWidth}px`, overflow: 'visible' }}
           >
             <button
