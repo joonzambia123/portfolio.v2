@@ -586,6 +586,7 @@ function App() {
   const activityButtonRef = useRef(null);
   const contactButtonRef = useRef(null);
   const isHoveredRef = useRef(false);
+  const videoFrameRef = useRef(null);
   const isTransitioningRef = useRef(false);
   const modalTimeoutRef = useRef(null);
   const shortcutsModalTimeoutRef = useRef(null);
@@ -1334,6 +1335,21 @@ function App() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isClockExpanded, handleClockClose]);
+
+  // Close video metadata on tap outside (mobile/tablet)
+  useEffect(() => {
+    if (!mobileMetadataExpanded || !isMobileOrTablet) return;
+    const handleTapOutside = (e) => {
+      if (videoFrameRef.current && videoFrameRef.current.contains(e.target)) return;
+      setMobileMetadataExpanded(false);
+    };
+    document.addEventListener('mousedown', handleTapOutside);
+    document.addEventListener('touchstart', handleTapOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleTapOutside);
+      document.removeEventListener('touchstart', handleTapOutside);
+    };
+  }, [mobileMetadataExpanded, isMobileOrTablet]);
 
   // Close expanded clock on Escape
   useEffect(() => {
@@ -2540,6 +2556,7 @@ function App() {
 
           {/* Right Column - Video Card */}
             <div
+              ref={videoFrameRef}
               className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? `component-loaded ${isTabletOrBelow ? 'from-left' : 'from-right'}` : `component-hidden ${isTabletOrBelow ? 'from-left' : 'from-right'}`} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
               onMouseEnter={() => {
                 if (isMobileOrTablet) return; // No hover on mobile
