@@ -2809,12 +2809,12 @@ function App() {
           )}
           
           <div
-            className="music-pill-wrapper h-[64px] flex items-center pl-[6px] pr-[12px] relative flex-shrink-0"
+            className="music-pill-wrapper h-[64px] flex items-center relative flex-shrink-0"
             style={{ '--music-pill-width': `${musicPillWidth}px`, overflow: 'visible' }}
           >
             <button
               ref={musicButtonRef}
-              className="music-player-button h-[48px] w-full flex items-center gap-[10px] pl-[6px] pr-[16px] cursor-pointer group/vinyl"
+              className="music-player-button h-full w-full flex items-center gap-[10px] pl-[12px] pr-[28px] cursor-pointer group/vinyl"
               onClick={(e) => {
                 e.preventDefault();
                 playClick();
