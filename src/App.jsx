@@ -579,6 +579,9 @@ function App() {
   const [isMac, setIsMac] = useState(true);
   const [activeModal, setActiveModal] = useState(null); // 'music' | 'activity' | 'shortcuts' | 'contact' | null
   const [activeAnchorRef, setActiveAnchorRef] = useState(null);
+
+  // Bunny CDN base URL for video hosting
+  const BUNNY_CDN_BASE = 'https://joonseo-videos.b-cdn.net';
   const musicButtonRef = useRef(null);
   const activityButtonRef = useRef(null);
   const contactButtonRef = useRef(null);
@@ -916,22 +919,11 @@ function App() {
   // Get the appropriate video source - Safari gets smaller optimized files
   const getVideoSrc = (video) => {
     if (!video) return '';
-
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
     // Safari: Use smaller Safari-optimized files for faster loading
-    if (isSafari) {
-      // Local files: Use srcSafari if available
-      if (video.srcSafari) {
-        return video.srcSafari;
-      }
-      // Cloudinary URLs: Add Safari transforms (720p, lower quality)
-      if (video.src && video.src.includes('cloudinary.com')) {
-        return video.src.replace('/upload/', '/upload/c_scale,h_720,q_auto:eco/');
-      }
+    if (isSafari && video.srcSafari) {
+      return video.srcSafari;
     }
-
-    // Default: Standard tier (1080p Premium quality)
     return video.src;
   };
 
@@ -1002,68 +994,25 @@ function App() {
   const pendingDirectionRef = useRef(null);
   const targetVideoIndexRef = useRef(0); // Track ultimate target when clicking fast
 
-  // Helper to get video src - handles both Cloudinary URLs and local paths
-  // Applies browser-specific optimizations for Cloudinary URLs
-  const encodeVideoSrc = (src, options = {}) => {
+  // Helper to encode video src - handles URL encoding for paths
+  const encodeVideoSrc = (src) => {
     if (!src) return src;
-
-    // If it's a Cloudinary URL, optimize transformations
-    if (src.includes('cloudinary.com')) {
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-      // Parse existing URL to modify transformations
-      const urlParts = src.match(/\/video\/upload\/([^/]+)\/(.+)/);
-      if (urlParts) {
-        const [, existingTransforms, path] = urlParts;
-
-        // Build optimized transformations
-        // - q_auto:good - automatic quality optimization
-        // - vc_h264 - H.264 codec (best Safari support)
-        // - f_mp4 - MP4 format (universal support)
-        // - ac_none - remove audio (videos are muted, saves bandwidth)
-        // - so_0 - start offset 0 (ensures consistent starting point)
-        // For Safari: add fl_progressive for smoother streaming
-        const baseTransforms = 'q_auto:good,vc_h264,f_mp4,ac_none,so_0';
-        const safariTransforms = isSafari ? `${baseTransforms},fl_progressive:steep` : baseTransforms;
-
-        return `https://res.cloudinary.com/dxsdxpm9m/video/upload/${safariTransforms}/${path}`;
-      }
-
-      return src;
-    }
-
-    // Local path - encode spaces
+    // Encode spaces in URL path segments
     const parts = src.split('/');
     return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
 
-  // Helper to get poster image - uses Cloudinary thumbnail or local poster
+  // Helper to get poster image from Bunny CDN
   const getPosterSrc = (src) => {
     if (!src) return '';
-
-    // If it's a Cloudinary URL, generate thumbnail URL
-    if (src.includes('cloudinary.com')) {
-      // Convert video URL to image thumbnail
-      // Replace video transformations with image thumbnail transformations
-      // Extract the base URL and filename
-      const match = src.match(/\/video\/upload\/([^/]+)\/(.+)\.(mp4|webm|mov)/i);
-      if (match) {
-        const filename = match[2];
-        // Use f_auto for WebP/AVIF delivery when supported, with quality optimization
-        return `https://res.cloudinary.com/dxsdxpm9m/video/upload/f_auto,q_auto:good,so_0/${filename}.jpg`;
-      }
-      // Fallback for URLs without extension
-      return src
-        .replace(/\/video\/upload\/[^/]+\//, '/video/upload/f_auto,q_auto:good,so_0/')
-        .replace(/\.(mp4|webm|mov)$/i, '.jpg');
+    // Extract filename from URL path, replace .mp4 with .jpg
+    try {
+      const urlPath = new URL(src, window.location.origin).pathname;
+      const filename = urlPath.split('/').pop().replace('.mp4', '.jpg');
+      return `${BUNNY_CDN_BASE}/posters/${filename}`;
+    } catch {
+      return '';
     }
-
-    // Local path - use local poster
-    const filename = src.startsWith('/') ? src.slice(1) : src;
-    const posterName = filename.replace('.mp4', '.jpg');
-    const posterPath = `/posters/${posterName}`;
-    const parts = posterPath.split('/');
-    return parts.map((part, i) => i === 0 ? part : encodeURIComponent(part)).join('/');
   };
 
   // Warm up adjacent video by silently playing one frame (forces Safari decoder init)
@@ -1359,16 +1308,12 @@ function App() {
     const pill = clockPillRef.current;
     if (!pill) return;
     const rect = pill.getBoundingClientRect();
-    // Measure where the clock icon content sits inside the pill to align the expanded card.
-    // The pill uses items-center on h-[35px] with 1px border, content is 20px tall.
-    // Content top inside pill = border(1) + (35-20)/2 = 1 + 7.5 = 8.5px from pillRect.top.
-    // The expanded card header uses mt-[8px] with 1px border = content at 9px from cardTop.
-    // So offset card top by -0.5px to align content exactly.
     setPillRect({
-      top: rect.top - 0.5,
+      top: rect.top,
       left: rect.left,
       width: rect.width,
       height: rect.height,
+      centerX: rect.left + rect.width / 2,
     });
     setExpandPhase('measuring');
   }, [expandPhase]);
@@ -1457,7 +1402,7 @@ function App() {
       setExpandPhase('collapsed');
       setPillRect(null);
       setCardTargetSize({ width: 294, height: 400 });
-    }, 300); // buffer beyond 200ms CSS transition so animation fully completes before unmount
+    }, 300); // buffer beyond 250ms CSS exit animation so it fully completes before unmount
     return () => clearTimeout(timer);
   }, [expandPhase]);
 
@@ -2536,12 +2481,11 @@ function App() {
               <div
                 ref={clockPillRef}
                 onClick={handleClockExpand}
-                className="bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
-                  opacity: isClockExpanded && expandPhase !== 'closing' ? 0 : 1,
-                  transition: 'opacity 150ms ease',
-                  pointerEvents: isClockExpanded && expandPhase !== 'closing' ? 'none' : 'auto',
+                  opacity: isClockExpanded && expandPhase !== 'measuring' ? 0 : 1,
+                  pointerEvents: isClockExpanded && expandPhase !== 'measuring' ? 'none' : 'auto',
                 }}
               >
                 <div className="overflow-clip relative shrink-0 size-[20px]">
@@ -3102,17 +3046,20 @@ function App() {
           style={{
             position: 'fixed',
             top: pillRect.top,
-            left: pillRect.left,
+            left: isTabletOrBelow ? pillRect.centerX : pillRect.left,
+            transform: isTabletOrBelow ? 'translateX(-50%)' : 'none',
             width: expandPhase === 'expanding' || expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing'
               ? `${cardTargetSize.width}px` : `${pillRect.width}px`,
+            maxWidth: 'calc(100vw - 32px)',
             height: expandPhase === 'expanding' || expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing'
               ? `${cardTargetSize.height}px` : `${pillRect.height}px`,
             background: '#ffffff',
             border: '1px solid rgba(235, 238, 245, 0.85)',
             boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
+            opacity: expandPhase === 'measuring' ? 0 : 1,
             transition: expandPhase === 'measuring' ? 'none'
               : 'width 300ms cubic-bezier(0.4, 0, 0.2, 1), height 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-            transformOrigin: 'top left',
+            transformOrigin: isTabletOrBelow ? 'top center' : 'top left',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -3120,8 +3067,13 @@ function App() {
             {/* Header: Clock + Time + City — always visible, stays still */}
             <div
               onClick={handleClockClose}
-              className="flex gap-[6px] items-center h-[20px] rounded-[8px] w-fit cursor-pointer mx-[8px] mt-[8px]"
-              style={{ transition: 'background 200ms ease' }}
+              className="flex gap-[6px] items-center h-[20px] rounded-[8px] w-fit cursor-pointer"
+              style={{
+                transition: 'background 200ms ease',
+                marginTop: '6.5px',
+                marginLeft: '8px',
+                marginRight: '8px',
+              }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
@@ -3177,7 +3129,7 @@ function App() {
                   ref={leafletContainerRef}
                   className="ambient-map rounded-[10px] overflow-hidden"
                   style={{
-                    width: '264px',
+                    width: '100%',
                     height: '143px',
                     border: '1px solid #ebeef5',
                     background: '#f2f2f2',
