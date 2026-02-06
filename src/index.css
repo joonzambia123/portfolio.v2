@@ -505,15 +505,9 @@ background-color: #E8F6FF;
     background: rgba(0, 0, 0, 0.15);
   }
 
-  .ambient-card {
-    left: 50% !important;
-    top: 50% !important;
-    transform-origin: center center !important;
-    animation: ambientCardInMobile 300ms cubic-bezier(0.34, 1.2, 0.64, 1) forwards !important;
-  }
-
-  .ambient-card .h-\[100px\] {
-    height: 80px !important;
+  .ambient-map {
+    width: 100% !important;
+    height: 110px !important;
   }
 }
 
@@ -816,41 +810,56 @@ background-color: #E8F6FF;
               backdrop-filter 300ms ease;
 }
 
-/* Ambient Context Card - fixed overlay animation */
-.ambient-card {
-  animation: ambientCardIn 300ms cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+/* Ambient Context Card - exit animation (CSS keyframes so 60fps clock re-renders can't disrupt it) */
+.ambient-card-exit {
+  animation: ambientCardExit 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.ambient-card-content {
-  animation: ambientContentIn 200ms ease 120ms forwards;
-  opacity: 0;
-}
-
-@keyframes ambientCardIn {
+@keyframes ambientCardExit {
   from {
-    opacity: 0;
-    transform: scale(0.92) translateY(-4px);
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1);
   }
   to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes ambientContentIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes ambientCardInMobile {
-  from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.92);
+    filter: blur(4px);
+    transform: scale(0.97);
   }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+}
+
+/* Mobile exit preserves translateX(-50%) centering */
+@media (max-width: 813px) {
+  @keyframes ambientCardExit {
+    from {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateX(-50%) scale(1);
+    }
+    to {
+      opacity: 0;
+      filter: blur(4px);
+      transform: translateX(-50%) scale(0.97);
+    }
   }
+}
+
+/* Leaflet overrides for ambient map */
+.ambient-map .leaflet-control-attribution {
+  display: none;
+}
+
+.ambient-map .leaflet-container {
+  background: #f8f8f8;
+}
+
+.ambient-map-marker {
+  width: 8px !important;
+  height: 8px !important;
+  background: #5b5b5e;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 4px rgba(0, 0, 0, 0.15);
 }
 
 /* Skeuomorphic nav pill container - matches bottom pill style */
@@ -1614,8 +1623,10 @@ background-color: #E8F6FF;
   border: 1px solid rgba(235, 238, 245, 0.85);
 }
 
-/* Transform applied from static parent to prevent hover flicker */
-.music-pill-wrapper:hover .music-player-button {
+/* Transform applied from static parent to prevent hover flicker.
+   Uses :has() so the lift only triggers when the button itself is hovered,
+   not when the cursor enters the wrapper's padding/white-space area. */
+.music-pill-wrapper:has(.music-player-button:hover) .music-player-button {
   transform: translateY(-1.5px);
 }
 
@@ -2423,6 +2434,11 @@ background-color: #E8F6FF;
 /* Transform applied from static parent to prevent hover flicker */
 .hover-trigger:hover > [class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"] {
   transform: translateY(-0.5px) !important;
+}
+
+/* Clock pill: no hover lift (prevents flicker when expanding) */
+.hover-trigger:hover > .clock-pill[class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"] {
+  transform: none !important;
 }
 
 /* Active/pressed state - pushed down, darker, inset - more subtle like bottom buttons */
