@@ -1569,10 +1569,14 @@ background-color: #E8F6FF;
   80% { height: 6px; }
 }
 
-/* Music pill dynamic width transition - uses CSS custom property for reliable sizing */
+/* Music pill dynamic width transition - uses CSS custom property for reliable sizing.
+   pointer-events:none on wrapper so its padding doesn't capture hover directly.
+   The button (pointer-events:auto) still propagates :hover up to the wrapper,
+   so .music-pill-wrapper:hover only fires when the button itself is hovered. */
 .music-pill-wrapper {
   width: var(--music-pill-width, 205px);
   transition: width 500ms cubic-bezier(0.34, 1.2, 0.64, 1);
+  pointer-events: none;
 }
 
 .music-pill-wrapper .music-text-container {
@@ -1585,6 +1589,7 @@ background-color: #E8F6FF;
 
 /* Skeuomorphic music player button - matches bottom buttons style */
 .music-player-button {
+  pointer-events: auto;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(252, 252, 252, 0) 100%);
   border: 1px solid rgba(235, 238, 245, 0);
   position: relative;
