@@ -1612,7 +1612,19 @@ background-color: #E8F6FF;
   transition: all 250ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
-/* Hover styles on the button itself (bg, shadow, border) */
+/* Invisible hover cushion below the button to prevent flicker.
+   When the button lifts by 1.5px, this ::after fills the gap so
+   the cursor never loses :hover on the button itself. */
+.music-player-button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 4px;
+}
+
+/* Hover styles on the button itself (bg, shadow, border, transform) */
 .music-player-button:hover {
   background: linear-gradient(180deg, #fafafa 0%, #f5f5f6 100%);
   box-shadow:
@@ -1621,10 +1633,6 @@ background-color: #E8F6FF;
     inset 0 0.5px 0 rgba(255, 255, 255, 0.6),
     inset 0 -0.5px 0 rgba(0, 0, 0, 0.01);
   border: 1px solid rgba(235, 238, 245, 0.85);
-}
-
-/* Transform applied from static parent to prevent hover flicker */
-.music-pill-wrapper:hover .music-player-button {
   transform: translateY(-1.5px);
 }
 
