@@ -546,6 +546,7 @@ function App() {
   const video2IndexRef = useRef(1); // Which video data index is in video2
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false); // Loading state during video transitions
+  const [currentVideoPlaying, setCurrentVideoPlaying] = useState(false); // Track if current video is actually playing
   const firstVideoReadyRef = useRef(false); // Track if first video is ready for loader
 
   // Video warm-up tracking - briefly plays each video to initialize decoder
@@ -1119,6 +1120,17 @@ function App() {
       document.documentElement.classList.add('safari');
     }
   }, []);
+
+  // Track when current video is actually playing (for loading indicator)
+  useEffect(() => {
+    const currentVideo = videoElementsRef.current[videoIndex];
+    // If video is already playing, set state immediately
+    if (currentVideo && !currentVideo.paused && currentVideo.readyState >= 3) {
+      setCurrentVideoPlaying(true);
+    } else {
+      setCurrentVideoPlaying(false);
+    }
+  }, [videoIndex]);
 
   // Save/restore scroll position when toggling between pages
   useEffect(() => {
@@ -2588,6 +2600,13 @@ function App() {
                 </div>
               )}
             <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-[#f5f5f5]">
+              {/* Video loading shimmer - shows while video is loading but loader has finished */}
+              {!currentVideoPlaying && !isLoading && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+                  <div className="video-loading-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <div className="w-2 h-2 bg-[#999]/60 rounded-full animate-pulse" />
+                </div>
+              )}
               {/* Poster background - shows while video loads */}
               {safeVideoData[videoIndex] && (
                 <div
@@ -2627,6 +2646,7 @@ function App() {
                     loop={false}
                     onEnded={handleVideoEnded}
                     onError={(e) => handleVideoError(video.id, e.target)}
+                    onPlaying={() => { if (isActive) setCurrentVideoPlaying(true); }}
                   >
                     <source src={encodeVideoSrc(getVideoSrc(video))} type="video/mp4" />
                   </video>
