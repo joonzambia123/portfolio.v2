@@ -1163,36 +1163,10 @@ function App() {
     const currentVideo = videoElementsRef.current[videoIndex];
     const nextVideo = videoElementsRef.current[nextIndex];
 
-    // Prepare next video BEFORE switching - ensure it's ready and visible
-    if (nextVideo) {
-      // Make next video visible (but still behind current due to z-index)
-      nextVideo.style.visibility = 'visible';
-      nextVideo.style.opacity = '1';
-
-      // Reset and start playing the next video
-      nextVideo.currentTime = 0;
-      const playPromise = nextVideo.play();
-
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Retry play on Safari
-          if (isSafari) {
-            setTimeout(() => nextVideo.play().catch(() => {}), 50);
-          }
-        });
-      }
-    }
-
     // Check if next video is loaded from blob cache (fully buffered)
     const nextVideoSrc = getVideoSrc(videoData[nextIndex]);
     const isBlobCached = videoCacheRef.current.has(nextVideoSrc);
-
-    // Ultra-fast switch (0ms via rAF) if blob-cached and fully decoded
-    // Fast switch (5ms) if decoded but not blob-cached
-    // Normal switch (10-30ms) otherwise
     const isFullyReady = nextVideo && nextVideo.readyState >= 4 && isBlobCached;
-    const isPartiallyReady = nextVideo && nextVideo.readyState >= 3;
-    const switchDelay = isFullyReady ? 0 : (isPartiallyReady ? 5 : (isSafari ? 30 : 10));
 
     const doSwitch = () => {
       // Now update index - this will swap z-index making next video visible
@@ -1206,11 +1180,69 @@ function App() {
       }
     };
 
-    if (switchDelay === 0) {
-      // Use requestAnimationFrame for truly instant switching
-      requestAnimationFrame(doSwitch);
-    } else {
-      setTimeout(doSwitch, switchDelay);
+    // Prepare and play next video
+    if (nextVideo) {
+      // Reset to start
+      nextVideo.currentTime = 0;
+
+      // Function to make video visible and switch
+      const showAndSwitch = () => {
+        nextVideo.style.visibility = 'visible';
+        nextVideo.style.opacity = '1';
+        // Use double rAF to ensure the frame is painted before switching
+        requestAnimationFrame(() => {
+          requestAnimationFrame(doSwitch);
+        });
+      };
+
+      // If video is fully ready, play and switch immediately
+      if (isFullyReady) {
+        nextVideo.play().catch(() => {});
+        showAndSwitch();
+      } else {
+        // Wait for first frame to be ready before showing
+        const onFirstFrame = () => {
+          nextVideo.removeEventListener('playing', onFirstFrame);
+          nextVideo.removeEventListener('timeupdate', onFirstFrame);
+          showAndSwitch();
+        };
+
+        // Keep video hidden while preparing
+        nextVideo.style.visibility = 'hidden';
+        nextVideo.style.opacity = '0';
+
+        // Listen for first frame
+        nextVideo.addEventListener('playing', onFirstFrame, { once: true });
+        // Fallback: timeupdate fires when video has rendered a frame
+        nextVideo.addEventListener('timeupdate', onFirstFrame, { once: true });
+
+        // Start playing (will trigger events above)
+        const playPromise = nextVideo.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // If play fails, still try to switch
+            nextVideo.removeEventListener('playing', onFirstFrame);
+            nextVideo.removeEventListener('timeupdate', onFirstFrame);
+            if (isSafari) {
+              setTimeout(() => {
+                nextVideo.play().catch(() => {});
+                showAndSwitch();
+              }, 50);
+            } else {
+              showAndSwitch();
+            }
+          });
+        }
+
+        // Safety timeout: switch anyway after 150ms
+        setTimeout(() => {
+          nextVideo.removeEventListener('playing', onFirstFrame);
+          nextVideo.removeEventListener('timeupdate', onFirstFrame);
+          if (nextVideo.style.visibility === 'hidden') {
+            showAndSwitch();
+          }
+        }, 150);
+      }
     }
   };
 
