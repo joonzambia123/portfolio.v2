@@ -7,7 +7,8 @@ export const timelineData = [
     type: 'video',
     src: 'https://joonseo-videos.b-cdn.net/premium/About_Premium.mp4',
     srcSafari: 'https://joonseo-videos.b-cdn.net/safari/About_Safari.mp4',
-    caption: 'This is me 5 days ago. Let\'s take a look back.',
+    recordedDate: '2026-02-06', // Used to calculate "X days ago" dynamically
+    caption: 'This is me {daysAgo} days ago. Let\'s take a look back.',
     alt: 'Recent video of Joon'
   },
   {

@@ -1,7 +1,24 @@
 // Timeline milestone - NYT minimal design
+import { useMemo } from 'react'
 
 const TimelineMilestone = ({ milestone, isActive, onClick }) => {
-  const { id, year, image, caption, alt } = milestone
+  const { id, year, image, caption, alt, recordedDate } = milestone
+
+  // Calculate dynamic caption with days ago
+  const displayCaption = useMemo(() => {
+    if (!recordedDate || !caption.includes('{daysAgo}')) return caption
+
+    const recorded = new Date(recordedDate)
+    const today = new Date()
+    // Reset time to midnight for accurate day calculation
+    recorded.setHours(0, 0, 0, 0)
+    today.setHours(0, 0, 0, 0)
+
+    const diffTime = today - recorded
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+    return caption.replace('{daysAgo}', diffDays)
+  }, [recordedDate, caption])
 
   return (
     <div
@@ -60,7 +77,7 @@ const TimelineMilestone = ({ milestone, isActive, onClick }) => {
             transition: 'color 400ms ease'
           }}
         >
-          {caption}
+          {displayCaption}
         </p>
       </div>
 
