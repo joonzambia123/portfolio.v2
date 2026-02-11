@@ -5,8 +5,8 @@ export const timelineData = [
     id: 'present',
     year: 'Present',
     type: 'video',
-    src: '/videos/compressed/premium/Jeju2v2_Premium.mp4',
-    srcSafari: '/videos/compressed/safari/Jeju2v2_Safari.mp4',
+    src: '/videos/compressed/premium/About_Premium.mp4',
+    srcSafari: '/videos/compressed/safari/About_Safari.mp4',
     caption: 'This is me 5 days ago. Let\'s take a look back.',
     alt: 'Recent video of Joon'
   },
