@@ -1040,6 +1040,72 @@ function App() {
     });
   }, []);
 
+  // Track which videos have been predictively preloaded to avoid duplicate fetches
+  const predictivePreloadedRef = useRef(new Set());
+
+  // Predictive preloading: preload next+1 video when current is 50% complete
+  const handleVideoTimeUpdate = useCallback((e) => {
+    const video = e.target;
+    if (!video || !video.duration || videoData.length < 3) return;
+
+    const progress = video.currentTime / video.duration;
+    const currentIdx = videoElementsRef.current.findIndex(v => v === video);
+    if (currentIdx === -1 || currentIdx !== videoIndex) return;
+
+    // When 40% through, start preloading next video (in case not already loaded)
+    if (progress >= 0.4 && progress < 0.5) {
+      const nextIdx = (currentIdx + 1) % videoData.length;
+      const nextVideoSrc = getVideoSrc(videoData[nextIdx]);
+      if (!videoCacheRef.current.has(nextVideoSrc) && !predictivePreloadedRef.current.has(nextVideoSrc)) {
+        predictivePreloadedRef.current.add(nextVideoSrc);
+        const encodedSrc = encodeVideoSrc(nextVideoSrc);
+        fetch(encodedSrc, { priority: 'high' }).then(res => {
+          if (res.ok) return res.blob();
+          throw new Error('fetch failed');
+        }).then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          videoCacheRef.current.set(nextVideoSrc, blobUrl);
+          const videoEl = videoElementsRef.current[nextIdx];
+          if (videoEl && nextIdx !== videoIndex) {
+            videoEl.src = blobUrl;
+            videoEl.load();
+            warmUpAdjacentVideo(videoEl);
+          }
+        }).catch(() => {});
+      }
+    }
+
+    // When 60% through, preload next+1 video for smoother experience
+    if (progress >= 0.6 && progress < 0.7 && videoData.length > 3) {
+      const nextPlusOneIdx = (currentIdx + 2) % videoData.length;
+      const nextPlusOneSrc = getVideoSrc(videoData[nextPlusOneIdx]);
+      if (!videoCacheRef.current.has(nextPlusOneSrc) && !predictivePreloadedRef.current.has(nextPlusOneSrc)) {
+        predictivePreloadedRef.current.add(nextPlusOneSrc);
+        // Use requestIdleCallback for next+1 to avoid competing with main thread
+        const doPreload = () => {
+          const encodedSrc = encodeVideoSrc(nextPlusOneSrc);
+          fetch(encodedSrc).then(res => {
+            if (res.ok) return res.blob();
+            throw new Error('fetch failed');
+          }).then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            videoCacheRef.current.set(nextPlusOneSrc, blobUrl);
+            const videoEl = videoElementsRef.current[nextPlusOneIdx];
+            if (videoEl && nextPlusOneIdx !== videoIndex) {
+              videoEl.src = blobUrl;
+              videoEl.load();
+            }
+          }).catch(() => {});
+        };
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(doPreload, { timeout: 3000 });
+        } else {
+          setTimeout(doPreload, 100);
+        }
+      }
+    }
+  }, [videoIndex, videoData, warmUpAdjacentVideo]);
+
   // Preload video on hover for faster transitions
   const preloadVideoOnHover = (direction) => {
     if (videoData.length === 0 || isTransitioningRef.current) return;
@@ -1055,6 +1121,27 @@ function App() {
       targetVideoEl.preload = 'auto';
       // Also warm up the video for faster switching on Safari
       warmUpAdjacentVideo(targetVideoEl);
+    }
+
+    // Also preload next+1 in the same direction for smoother multi-hop navigation
+    if (videoData.length > 3) {
+      const nextPlusOneIdx = direction === 'next'
+        ? (baseIndex + 2) % videoData.length
+        : (baseIndex - 2 + videoData.length) % videoData.length;
+      const nextPlusOneSrc = getVideoSrc(videoData[nextPlusOneIdx]);
+      if (!videoCacheRef.current.has(nextPlusOneSrc) && !predictivePreloadedRef.current.has(nextPlusOneSrc)) {
+        predictivePreloadedRef.current.add(nextPlusOneSrc);
+        const encodedSrc = encodeVideoSrc(nextPlusOneSrc);
+        fetch(encodedSrc).then(res => res.ok ? res.blob() : Promise.reject()).then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          videoCacheRef.current.set(nextPlusOneSrc, blobUrl);
+          const videoEl = videoElementsRef.current[nextPlusOneIdx];
+          if (videoEl && nextPlusOneIdx !== videoIndex) {
+            videoEl.src = blobUrl;
+            videoEl.load();
+          }
+        }).catch(() => {});
+      }
     }
   };
 
@@ -1096,10 +1183,18 @@ function App() {
       }
     }
 
-    // Dynamic delay: if next video is pre-decoded (readyState >= 3), switch faster
-    const switchDelay = (nextVideo && nextVideo.readyState >= 3) ? 5 : (isSafari ? 30 : 10);
+    // Check if next video is loaded from blob cache (fully buffered)
+    const nextVideoSrc = getVideoSrc(videoData[nextIndex]);
+    const isBlobCached = videoCacheRef.current.has(nextVideoSrc);
 
-    setTimeout(() => {
+    // Ultra-fast switch (0ms via rAF) if blob-cached and fully decoded
+    // Fast switch (5ms) if decoded but not blob-cached
+    // Normal switch (10-30ms) otherwise
+    const isFullyReady = nextVideo && nextVideo.readyState >= 4 && isBlobCached;
+    const isPartiallyReady = nextVideo && nextVideo.readyState >= 3;
+    const switchDelay = isFullyReady ? 0 : (isPartiallyReady ? 5 : (isSafari ? 30 : 10));
+
+    const doSwitch = () => {
       // Now update index - this will swap z-index making next video visible
       setVideoIndex(nextIndex);
 
@@ -1109,7 +1204,14 @@ function App() {
         currentVideo.style.visibility = 'hidden';
         currentVideo.style.opacity = '0';
       }
-    }, switchDelay);
+    };
+
+    if (switchDelay === 0) {
+      // Use requestAnimationFrame for truly instant switching
+      requestAnimationFrame(doSwitch);
+    } else {
+      setTimeout(doSwitch, switchDelay);
+    }
   };
 
 
@@ -1771,15 +1873,39 @@ function App() {
         indicesToPreload.push(i);
       }
 
-      // Preload with stagger to avoid network congestion
-      indicesToPreload.forEach((index, i) => {
-        setTimeout(() => {
-          if (!isCancelled) {
-            preloadVideo(videoData[index]);
-          }
-        }, i * 1500); // 1.5 second stagger
-      });
-    }, 2000);
+      // Use requestIdleCallback for non-blocking background preloading
+      let currentPreloadIndex = 0;
+      const preloadNextVideo = (deadline) => {
+        if (isCancelled || currentPreloadIndex >= indicesToPreload.length) return;
+
+        // If we have time in this idle period, preload a video
+        // Each video fetch takes time, so we only start one per idle callback
+        if (deadline && deadline.timeRemaining() > 10) {
+          const index = indicesToPreload[currentPreloadIndex];
+          preloadVideo(videoData[index]);
+          currentPreloadIndex++;
+        }
+
+        // Schedule next preload with a delay to avoid network congestion
+        if (currentPreloadIndex < indicesToPreload.length && !isCancelled) {
+          setTimeout(() => {
+            if ('requestIdleCallback' in window) {
+              requestIdleCallback(preloadNextVideo, { timeout: 5000 });
+            } else {
+              preloadNextVideo({ timeRemaining: () => 50 });
+            }
+          }, 1000); // 1 second stagger
+        }
+      };
+
+      // Start the preload chain
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(preloadNextVideo, { timeout: 5000 });
+      } else {
+        // Fallback for Safari
+        preloadNextVideo({ timeRemaining: () => 50 });
+      }
+    }, 1500);
 
     return () => {
       isCancelled = true;
@@ -2576,6 +2702,9 @@ function App() {
                 isHoveredRef.current = true;
                 setShowJiggle(false);
                 setIsHovered(true);
+                // Preload both adjacent videos when hovering on video frame
+                preloadVideoOnHover('next');
+                preloadVideoOnHover('prev');
               }}
               onMouseLeave={() => {
                 if (isMobileOrTablet) return; // No hover on mobile
@@ -2647,6 +2776,7 @@ function App() {
                     onEnded={handleVideoEnded}
                     onError={(e) => handleVideoError(video.id, e.target)}
                     onPlaying={() => { if (isActive) setCurrentVideoPlaying(true); }}
+                    onTimeUpdate={isActive ? handleVideoTimeUpdate : undefined}
                   >
                     <source src={encodeVideoSrc(getVideoSrc(video))} type="video/mp4" />
                   </video>
