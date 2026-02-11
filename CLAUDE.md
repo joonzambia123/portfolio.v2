@@ -75,20 +75,49 @@ ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 28 -preset medium -c
 **For vertical videos (phone/portrait):**
 Same commands - ffmpeg auto-applies rotation metadata.
 
-### 4. Output Location
+### 4. Output Location (Local)
 - `public/videos/compressed/premium/` (Standard tier files)
 - `public/videos/compressed/safari/` (Safari-optimized files)
 
-### 5. Update JSON
+### 5. Upload to Bunny CDN (REQUIRED for Production)
+**IMPORTANT:** Videos are hosted on Bunny CDN, NOT served from the local `public/` folder in production.
+
+**Bunny CDN Details:**
+- CDN URL: `https://joonseo-videos.b-cdn.net`
+- Storage Zone: `joonseo`
+- Storage Hostname: `sg.storage.bunnycdn.com`
+- Storage Password: `1e3cbf6e-2794-4ad8-8c1e20e72aaa-8f1b-4acf`
+- API Key: `b461e284-681a-465a-a587-8526584b80a62ad794b7-1140-4eec-87e5-93f51adea239`
+
+**Upload via curl (use Storage Password as AccessKey):**
+```bash
+# Upload Premium video
+curl -X PUT "https://sg.storage.bunnycdn.com/joonseo/premium/Name_Premium.mp4" \
+  -H "AccessKey: 1e3cbf6e-2794-4ad8-8c1e20e72aaa-8f1b-4acf" \
+  -H "Content-Type: video/mp4" \
+  --data-binary @"public/videos/compressed/premium/Name_Premium.mp4"
+
+# Upload Safari video
+curl -X PUT "https://sg.storage.bunnycdn.com/joonseo/safari/Name_Safari.mp4" \
+  -H "AccessKey: 1e3cbf6e-2794-4ad8-8c1e20e72aaa-8f1b-4acf" \
+  -H "Content-Type: video/mp4" \
+  --data-binary @"public/videos/compressed/safari/Name_Safari.mp4"
+```
+
+**After uploading, the CDN URLs will be:**
+- Premium: `https://joonseo-videos.b-cdn.net/premium/Name_Premium.mp4`
+- Safari: `https://joonseo-videos.b-cdn.net/safari/Name_Safari.mp4`
+
+### 6. Update JSON
 **IMPORTANT:** Edit `cms-data/homepage-media.json` (root-level source of truth), NOT `public/cms-data/homepage-media.json`. The Vite build has a `copyCmsData` plugin (`vite.config.js`) that copies from `cms-data/` → `public/cms-data/` at build time, so edits to `public/` get overwritten.
 
-Add entry to `cms-data/homepage-media.json`:
+**For homepage videos** - Add entry to `cms-data/homepage-media.json`:
 ```json
 {
   "id": <next_id>,
   "type": "video",
-  "src": "/videos/compressed/premium/Name_Premium.mp4",
-  "srcSafari": "/videos/compressed/safari/Name_Safari.mp4",
+  "src": "https://joonseo-videos.b-cdn.net/premium/Name_Premium.mp4",
+  "srcSafari": "https://joonseo-videos.b-cdn.net/safari/Name_Safari.mp4",
   "location": "City, Country",
   "coordinates": "XX.XXXX°N, XX.XXXX°E",
   "coordinatesUrl": "https://www.google.com/maps?q=...",
@@ -101,14 +130,27 @@ Add entry to `cms-data/homepage-media.json`:
 }
 ```
 
-**Note:** For Cloudinary-hosted videos (external URLs), no `srcSafari` is needed - the app automatically applies URL transforms for Safari.
+**For About page timeline videos** - Edit `src/components/About/timelineData.js`:
+```javascript
+{
+  id: 'present',
+  year: 'Present',
+  type: 'video',
+  src: 'https://joonseo-videos.b-cdn.net/premium/Name_Premium.mp4',
+  srcSafari: 'https://joonseo-videos.b-cdn.net/safari/Name_Safari.mp4',
+  caption: 'Caption text here',
+  alt: 'Alt text'
+}
+```
 
-### 6. Commit & Deploy
+### 7. Commit & Deploy
 ```bash
-git add public/videos/compressed/*/Name*.mp4 cms-data/homepage-media.json
+git add cms-data/homepage-media.json src/components/About/timelineData.js
 git commit -m "Add Name video"
 git push
 ```
+
+**Note:** Local files in `public/videos/compressed/` are for development only. Production always uses Bunny CDN URLs.
 
 ---
 
