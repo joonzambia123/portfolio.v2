@@ -266,22 +266,6 @@
       "noExposureBoost": true
     },
     {
-      "id": 8,
-      "type": "video",
-      "src": "https://joonseo-videos.b-cdn.net/premium/Okayama_Premium.mp4",
-      "srcSafari": "https://joonseo-videos.b-cdn.net/safari/Okayama_Safari.mp4",
-      "location": "Okayama, Japan",
-      "coordinates": "34.6553°N, 133.9195°E",
-      "coordinatesUrl": "https://www.google.com/maps?q=34.6553,133.9195",
-      "camera": "iPhone 15 Pro",
-      "aperture": "ƒ1.8",
-      "shutter": "1/60s",
-      "iso": "100",
-      "alt": "Video from Okayama, Japan",
-      "fileSize": "",
-      "noExposureBoost": true
-    },
-    {
       "id": 18,
       "type": "video",
       "src": "https://joonseo-videos.b-cdn.net/premium/Jeju2v2_Premium.mp4",
