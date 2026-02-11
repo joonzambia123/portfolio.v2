@@ -1,7 +1,22 @@
 // Vertical timeline with photo above and scrolling text below
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 
 const AUTO_ROTATE_MS = 10000
+
+// Helper to calculate dynamic caption with days ago
+const getDynamicCaption = (caption, recordedDate) => {
+  if (!recordedDate || !caption.includes('{daysAgo}')) return caption
+
+  const recorded = new Date(recordedDate)
+  const today = new Date()
+  recorded.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+
+  const diffTime = today - recorded
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+  return caption.replace('{daysAgo}', diffDays)
+}
 
 const Timeline = ({ milestones, isVisible = false }) => {
   const [activeIndex, setActiveIndex] = useState(0)
@@ -334,7 +349,7 @@ const Timeline = ({ milestones, isVisible = false }) => {
               overflow: 'hidden',
               textOverflow: 'ellipsis'
             }}>
-              {item.caption}
+              {getDynamicCaption(item.caption, item.recordedDate)}
             </span>
             <span style={{
               color: '#C3C3C3',
