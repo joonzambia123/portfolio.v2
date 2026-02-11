@@ -1152,8 +1152,6 @@ function App() {
     // Don't change if no video data
     if (videoData.length === 0) return;
 
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
     // Calculate next index
     const nextIndex = direction === 'next'
       ? (videoIndex + 1) % videoData.length
@@ -1162,11 +1160,6 @@ function App() {
     // Get video elements
     const currentVideo = videoElementsRef.current[videoIndex];
     const nextVideo = videoElementsRef.current[nextIndex];
-
-    // Check if next video is loaded from blob cache (fully buffered)
-    const nextVideoSrc = getVideoSrc(videoData[nextIndex]);
-    const isBlobCached = videoCacheRef.current.has(nextVideoSrc);
-    const isFullyReady = nextVideo && nextVideo.readyState >= 4 && isBlobCached;
 
     const doSwitch = () => {
       // Now update index - this will swap z-index making next video visible
@@ -1182,66 +1175,44 @@ function App() {
 
     // Prepare and play next video
     if (nextVideo) {
-      // Reset to start
-      nextVideo.currentTime = 0;
+      // IMPORTANT: Hide video first to prevent flicker of old frame
+      nextVideo.style.visibility = 'hidden';
+      nextVideo.style.opacity = '0';
+      nextVideo.pause();
 
-      // Function to make video visible and switch
+      // Function to show video and switch after seek is confirmed
       const showAndSwitch = () => {
         nextVideo.style.visibility = 'visible';
         nextVideo.style.opacity = '1';
+        nextVideo.play().catch(() => {});
         // Use double rAF to ensure the frame is painted before switching
         requestAnimationFrame(() => {
           requestAnimationFrame(doSwitch);
         });
       };
 
-      // If video is fully ready, play and switch immediately
-      if (isFullyReady) {
-        nextVideo.play().catch(() => {});
+      // If already at position 0 and has enough data, show immediately
+      if (nextVideo.currentTime < 0.1 && nextVideo.readyState >= 3) {
         showAndSwitch();
       } else {
-        // Wait for first frame to be ready before showing
-        const onFirstFrame = () => {
-          nextVideo.removeEventListener('playing', onFirstFrame);
-          nextVideo.removeEventListener('timeupdate', onFirstFrame);
-          showAndSwitch();
+        // Seek to start and wait for seeked event before showing
+        const onSeeked = () => {
+          nextVideo.removeEventListener('seeked', onSeeked);
+          // After seek completes, wait one frame to ensure new frame is rendered
+          requestAnimationFrame(showAndSwitch);
         };
 
-        // Keep video hidden while preparing
-        nextVideo.style.visibility = 'hidden';
-        nextVideo.style.opacity = '0';
+        nextVideo.addEventListener('seeked', onSeeked, { once: true });
+        nextVideo.currentTime = 0;
 
-        // Listen for first frame
-        nextVideo.addEventListener('playing', onFirstFrame, { once: true });
-        // Fallback: timeupdate fires when video has rendered a frame
-        nextVideo.addEventListener('timeupdate', onFirstFrame, { once: true });
-
-        // Start playing (will trigger events above)
-        const playPromise = nextVideo.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // If play fails, still try to switch
-            nextVideo.removeEventListener('playing', onFirstFrame);
-            nextVideo.removeEventListener('timeupdate', onFirstFrame);
-            if (isSafari) {
-              setTimeout(() => {
-                nextVideo.play().catch(() => {});
-                showAndSwitch();
-              }, 50);
-            } else {
-              showAndSwitch();
-            }
-          });
-        }
-
-        // Safety timeout: switch anyway after 150ms
+        // Safety timeout in case seeked doesn't fire
         setTimeout(() => {
-          nextVideo.removeEventListener('playing', onFirstFrame);
-          nextVideo.removeEventListener('timeupdate', onFirstFrame);
+          nextVideo.removeEventListener('seeked', onSeeked);
           if (nextVideo.style.visibility === 'hidden') {
+            nextVideo.currentTime = 0; // Force reset again
             showAndSwitch();
           }
-        }, 150);
+        }, 200);
       }
     }
   };
