@@ -49,10 +49,9 @@ export default async function handler() {
   try {
     const weekStart = getWeekStart();
 
-    // Fetch user events with pagination — up to 2 pages (200 events max)
-    // Reduced from 3 pages to minimize API calls
+    // Fetch user events with pagination — up to 3 pages (300 events max)
     const allEvents: GitHubEvent[] = [];
-    for (let page = 1; page <= 2; page++) {
+    for (let page = 1; page <= 3; page++) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -114,8 +113,8 @@ export default async function handler() {
       }));
 
     // Limit compare calls to prevent rate limit issues
-    // Only process the most recent 15 pushes (usually enough for a 2-week summary)
-    const limitedCompareCalls = compareCalls.slice(0, 15);
+    // Process up to 50 pushes (covers most 2-week activity while staying under rate limits)
+    const limitedCompareCalls = compareCalls.slice(0, 50);
 
     // Process all Compare calls in concurrent batches of 5.
     // Each call is per-push so we capture total churn (lines touched),
@@ -177,9 +176,8 @@ export default async function handler() {
         status: 200,
         headers: {
           ...JSON_HEADERS,
-          // Cache for 1 hour, serve stale for up to 4 hours while revalidating
-          // Reduces API calls significantly to avoid rate limits
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=14400",
+          // Cache for 30 min, serve stale for up to 2 hours while revalidating
+          "Cache-Control": "public, max-age=1800, stale-while-revalidate=7200",
         },
       }
     );
