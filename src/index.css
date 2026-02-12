@@ -2453,6 +2453,29 @@ background-color: #E8F6FF;
   animation: clockWeatherCollapse 350ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* Arrow key navigation indicator animation */
+@keyframes arrowKeyAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(8px);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.05) translateY(-2px);
+  }
+  50% {
+    transform: scale(0.98) translateY(0);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+}
+
 /* Clock pill: no hover effects at all - high specificity to override general hover rules */
 .clock-pill,
 .clock-pill:hover,

@@ -562,6 +562,11 @@ function App() {
     navBar: false
   });
   const [showJiggle, setShowJiggle] = useState(false);
+
+  // Arrow key navigation indicator
+  const [arrowKeyIndicator, setArrowKeyIndicator] = useState(null); // 'left' | 'right' | null
+  const arrowKeyTimeoutRef = useRef(null);
+  const changeVideoRef = useRef(null);
   const [hasDiscoveredContent, setHasDiscoveredContent] = useState(false); // Once true, jiggle never triggers again
   const [isHovered, setIsHovered] = useState(false);
   const [mobileMetadataExpanded, setMobileMetadataExpanded] = useState(false); // Mobile: toggle metadata box on tap
@@ -1221,6 +1226,47 @@ function App() {
       document.documentElement.classList.add('safari');
     }
   }, []);
+
+  // Keep changeVideo ref updated to avoid stale closures in keyboard handler
+  useEffect(() => {
+    changeVideoRef.current = changeVideo;
+  });
+
+  // Keyboard navigation for videos (arrow keys)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only on homepage and when not in an input/textarea
+      if (location.pathname !== '/') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        changeVideoRef.current?.('next');
+        playArrow();
+
+        // Show indicator
+        setArrowKeyIndicator('right');
+        if (arrowKeyTimeoutRef.current) clearTimeout(arrowKeyTimeoutRef.current);
+        arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 800);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        changeVideoRef.current?.('prev');
+        playArrow();
+
+        // Show indicator
+        setArrowKeyIndicator('left');
+        if (arrowKeyTimeoutRef.current) clearTimeout(arrowKeyTimeoutRef.current);
+        arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 800);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (arrowKeyTimeoutRef.current) clearTimeout(arrowKeyTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // Track when current video is actually playing (for loading indicator)
   useEffect(() => {
@@ -3079,6 +3125,55 @@ function App() {
         </SlideUpModal>
       </Suspense>
     </div>
+
+    {/* Arrow Key Navigation Indicator */}
+    {arrowKeyIndicator && (
+      <div
+        className="arrow-key-indicator"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
+            background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
+            border: '1px solid rgba(235, 238, 245, 0.85)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 0.5px 0 rgba(255, 255, 255, 0.6), inset 0 -0.5px 0 rgba(0, 0, 0, 0.015)',
+            animation: 'arrowKeyAppear 0.8s cubic-bezier(0.34, 1.25, 0.64, 1) forwards',
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              transform: arrowKeyIndicator === 'left' ? 'rotate(180deg)' : 'none',
+            }}
+          >
+            <path
+              d="M6 3L11 8L6 13"
+              stroke="#5B5B5E"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+    )}
+
     {import.meta.env.DEV && <Agentation />}
     </>
   )
