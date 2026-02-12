@@ -189,8 +189,8 @@
     {
       "id": 13,
       "type": "video",
-      "src": "https://joonseo-videos.b-cdn.net/premium/Kagoshima_Premium.mp4?v=2",
-      "srcSafari": "https://joonseo-videos.b-cdn.net/safari/Kagoshima_Safari.mp4?v=2",
+      "src": "https://joonseo-videos.b-cdn.net/premium/Kagoshima_Premium.mp4",
+      "srcSafari": "https://joonseo-videos.b-cdn.net/safari/Kagoshima_Safari.mp4",
       "location": "Kagoshima, Japan",
       "coordinates": "31.5966°N, 130.5571°E",
       "coordinatesUrl": "https://www.google.com/maps?q=31.5966,130.5571",
