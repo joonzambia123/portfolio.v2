@@ -172,8 +172,8 @@ export default async function handler() {
         status: 200,
         headers: {
           ...JSON_HEADERS,
-          // Cache for 30 min, serve stale for up to 6 hours while revalidating
-          "Cache-Control": "public, max-age=1800, stale-while-revalidate=21600",
+          // Cache for 5 min, serve stale for up to 30 min while revalidating
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=1800",
         },
       }
     );

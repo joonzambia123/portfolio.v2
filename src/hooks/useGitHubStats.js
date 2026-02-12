@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react';
 
 const CACHE_KEY = 'github-stats-cache';
 
-// Read cached stats from localStorage
+// Max age for localStorage cache (10 minutes)
+const MAX_CACHE_AGE_MS = 10 * 60 * 1000;
+
+// Read cached stats from localStorage (only if not too old)
 function getCachedStats() {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
-    return JSON.parse(cached);
+    const parsed = JSON.parse(cached);
+    // Ignore cache if older than MAX_CACHE_AGE_MS
+    if (parsed.cachedAt && Date.now() - parsed.cachedAt > MAX_CACHE_AGE_MS) {
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -38,7 +46,9 @@ export function useGitHubStats() {
     }
 
     try {
-      const response = await fetch('/.netlify/functions/get-github-stats');
+      // Add cache-busting param to bypass stale edge cache
+      const cacheBuster = Math.floor(Date.now() / 60000); // Changes every minute
+      const response = await fetch(`/.netlify/functions/get-github-stats?_=${cacheBuster}`);
 
       if (!response.ok) {
         throw new Error(`API returned ${response.status}`);
@@ -77,8 +87,8 @@ export function useGitHubStats() {
   useEffect(() => {
     fetchStats();
 
-    // Refresh every 30 minutes (aligned with edge cache TTL)
-    const interval = setInterval(fetchStats, 30 * 60 * 1000);
+    // Refresh every 10 minutes
+    const interval = setInterval(fetchStats, 10 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
