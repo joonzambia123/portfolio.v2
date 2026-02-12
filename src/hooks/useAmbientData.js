@@ -68,18 +68,20 @@ export function useAmbientData({ lat, lng, timezone, enabled }) {
   const [weather, setWeather] = useState(null);
   const [sun, setSun] = useState(null);
   const [moon, setMoon] = useState(null);
-  const weatherCacheRef = useRef({ data: null, timestamp: 0 });
-  const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+  const weatherCacheRef = useRef({ data: null, timestamp: 0, lat: null, lng: null });
+  const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
   // Fetch weather from Open-Meteo (no API key needed)
   useEffect(() => {
     if (!enabled || !lat || !lng) return;
 
     const fetchWeather = async () => {
-      // Check cache
+      // Check cache - must match coordinates and not be too old
       const now = Date.now();
-      if (weatherCacheRef.current.data && now - weatherCacheRef.current.timestamp < CACHE_DURATION) {
-        setWeather(weatherCacheRef.current.data);
+      const cache = weatherCacheRef.current;
+      const sameLocation = cache.lat === lat && cache.lng === lng;
+      if (cache.data && sameLocation && now - cache.timestamp < CACHE_DURATION) {
+        setWeather(cache.data);
         return;
       }
 
@@ -94,7 +96,7 @@ export function useAmbientData({ lat, lng, timezone, enabled }) {
           condition: weatherCodeToText[data.current.weather_code] || 'Clear',
         };
 
-        weatherCacheRef.current = { data: weatherData, timestamp: now };
+        weatherCacheRef.current = { data: weatherData, timestamp: now, lat, lng };
         setWeather(weatherData);
       } catch {
         // Graceful: show nothing rather than error

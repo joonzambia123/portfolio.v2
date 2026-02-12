@@ -2476,9 +2476,14 @@ function App() {
               <div className="hover-trigger w-fit">
               <div
                 ref={clockPillRef}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-default select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
+                  // Pill bounces slightly when collapsing - tiny scale change enables bounce math
+                  transform: isClockHovered ? 'scale(1.008)' : 'scale(1)',
+                  transition: isClockHovered
+                    ? 'transform 480ms cubic-bezier(0.34, 1.25, 0.64, 1)'
+                    : 'transform 500ms cubic-bezier(0.34, 1.25, 0.64, 1)',
                 }}
                 onMouseEnter={() => setIsClockHovered(true)}
                 onMouseLeave={() => setIsClockHovered(false)}
@@ -2513,27 +2518,36 @@ function App() {
                 {/* Weather section - expands on hover with smooth animation */}
                 {ambientWeather && (
                   <div
-                    className="clock-weather-section"
+                    className="clock-weather-section overflow-hidden flex justify-end"
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: isClockHovered ? '1fr' : '0fr',
-                      opacity: isClockHovered ? 1 : 0,
-                      transition: 'grid-template-columns 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease 100ms',
-                      marginLeft: isClockHovered ? '0px' : '-6px',
+                      // Fixed pixel width - collapse to 3px (not 0) to allow bounce undershoot
+                      width: isClockHovered ? '44px' : '3px',
+                      // Constant -6px margin compensates for parent's gap, extra -3px hides the 3px collapsed width
+                      marginLeft: isClockHovered ? '-6px' : '-9px',
+                      // Expand: 480ms with bounce, Collapse: 500ms with bounce
+                      transition: isClockHovered
+                        ? 'width 480ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 480ms cubic-bezier(0.22, 1.4, 0.36, 1)'
+                        : 'width 500ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 500ms cubic-bezier(0.22, 1.4, 0.36, 1)',
                     }}
                   >
-                    <div className="overflow-hidden min-w-0">
-                      <div className="flex gap-[6px] items-center pl-[6px] whitespace-nowrap">
-                        {/* Vertical divider */}
-                        <div
-                          className="h-[17px] w-[1px] shrink-0"
-                          style={{ backgroundColor: '#ebeef5' }}
-                        />
-                        {/* Temperature */}
-                        <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal]">
-                          {ambientWeather.temperature}&#8451;
+                    <div
+                      className="flex items-center whitespace-nowrap"
+                      style={{
+                        opacity: isClockHovered ? 1 : 0,
+                        transition: isClockHovered
+                          ? 'opacity 220ms ease 120ms'
+                          : 'opacity 100ms ease',
+                      }}
+                    >
+                      {/* Vertical divider */}
+                      <div
+                        className="h-[17px] w-[1px] shrink-0"
+                        style={{ backgroundColor: '#ebeef5' }}
+                      />
+                      {/* Temperature */}
+                      <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[6px]">
+                        {ambientWeather.temperature}&#8451;
                         </span>
-                      </div>
                     </div>
                   </div>
                 )}
