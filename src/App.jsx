@@ -2523,21 +2523,17 @@ function App() {
                       transition: isClockHovered
                         ? 'width 480ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 480ms cubic-bezier(0.22, 1.4, 0.36, 1)'
                         : 'width 500ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 500ms cubic-bezier(0.22, 1.4, 0.36, 1)',
-                      // GPU compositing for smooth animation on Safari/mobile
-                      willChange: 'width, margin-left',
                     }}
                   >
                     <div
                       className="flex items-center whitespace-nowrap"
                       style={{
                         opacity: isClockHovered ? 1 : 0,
+                        // visibility:hidden fully removes text from rendering when collapsed
+                        visibility: isClockHovered ? 'visible' : 'hidden',
                         transition: isClockHovered
-                          ? 'opacity 220ms ease 120ms'
-                          : 'opacity 100ms ease',
-                        // GPU compositing prevents text distortion on Safari/mobile during animation
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        transform: 'translateZ(0)',
+                          ? 'opacity 220ms ease 120ms, visibility 0ms ease 0ms'
+                          : 'opacity 100ms ease, visibility 0ms ease 100ms',
                       }}
                     >
                       {/* Vertical divider */}
