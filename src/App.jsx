@@ -564,8 +564,9 @@ function App() {
   const [showJiggle, setShowJiggle] = useState(false);
 
   // Arrow key navigation indicator
-  const [arrowKeyIndicator, setArrowKeyIndicator] = useState(null); // 'left' | 'right' | null
+  const [arrowKeyIndicator, setArrowKeyIndicator] = useState(null); // { direction: 'left' | 'right', key: number } | null
   const arrowKeyTimeoutRef = useRef(null);
+  const arrowKeyCounterRef = useRef(0);
   const changeVideoRef = useRef(null);
   const [hasDiscoveredContent, setHasDiscoveredContent] = useState(false); // Once true, jiggle never triggers again
   const [isHovered, setIsHovered] = useState(false);
@@ -1244,19 +1245,21 @@ function App() {
         changeVideoRef.current?.('next');
         playArrow();
 
-        // Show indicator
-        setArrowKeyIndicator('right');
+        // Show indicator with unique key to force re-render
+        arrowKeyCounterRef.current += 1;
+        setArrowKeyIndicator({ direction: 'right', key: arrowKeyCounterRef.current });
         if (arrowKeyTimeoutRef.current) clearTimeout(arrowKeyTimeoutRef.current);
-        arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 800);
+        arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 1000);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         changeVideoRef.current?.('prev');
         playArrow();
 
-        // Show indicator
-        setArrowKeyIndicator('left');
+        // Show indicator with unique key to force re-render
+        arrowKeyCounterRef.current += 1;
+        setArrowKeyIndicator({ direction: 'left', key: arrowKeyCounterRef.current });
         if (arrowKeyTimeoutRef.current) clearTimeout(arrowKeyTimeoutRef.current);
-        arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 800);
+        arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 1000);
       }
     };
 
@@ -3129,6 +3132,7 @@ function App() {
     {/* Arrow Key Navigation Indicator */}
     {arrowKeyIndicator && (
       <div
+        key={arrowKeyIndicator.key}
         className="arrow-key-indicator"
         style={{
           position: 'fixed',
@@ -3149,7 +3153,7 @@ function App() {
             background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%)',
             border: '1px solid rgba(235, 238, 245, 0.85)',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 0.5px 0 rgba(255, 255, 255, 0.6), inset 0 -0.5px 0 rgba(0, 0, 0, 0.015)',
-            animation: 'arrowKeyAppear 0.8s cubic-bezier(0.34, 1.25, 0.64, 1) forwards',
+            animation: 'arrowKeyAppear 1s cubic-bezier(0.34, 1.25, 0.64, 1) forwards',
           }}
         >
           <svg
@@ -3159,7 +3163,7 @@ function App() {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             style={{
-              transform: arrowKeyIndicator === 'left' ? 'rotate(180deg)' : 'none',
+              transform: arrowKeyIndicator.direction === 'left' ? 'rotate(180deg)' : 'none',
             }}
           >
             <path

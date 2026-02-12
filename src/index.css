@@ -2453,26 +2453,31 @@ background-color: #E8F6FF;
   animation: clockWeatherCollapse 350ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Arrow key navigation indicator animation */
+/* Arrow key navigation indicator animation - 1s total */
 @keyframes arrowKeyAppear {
   0% {
     opacity: 0;
-    transform: scale(0.8) translateY(8px);
+    transform: scale(0.85);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(0.98);
   }
   30% {
     opacity: 1;
-    transform: scale(1.05) translateY(-2px);
-  }
-  50% {
-    transform: scale(0.98) translateY(0);
+    transform: scale(1);
   }
   70% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: scale(0.95) translateY(4px);
+    transform: scale(0.96);
   }
 }
 
