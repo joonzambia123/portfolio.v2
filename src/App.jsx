@@ -2473,13 +2473,12 @@ function App() {
               className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded from-left' : 'component-hidden from-left'}`}
             >
               {/* Clock Pill with hover expansion */}
+              <div className="hover-trigger w-fit">
               <div
                 ref={clockPillRef}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pb-[10px] pl-[8px] rounded-[20px] select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-default select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
-                  paddingRight: isClockHovered && ambientWeather ? '10px' : '10px',
-                  transition: 'padding 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
                 onMouseEnter={() => setIsClockHovered(true)}
                 onMouseLeave={() => setIsClockHovered(false)}
@@ -2511,29 +2510,34 @@ function App() {
                     <p className="leading-[normal]">{getCopy('clock_location')}</p>
                   </div>
                 </div>
-                {/* Weather section - expands on hover */}
+                {/* Weather section - expands on hover with smooth animation */}
                 {ambientWeather && (
                   <div
-                    className="flex items-center overflow-hidden"
+                    className="clock-weather-section"
                     style={{
-                      maxWidth: isClockHovered ? '60px' : '0px',
+                      display: 'grid',
+                      gridTemplateColumns: isClockHovered ? '1fr' : '0fr',
                       opacity: isClockHovered ? 1 : 0,
-                      transition: 'max-width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms ease',
+                      transition: 'grid-template-columns 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease 100ms',
+                      marginLeft: isClockHovered ? '0px' : '-6px',
                     }}
                   >
-                    <div className="flex gap-[6px] items-center pl-[6px]">
-                      {/* Vertical divider */}
-                      <div
-                        className="h-[17px] w-[1px] shrink-0"
-                        style={{ backgroundColor: '#ebeef5' }}
-                      />
-                      {/* Temperature */}
-                      <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] whitespace-nowrap">
-                        {ambientWeather.temperature}&#8451;
-                      </span>
+                    <div className="overflow-hidden min-w-0">
+                      <div className="flex gap-[6px] items-center pl-[6px] whitespace-nowrap">
+                        {/* Vertical divider */}
+                        <div
+                          className="h-[17px] w-[1px] shrink-0"
+                          style={{ backgroundColor: '#ebeef5' }}
+                        />
+                        {/* Temperature */}
+                        <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal]">
+                          {ambientWeather.temperature}&#8451;
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
+              </div>
               </div>
             </div>
             <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
