@@ -1235,24 +1235,22 @@ function App() {
       if (location.pathname !== '/') return;
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-      if (e.key === 'ArrowRight') {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
         e.preventDefault();
-        changeVideoRef.current?.('next');
+        e.stopPropagation();
+
+        // Blur any focused element to prevent focus outlines
+        if (document.activeElement && document.activeElement !== document.body) {
+          document.activeElement.blur();
+        }
+
+        const direction = e.key === 'ArrowRight' ? 'next' : 'prev';
+        changeVideoRef.current?.(direction);
         playArrow();
 
         // Show indicator with unique key to force re-render
         arrowKeyCounterRef.current += 1;
-        setArrowKeyIndicator({ direction: 'right', key: arrowKeyCounterRef.current });
-        if (arrowKeyTimeoutRef.current) clearTimeout(arrowKeyTimeoutRef.current);
-        arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 1000);
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        changeVideoRef.current?.('prev');
-        playArrow();
-
-        // Show indicator with unique key to force re-render
-        arrowKeyCounterRef.current += 1;
-        setArrowKeyIndicator({ direction: 'left', key: arrowKeyCounterRef.current });
+        setArrowKeyIndicator({ direction: e.key === 'ArrowRight' ? 'right' : 'left', key: arrowKeyCounterRef.current });
         if (arrowKeyTimeoutRef.current) clearTimeout(arrowKeyTimeoutRef.current);
         arrowKeyTimeoutRef.current = setTimeout(() => setArrowKeyIndicator(null), 1000);
       }
