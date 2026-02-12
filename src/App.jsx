@@ -2546,8 +2546,17 @@ function App() {
                     <circle cx="10" cy="10" r="0.8" fill="#111112"/>
                   </svg>
                 </div>
-                {/* Time and City */}
-                <div className="flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap">
+                {/* Time and City - isolated compositing layer to prevent distortion during weather animation */}
+                <div
+                  className="clock-pill-text flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap"
+                  style={{
+                    // Force separate compositing layer so width animation doesn't affect text
+                    transform: 'translate3d(0,0,0)',
+                    backfaceVisibility: 'hidden',
+                    WebkitFontSmoothing: 'antialiased',
+                    MozOsxFontSmoothing: 'grayscale',
+                  }}
+                >
                   <div className="flex flex-col justify-center text-[#5b5b5e]">
                     <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
                   </div>
@@ -2587,9 +2596,16 @@ function App() {
                         style={{ backgroundColor: '#ebeef5' }}
                       />
                       {/* Temperature */}
-                      <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[6px]">
+                      <span
+                        className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[6px]"
+                        style={{
+                          transform: 'translate3d(0,0,0)',
+                          backfaceVisibility: 'hidden',
+                          WebkitFontSmoothing: 'antialiased',
+                        }}
+                      >
                         {ambientWeather.temperature}&#8451;
-                        </span>
+                      </span>
                     </div>
                   </div>
                 )}
