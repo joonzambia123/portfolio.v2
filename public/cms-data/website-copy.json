@@ -34,13 +34,13 @@
       "id": 6,
       "key": "bio_grants",
       "label": "Bio - Grants",
-      "content": "Through sheer dumb luck, I received grants from the teams at {Neo|https://www.forbes.com/sites/richardnieva/2025/04/16/this-tech-incubator-is-harder-to-get-into-than-harvard/} and {1517 Fund|https://www.bloomberg.com/news/articles/2016-12-01/thiel-s-1517-fund-is-stalking-the-next-zuckerberg}."
+      "content": "Received grants from the teams at {Neo|https://www.forbes.com/sites/richardnieva/2025/04/16/this-tech-incubator-is-harder-to-get-into-than-harvard/} and {1517 Fund|https://www.bloomberg.com/news/articles/2016-12-01/thiel-s-1517-fund-is-stalking-the-next-zuckerberg}, and am a regionally ranked {competitive debater}."
     },
     {
       "id": 7,
       "key": "clock_location",
       "label": "Clock Location",
-      "content": "Kagoshima"
+      "content": "Saigon"
     },
     {
       "id": 9,
