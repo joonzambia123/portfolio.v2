@@ -49,9 +49,10 @@ export default async function handler() {
   try {
     const weekStart = getWeekStart();
 
-    // Fetch user events with pagination — up to 3 pages (300 events max)
+    // Fetch user events with pagination — up to 2 pages (200 events max)
+    // Reduced from 3 pages to minimize API calls
     const allEvents: GitHubEvent[] = [];
-    for (let page = 1; page <= 3; page++) {
+    for (let page = 1; page <= 2; page++) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -112,12 +113,16 @@ export default async function handler() {
         head: e.payload.head!,
       }));
 
-    // Process all Compare calls in concurrent batches of 10.
+    // Limit compare calls to prevent rate limit issues
+    // Only process the most recent 15 pushes (usually enough for a 2-week summary)
+    const limitedCompareCalls = compareCalls.slice(0, 15);
+
+    // Process all Compare calls in concurrent batches of 5.
     // Each call is per-push so we capture total churn (lines touched),
-    // not just net diff. Authenticated rate limit is 5000/hr — safe.
-    const BATCH_SIZE = 10;
-    for (let i = 0; i < compareCalls.length; i += BATCH_SIZE) {
-      const batch = compareCalls.slice(i, i + BATCH_SIZE);
+    // not just net diff.
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < limitedCompareCalls.length; i += BATCH_SIZE) {
+      const batch = limitedCompareCalls.slice(i, i + BATCH_SIZE);
 
       const results = await Promise.allSettled(
         batch.map(async ({ repo, before, head }) => {
@@ -157,7 +162,7 @@ export default async function handler() {
       }
     }
 
-    const isPartial = compareCalls.length > 0 && failedComparisons > compareCalls.length / 2;
+    const isPartial = limitedCompareCalls.length > 0 && failedComparisons > limitedCompareCalls.length / 2;
 
     return new Response(
       JSON.stringify({
@@ -172,8 +177,9 @@ export default async function handler() {
         status: 200,
         headers: {
           ...JSON_HEADERS,
-          // Cache for 5 min, serve stale for up to 30 min while revalidating
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=1800",
+          // Cache for 1 hour, serve stale for up to 4 hours while revalidating
+          // Reduces API calls significantly to avoid rate limits
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=14400",
         },
       }
     );
