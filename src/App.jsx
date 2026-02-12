@@ -2479,11 +2479,6 @@ function App() {
                 className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
-                  // Pill bounces slightly when collapsing - tiny scale change enables bounce math
-                  transform: isClockHovered ? 'scale(1.008)' : 'scale(1)',
-                  transition: isClockHovered
-                    ? 'transform 480ms cubic-bezier(0.34, 1.25, 0.64, 1)'
-                    : 'transform 500ms cubic-bezier(0.34, 1.25, 0.64, 1)',
                 }}
                 onMouseEnter={() => setIsClockHovered(true)}
                 onMouseLeave={() => setIsClockHovered(false)}
@@ -2528,6 +2523,8 @@ function App() {
                       transition: isClockHovered
                         ? 'width 480ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 480ms cubic-bezier(0.22, 1.4, 0.36, 1)'
                         : 'width 500ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 500ms cubic-bezier(0.22, 1.4, 0.36, 1)',
+                      // GPU compositing for smooth animation on Safari/mobile
+                      willChange: 'width, margin-left',
                     }}
                   >
                     <div
@@ -2537,6 +2534,10 @@ function App() {
                         transition: isClockHovered
                           ? 'opacity 220ms ease 120ms'
                           : 'opacity 100ms ease',
+                        // GPU compositing prevents text distortion on Safari/mobile during animation
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'translateZ(0)',
                       }}
                     >
                       {/* Vertical divider */}
