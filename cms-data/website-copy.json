@@ -34,7 +34,7 @@
       "id": 6,
       "key": "bio_grants",
       "label": "Bio - Grants",
-      "content": "Through sheer dumb luck, I was the first Korean to receive grants from the teams at {Neo|https://www.forbes.com/sites/richardnieva/2025/04/16/this-tech-incubator-is-harder-to-get-into-than-harvard/} and {1517 Fund|https://www.bloomberg.com/news/articles/2016-12-01/thiel-s-1517-fund-is-stalking-the-next-zuckerberg}."
+      "content": "Through sheer dumb luck, I received grants from the teams at {Neo|https://www.forbes.com/sites/richardnieva/2025/04/16/this-tech-incubator-is-harder-to-get-into-than-harvard/} and {1517 Fund|https://www.bloomberg.com/news/articles/2016-12-01/thiel-s-1517-fund-is-stalking-the-next-zuckerberg}."
     },
     {
       "id": 7,
@@ -47,6 +47,18 @@
       "key": "",
       "label": "",
       "content": ""
+    },
+    {
+      "id": 10,
+      "key": "clock_nearest_station",
+      "label": "Clock - Nearest Station",
+      "content": "Nakamyo"
+    },
+    {
+      "id": 11,
+      "key": "clock_location_description",
+      "label": "Clock - Location Description",
+      "content": "It's a sleepy little town, many wandering cats, residents growing lemons, rusting abandoned cars. The Kagoshima prefecture is known for being home to Japan's most active volcano, Sakuraijima."
     }
   ]
 }
