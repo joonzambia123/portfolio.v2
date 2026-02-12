@@ -160,14 +160,10 @@ function App() {
   const navigate = useNavigate()
   const [clockTimeString, setClockTimeString] = useState('');
   const [clockTime, setClockTime] = useState({ hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
-  // Clock expand animation state machine: 'collapsed' | 'measuring' | 'expanding' | 'revealing' | 'expanded' | 'closing'
-  const [expandPhase, setExpandPhase] = useState('collapsed');
-  const isClockExpanded = expandPhase !== 'collapsed';
+  // Clock hover state for weather expansion
+  const [isClockHovered, setIsClockHovered] = useState(false);
   const clockCardRef = useRef(null);
-  const clockExpandedRef = useRef(null);
   const clockPillRef = useRef(null);
-  const [pillRect, setPillRect] = useState(null);
-  const [cardTargetSize, setCardTargetSize] = useState({ width: 294, height: 400 });
 
   // Loader state - shows coordinates while videos preload
   const [isLoading, setIsLoading] = useState(true);
@@ -1415,43 +1411,6 @@ function App() {
     timezone: clockTimezone,
     enabled: true,
   });
-  const clockStation = getCopy('clock_nearest_station');
-  const clockDescription = getCopy('clock_location_description');
-  const leafletMapRef = useRef(null);
-  const leafletContainerRef = useRef(null);
-
-  // --- Clock expand/close handlers ---
-  const handleClockExpand = useCallback(() => {
-    if (expandPhase !== 'collapsed') return;
-    const pill = clockPillRef.current;
-    if (!pill) return;
-    const rect = pill.getBoundingClientRect();
-    setPillRect({
-      top: rect.top,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height,
-      centerX: rect.left + rect.width / 2,
-    });
-    setExpandPhase('measuring');
-  }, [expandPhase]);
-
-  const handleClockClose = useCallback(() => {
-    if (expandPhase === 'closing' || expandPhase === 'collapsed') return;
-    setExpandPhase('closing');
-  }, [expandPhase]);
-
-  // Close expanded clock on click outside
-  useEffect(() => {
-    if (!isClockExpanded) return;
-    const handleClickOutside = (e) => {
-      if (clockCardRef.current && clockCardRef.current.contains(e.target)) return;
-      if (clockExpandedRef.current && clockExpandedRef.current.contains(e.target)) return;
-      handleClockClose();
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isClockExpanded, handleClockClose]);
 
   // Close video metadata on tap outside (mobile/tablet)
   useEffect(() => {
@@ -1467,126 +1426,6 @@ function App() {
       document.removeEventListener('touchstart', handleTapOutside);
     };
   }, [mobileMetadataExpanded, isMobileOrTablet]);
-
-  // Close expanded clock on Escape
-  useEffect(() => {
-    if (!isClockExpanded) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') handleClockClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isClockExpanded, handleClockClose]);
-
-  // --- Phase orchestration ---
-  // measuring → expanding: measure the full card height, then start transition
-  useEffect(() => {
-    if (expandPhase !== 'measuring') return;
-    // Wait two frames for the DOM to render the card at auto height
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const card = clockExpandedRef.current;
-        if (!card) return;
-        // Temporarily set to auto to measure natural height
-        const prevHeight = card.style.height;
-        const prevTransition = card.style.transition;
-        card.style.transition = 'none';
-        card.style.height = 'auto';
-        card.style.width = '294px';
-        const measured = card.getBoundingClientRect();
-        setCardTargetSize({ width: 294, height: measured.height });
-        // Reset to pill size so we can animate from it
-        card.style.height = `${pillRect?.height || 35}px`;
-        card.style.width = `${pillRect?.width || 170}px`;
-        card.style.transition = prevTransition;
-        // Force layout
-        card.offsetHeight; // eslint-disable-line no-unused-expressions
-        setExpandPhase('expanding');
-      });
-    });
-  }, [expandPhase, pillRect]);
-
-  // expanding → revealing: wait for CSS transition to finish
-  useEffect(() => {
-    if (expandPhase !== 'expanding') return;
-    const timer = setTimeout(() => {
-      setExpandPhase('revealing');
-    }, 350); // matches CSS transition duration
-    return () => clearTimeout(timer);
-  }, [expandPhase]);
-
-  // revealing → expanded: staggered content reveal, then done
-  useEffect(() => {
-    if (expandPhase !== 'revealing') return;
-    const timer = setTimeout(() => {
-      setExpandPhase('expanded');
-    }, 400); // enough time for staggered content to fade in
-    return () => clearTimeout(timer);
-  }, [expandPhase]);
-
-  // closing → collapsed: wait for exit animation to finish, then clean up and unmount
-  useEffect(() => {
-    if (expandPhase !== 'closing') return;
-    const timer = setTimeout(() => {
-      if (leafletMapRef.current) {
-        leafletMapRef.current.remove();
-        leafletMapRef.current = null;
-      }
-      setExpandPhase('collapsed');
-      setPillRect(null);
-      setCardTargetSize({ width: 294, height: 400 });
-    }, 300); // buffer beyond 250ms CSS exit animation so it fully completes before unmount
-    return () => clearTimeout(timer);
-  }, [expandPhase]);
-
-  // Initialize Leaflet when revealing phase starts
-  useEffect(() => {
-    if (expandPhase !== 'revealing' && expandPhase !== 'expanded') {
-      if (expandPhase === 'collapsed' && leafletMapRef.current) {
-        leafletMapRef.current.remove();
-        leafletMapRef.current = null;
-      }
-      return;
-    }
-
-    // Small delay to ensure container is visible and has dimensions
-    const timer = setTimeout(() => {
-      const container = leafletContainerRef.current;
-      if (!container || leafletMapRef.current) return;
-
-      const map = L.map(container, {
-        center: [clockCoords.lat, clockCoords.lng],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        dragging: true,
-        touchZoom: true,
-        scrollWheelZoom: false,
-        doubleClickZoom: true,
-      });
-
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png', {
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
-
-      const dotIcon = L.divIcon({
-        className: 'ambient-map-marker',
-        iconSize: [8, 8],
-        iconAnchor: [4, 4],
-      });
-      L.marker([clockCoords.lat, clockCoords.lng], { icon: dotIcon, interactive: false }).addTo(map);
-
-      leafletMapRef.current = map;
-
-      requestAnimationFrame(() => {
-        map.invalidateSize();
-        setTimeout(() => map.invalidateSize(), 100);
-      });
-    }, 150);
-
-    return () => clearTimeout(timer);
-  }, [expandPhase, clockCoords.lat, clockCoords.lng]);
 
   // Font loading check - ensure fonts are loaded before loader animation
   useEffect(() => {
@@ -2628,23 +2467,22 @@ function App() {
         <div className="flex gap-[50px] items-start text-left main-content-wrapper">
           {/* Left Column - Text Content (display:contents on mobile for reordering) */}
           <div className="flex flex-col w-[375px] home-left-column">
-            {/* Time Component - Expandable Ambient Context Card */}
+            {/* Time Component - Hover to show weather */}
             <div
               ref={clockCardRef}
               className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded from-left' : 'component-hidden from-left'}`}
             >
-              {/* Original Clock Pill */}
-              <div className="hover-trigger w-fit">
+              {/* Clock Pill with hover expansion */}
               <div
                 ref={clockPillRef}
-                onClick={handleClockExpand}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[40px] items-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
-                  opacity: isClockExpanded && expandPhase !== 'measuring' ? 0 : 1,
-                  pointerEvents: isClockExpanded && expandPhase !== 'measuring' ? 'none' : 'auto',
                 }}
+                onMouseEnter={() => setIsClockHovered(true)}
+                onMouseLeave={() => setIsClockHovered(false)}
               >
+                {/* Clock icon */}
                 <div className="overflow-clip relative shrink-0 size-[20px]">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
                     {Array.from({ length: 60 }).map((_, i) => {
@@ -2662,15 +2500,32 @@ function App() {
                     <circle cx="10" cy="10" r="0.8" fill="#111112"/>
                   </svg>
                 </div>
-                <div className="flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap">
-                  <div className="flex flex-col justify-center text-[#5b5b5e]">
-                    <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
-                  </div>
-                  <div className="flex flex-col justify-center text-[#c3c3c3]">
-                    <p className="leading-[normal]">{getCopy('clock_location')}</p>
+                {/* Time and City */}
+                <div className="flex font-graphik gap-[8px] items-center leading-[0] text-[14px] whitespace-nowrap">
+                  <span className="text-[#5b5b5e] leading-[normal]">{clockTimeString || '2:02 PM'}</span>
+                  <span className="text-[#c3c3c3] leading-[normal]">{getCopy('clock_location')}</span>
+                </div>
+                {/* Weather section - expands on hover */}
+                <div
+                  className="flex items-center overflow-hidden"
+                  style={{
+                    width: isClockHovered && ambientWeather ? 'auto' : '0px',
+                    opacity: isClockHovered && ambientWeather ? 1 : 0,
+                    transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease',
+                  }}
+                >
+                  <div className="flex gap-[6px] items-center pl-[6px]">
+                    {/* Vertical divider */}
+                    <div
+                      className="h-[17px] w-[1px]"
+                      style={{ backgroundColor: '#ebeef5' }}
+                    />
+                    {/* Temperature */}
+                    <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] whitespace-nowrap pr-[2px]">
+                      {ambientWeather?.temperature}&#8451;
+                    </span>
                   </div>
                 </div>
-              </div>
               </div>
             </div>
             <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
@@ -3202,145 +3057,6 @@ function App() {
       </Suspense>
     </div>
     {import.meta.env.DEV && <Agentation />}
-
-    {/* Ambient Context Card - pill expand animation */}
-    {isClockExpanded && pillRect && (
-      <div
-        className={expandPhase !== 'measuring' && expandPhase !== 'closing' ? 'ambient-card-backdrop' : ''}
-        style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999,
-        }}
-        onClick={handleClockClose}
-      >
-        <div
-          ref={clockExpandedRef}
-          className={`font-graphik rounded-[20px] overflow-hidden select-none${expandPhase === 'closing' ? ' ambient-card-exit' : ''}`}
-          style={{
-            position: 'fixed',
-            top: pillRect.top,
-            left: isTabletOrBelow ? pillRect.centerX : pillRect.left,
-            transform: isTabletOrBelow ? 'translateX(-50%)' : 'none',
-            width: expandPhase === 'expanding' || expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing'
-              ? `${cardTargetSize.width}px` : `${pillRect.width}px`,
-            maxWidth: 'calc(100vw - 32px)',
-            height: expandPhase === 'expanding' || expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing'
-              ? `${cardTargetSize.height}px` : `${pillRect.height}px`,
-            background: '#ffffff',
-            border: '1px solid rgba(235, 238, 245, 0.85)',
-            boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
-            opacity: expandPhase === 'measuring' ? 0 : 1,
-            transition: expandPhase === 'measuring' ? 'none'
-              : 'width 300ms cubic-bezier(0.4, 0, 0.2, 1), height 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-            transformOrigin: isTabletOrBelow ? 'top center' : 'top left',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex flex-col">
-            {/* Header: Clock + Time + City — always visible, stays still */}
-            <div
-              onClick={handleClockClose}
-              className="flex gap-[6px] items-center h-[20px] rounded-[8px] w-fit cursor-pointer"
-              style={{
-                transition: 'background 200ms ease',
-                marginTop: '6.5px',
-                marginLeft: '8px',
-                marginRight: '8px',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <div className="overflow-clip relative shrink-0 size-[20px]">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="block max-w-none size-full">
-                  {Array.from({ length: 60 }).map((_, i) => {
-                    const angle = (i * 6 - 90) * (Math.PI / 180);
-                    const isHourMarker = i % 5 === 0;
-                    const outerRadius = 9.5;
-                    const innerRadius = isHourMarker ? 8.5 : 9;
-                    return (
-                      <line key={`em-${i}`} x1={10 + Math.cos(angle) * innerRadius} y1={10 + Math.sin(angle) * innerRadius} x2={10 + Math.cos(angle) * outerRadius} y2={10 + Math.sin(angle) * outerRadius} stroke="#C3C3C3" strokeWidth={isHourMarker ? "0.8" : "0.4"} strokeLinecap="round" />
-                    );
-                  })}
-                  <line x1="10" y1="10" x2="10" y2="6" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5} 10 10)`} />
-                  <line x1="10" y1="10" x2="10" y2="3.5" stroke="#111112" strokeWidth="0.8" strokeLinecap="round" transform={`rotate(${clockTime.minutes * 6 + clockTime.seconds * 0.1} 10 10)`} />
-                  <line x1="10" y1="10" x2="10" y2="2.5" stroke="#FF0000" strokeWidth="0.6" strokeLinecap="round" transform={`rotate(${(clockTime.seconds + clockTime.milliseconds / 1000) * 6} 10 10)`} />
-                  <circle cx="10" cy="10" r="0.8" fill="#111112"/>
-                </svg>
-              </div>
-              <div className="flex gap-[8px] items-center leading-[0] text-[14px] whitespace-nowrap">
-                <span className="text-[#5b5b5e] leading-[normal]">{clockTimeString || '2:02 PM'}</span>
-                <span className="text-[#c3c3c3] leading-[normal]">{getCopy('clock_location')}</span>
-              </div>
-            </div>
-
-            {/* Expanded content — revealed sequentially after pill finishes expanding */}
-            <div style={{
-              opacity: expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing' ? 1 : 0,
-              transition: 'opacity 250ms ease',
-              pointerEvents: expandPhase === 'revealing' || expandPhase === 'expanded' ? 'auto' : 'none',
-            }}>
-              {/* Divider */}
-              <div
-                className="h-[1px] w-full mt-[10px]"
-                style={{
-                  background: '#ebeef5',
-                  opacity: expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing' ? 1 : 0,
-                  transition: 'opacity 200ms ease',
-                }}
-              />
-
-              {/* Interactive Map */}
-              <div
-                className="mx-[15px] mt-[12px]"
-                style={{
-                  opacity: expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing' ? 1 : 0,
-                  transform: expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing' ? 'translateY(0)' : 'translateY(6px)',
-                  transition: 'opacity 300ms ease 50ms, transform 300ms ease 50ms',
-                }}
-              >
-                <div
-                  ref={leafletContainerRef}
-                  className="ambient-map rounded-[10px] overflow-hidden"
-                  style={{
-                    width: '100%',
-                    height: '143px',
-                    border: '1px solid #ebeef5',
-                    background: '#f2f2f2',
-                  }}
-                />
-              </div>
-
-              {/* Description + Last Updated */}
-              <div
-                className="mx-[15px] mt-[12px] mb-[12px] flex flex-col gap-[10px]"
-                style={{
-                  opacity: expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing' ? 1 : 0,
-                  transform: expandPhase === 'revealing' || expandPhase === 'expanded' || expandPhase === 'closing' ? 'translateY(0)' : 'translateY(6px)',
-                  transition: 'opacity 300ms ease 150ms, transform 300ms ease 150ms',
-                }}
-              >
-                <p className="text-[14px] text-[#5b5b5e] leading-[22px]">
-                  {clockStation && (
-                    <>The station closest to me is {clockStation}. </>
-                  )}
-                  {clockDescription && (
-                    <>{clockDescription}</>
-                  )}
-                  {ambientWeather && (
-                    <> It is currently {ambientWeather.temperature}&#8451; here.</>
-                  )}
-                </p>
-
-                <p className="text-[14px] text-[#c3c3c3] leading-[22px]">
-                  Last updated {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, from{' '}
-                  {Math.abs(clockCoords.lat).toFixed(4)}&deg;{clockCoords.lat >= 0 ? 'N' : 'S'},{' '}
-                  {Math.abs(clockCoords.lng).toFixed(4)}&deg;{clockCoords.lng >= 0 ? 'E' : 'W'}.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
     </>
   )
 }
