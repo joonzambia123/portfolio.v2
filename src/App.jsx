@@ -920,14 +920,9 @@ function App() {
                        navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;
     setIsMac(checkIsMac);
   }, []);
-  // Get the appropriate video source - Safari gets smaller optimized files
+  // Get video source - unified premium quality for all browsers
   const getVideoSrc = (video) => {
     if (!video) return '';
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    // Safari: Use smaller Safari-optimized files for faster loading
-    if (isSafari && video.srcSafari) {
-      return video.srcSafari;
-    }
     return video.src;
   };
 
@@ -1580,12 +1575,13 @@ function App() {
     }
 
     // Fallback: mark as ready after timeout (in case fetch is slow)
+    // Increased timeouts for unified premium quality (~4MB files)
     const fallbackTimer = setTimeout(() => {
       if (!firstVideoReadyRef.current) {
         console.log('Video preload timeout - marking as ready');
         firstVideoReadyRef.current = true;
       }
-    }, isSafari ? 10000 : 8000);
+    }, isSafari ? 12000 : 10000);
 
     return () => {
       clearTimeout(fallbackTimer);
@@ -1818,8 +1814,8 @@ function App() {
       if (!isMounted) return;
 
       // Set minimum loader time to allow videos to fully decode frames
-      // Safari: 6 seconds, Chrome: 5 seconds (gives warmup time to decode all videos)
-      const minTime = isSafari ? 4000 : 3000;
+      // Increased for unified premium quality (~4MB files): Safari 5s, Chrome 4s
+      const minTime = isSafari ? 5000 : 4000;
       minTimeTimer = setTimeout(() => {
         if (isMounted) {
           loaderMinTimeRef.current = true;
@@ -1921,8 +1917,8 @@ function App() {
       const lastFmReady = !musicLoading || isDataComplete;
       const firstVideoReady = firstVideoReadyRef.current;
 
-      // Require 80% of videos preloaded
-      const minCached = Math.ceil(videoData.length * 0.8);
+      // Require 60% of videos preloaded (reduced from 80% for larger premium files)
+      const minCached = Math.ceil(videoData.length * 0.6);
       const cacheReady = warmupCompleteRef.current || warmupCountRef.current >= minCached;
 
       // Exit loader once first video ready and enough cached
@@ -1932,8 +1928,8 @@ function App() {
       }
     }, 100);
 
-    // Maximum loader time
-    const maxTime = isSafari ? 8000 : 6000;
+    // Maximum loader time - increased for unified premium quality (~4MB files)
+    const maxTime = isSafari ? 10000 : 8000;
     const maxTimer = setTimeout(() => {
       console.log(`Loader timeout: ${warmupCountRef.current}/${videoData.length} videos decoded`);
       setIsLoading(false);
@@ -2066,7 +2062,8 @@ function App() {
                 videoEl.src = blobUrl;
                 videoEl.load();
                 // Warm up the video after blob loads for instant switching
-                setTimeout(() => warmUpAdjacentVideo(videoEl), 200);
+                // Increased delay for larger premium files
+                setTimeout(() => warmUpAdjacentVideo(videoEl), 300);
               }
             }
           }).catch(() => {});
@@ -2118,6 +2115,7 @@ function App() {
         });
 
         // Safari: Preload all other videos for instant switching
+        // Increased stagger from 200ms to 300ms for larger premium files
         if (isSafari) {
           videoData.forEach((video, idx) => {
             if (idx === 0) return;
@@ -2127,7 +2125,7 @@ function App() {
                 videoEl.preload = 'auto';
                 videoEl.load();
               }
-            }, idx * 200);
+            }, idx * 300);
           });
         }
       });
