@@ -2475,9 +2475,11 @@ function App() {
               {/* Clock Pill with hover expansion */}
               <div
                 ref={clockPillRef}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[40px] items-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pb-[10px] pl-[8px] rounded-[20px] select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
+                  paddingRight: isClockHovered && ambientWeather ? '10px' : '10px',
+                  transition: 'padding 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
                 onMouseEnter={() => setIsClockHovered(true)}
                 onMouseLeave={() => setIsClockHovered(false)}
@@ -2501,31 +2503,37 @@ function App() {
                   </svg>
                 </div>
                 {/* Time and City */}
-                <div className="flex font-graphik gap-[8px] items-center leading-[0] text-[14px] whitespace-nowrap">
-                  <span className="text-[#5b5b5e] leading-[normal]">{clockTimeString || '2:02 PM'}</span>
-                  <span className="text-[#c3c3c3] leading-[normal]">{getCopy('clock_location')}</span>
-                </div>
-                {/* Weather section - expands on hover */}
-                <div
-                  className="flex items-center overflow-hidden"
-                  style={{
-                    width: isClockHovered && ambientWeather ? 'auto' : '0px',
-                    opacity: isClockHovered && ambientWeather ? 1 : 0,
-                    transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease',
-                  }}
-                >
-                  <div className="flex gap-[6px] items-center pl-[6px]">
-                    {/* Vertical divider */}
-                    <div
-                      className="h-[17px] w-[1px]"
-                      style={{ backgroundColor: '#ebeef5' }}
-                    />
-                    {/* Temperature */}
-                    <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] whitespace-nowrap pr-[2px]">
-                      {ambientWeather?.temperature}&#8451;
-                    </span>
+                <div className="flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap">
+                  <div className="flex flex-col justify-center text-[#5b5b5e]">
+                    <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
+                  </div>
+                  <div className="flex flex-col justify-center text-[#c3c3c3]">
+                    <p className="leading-[normal]">{getCopy('clock_location')}</p>
                   </div>
                 </div>
+                {/* Weather section - expands on hover */}
+                {ambientWeather && (
+                  <div
+                    className="flex items-center overflow-hidden"
+                    style={{
+                      maxWidth: isClockHovered ? '60px' : '0px',
+                      opacity: isClockHovered ? 1 : 0,
+                      transition: 'max-width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms ease',
+                    }}
+                  >
+                    <div className="flex gap-[6px] items-center pl-[6px]">
+                      {/* Vertical divider */}
+                      <div
+                        className="h-[17px] w-[1px] shrink-0"
+                        style={{ backgroundColor: '#ebeef5' }}
+                      />
+                      {/* Temperature */}
+                      <span className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] whitespace-nowrap">
+                        {ambientWeather.temperature}&#8451;
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
