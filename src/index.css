@@ -256,11 +256,6 @@
   vertical-align: baseline;
 }
 
-/* Safari-specific fix: nudge black-box text up to compensate for Safari text metrics */
-.safari .black-box-slide .black-box-text {
-  transform: translateY(-1px);
-}
-
 /* Text selection/highlight colors */
 ::selection {
 background-color: #E8F6FF;

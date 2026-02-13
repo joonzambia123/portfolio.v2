@@ -2550,9 +2550,9 @@ function App() {
                 <div
                   className="clock-pill-text flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap"
                   style={{
-                    // Force separate compositing layer so width animation doesn't affect text
-                    transform: 'translate3d(0,0,0)',
-                    backfaceVisibility: 'hidden',
+                    // Create compositing layer without transform (avoids Safari 1px offset)
+                    willChange: 'opacity',
+                    isolation: 'isolate',
                     WebkitFontSmoothing: 'antialiased',
                     MozOsxFontSmoothing: 'grayscale',
                   }}
@@ -2599,8 +2599,6 @@ function App() {
                       <span
                         className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[6px]"
                         style={{
-                          transform: 'translate3d(0,0,0)',
-                          backfaceVisibility: 'hidden',
                           WebkitFontSmoothing: 'antialiased',
                         }}
                       >
