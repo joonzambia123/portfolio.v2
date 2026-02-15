@@ -2603,7 +2603,7 @@ function App() {
                     className="clock-weather-section overflow-hidden flex justify-end"
                     style={{
                       // Fixed pixel width - collapse to 3px (not 0) to allow bounce undershoot
-                      width: isClockHovered ? '52px' : '3px',
+                      width: isClockHovered ? '48px' : '3px',
                       // Constant -8px margin fully compensates for parent's gap, extra -3px hides the 3px collapsed width
                       marginLeft: isClockHovered ? '-8px' : '-11px',
                       // Expand: 480ms with bounce, Collapse: 500ms with bounce
@@ -2625,12 +2625,12 @@ function App() {
                     >
                       {/* Vertical divider */}
                       <div
-                        className="h-[17px] w-[1px] shrink-0 ml-[8px]"
+                        className="h-[17px] w-[1px] shrink-0 ml-[6px]"
                         style={{ backgroundColor: '#ebeef5' }}
                       />
                       {/* Temperature */}
                       <span
-                        className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[8px]"
+                        className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[6px]"
                         style={{
                           WebkitFontSmoothing: 'antialiased',
                         }}
