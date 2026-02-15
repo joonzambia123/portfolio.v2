@@ -23,8 +23,9 @@ const preloadModalComponents = () => {
 };
 
 // Marquee text component - circular scroll (one loop) with subtle fade hint
-// delay prop adds additional wait time before first scroll (for staggering multiple marquees)
-const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
+// waitForSignal: if true, waits for onStartSignal to be called before scrolling
+// onScrollComplete: callback fired when scroll animation finishes (for coordinating multiple marquees)
+const MarqueeText = ({ children, className, style, maxWidth, delay = 0, waitForSignal = false, signalReady = false, onScrollComplete }) => {
   const containerRef = useRef(null);
   const textRef = useRef(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -32,6 +33,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
   const [textWidth, setTextWidth] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
   const animationRef = useRef(null);
+  const hasCalledCompleteRef = useRef(false);
 
   const GAP = 50; // Gap between text instances
   const SCROLL_SPEED = 35; // Uniform scroll speed in pixels per second
@@ -52,13 +54,26 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
     return () => clearTimeout(timeout);
   }, [children, maxWidth]);
 
-  // Circular scroll: wait 8s initially (+ delay), scroll at uniform speed, then wait 16s AFTER animation ends, repeat
+  // Circular scroll animation
   useEffect(() => {
-    if (!isOverflowing || !textWidth) {
+    // If waiting for signal and signal not ready, don't start
+    if (waitForSignal && !signalReady) {
       setScrollOffset(0);
+      setIsScrolling(false);
       return;
     }
 
+    if (!isOverflowing || !textWidth) {
+      setScrollOffset(0);
+      // If not overflowing, signal completion immediately so dependent marquees can start
+      if (onScrollComplete && !hasCalledCompleteRef.current) {
+        hasCalledCompleteRef.current = true;
+        setTimeout(() => onScrollComplete(), 8000 + delay); // Still respect the initial wait
+      }
+      return;
+    }
+
+    hasCalledCompleteRef.current = false;
     const loopDistance = textWidth + GAP; // One full loop
     const scrollDuration = (loopDistance / SCROLL_SPEED) * 1000; // Duration based on uniform speed
     const initialWait = 8000 + delay; // First scroll after 8 seconds + any additional delay
@@ -66,6 +81,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
     const cycleTime = scrollDuration + pauseAfterScroll; // Total cycle
 
     let startTime = null;
+    let hasSignaledThisCycle = false;
 
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
@@ -84,6 +100,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
         const afterFirst = totalElapsed - initialWait - scrollDuration;
         cycleElapsed = afterFirst % cycleTime;
         currentWait = pauseAfterScroll; // Wait time AFTER scroll completes
+        hasSignaledThisCycle = false; // Reset for new cycle
       }
 
       if (cycleElapsed < currentWait) {
@@ -96,9 +113,13 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
         const scrollProgress = (cycleElapsed - currentWait) / scrollDuration;
         setScrollOffset(-loopDistance * scrollProgress);
       } else {
-        // Completed loop
+        // Completed loop - signal completion
         setScrollOffset(0);
         setIsScrolling(false);
+        if (onScrollComplete && !hasSignaledThisCycle) {
+          hasSignaledThisCycle = true;
+          onScrollComplete();
+        }
       }
 
       animationRef.current = requestAnimationFrame(animate);
@@ -111,7 +132,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0 }) => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isOverflowing, textWidth, delay]);
+  }, [isOverflowing, textWidth, delay, waitForSignal, signalReady, onScrollComplete]);
 
   return (
     <div
@@ -575,6 +596,7 @@ function App() {
   // Check if device is mobile/tablet
   const isMobileOrTablet = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const [isMusicHovered, setIsMusicHovered] = useState(false);
+  const [artistMarqueeReady, setArtistMarqueeReady] = useState(false); // Signal for artist marquee to start after song title
   const [isModalExiting, setIsModalExiting] = useState(false);
   const [isShortcutsHovered, setIsShortcutsHovered] = useState(false);
   const [isShortcutsModalExiting, setIsShortcutsModalExiting] = useState(false);
@@ -901,6 +923,11 @@ function App() {
     lastMusicPillWidthRef.current = newWidth;
     return newWidth;
   }, [currentTrack?.name, currentTrack?.artist, isDataComplete]);
+
+  // Reset artist marquee signal when track changes
+  useEffect(() => {
+    setArtistMarqueeReady(false);
+  }, [currentTrack?.name]);
 
   // Cleanup modal timeout on unmount
   useEffect(() => {
@@ -3001,13 +3028,15 @@ function App() {
               <MarqueeText
                 className="text-[#333] leading-[1.2]"
                 maxWidth="calc(var(--music-pill-width, 205px) - 100px)"
+                onScrollComplete={() => setArtistMarqueeReady(true)}
               >
                 {currentTrack?.name || (musicLoading ? 'Loading...' : 'No recent track')}
               </MarqueeText>
               <MarqueeText
                 className="text-[#c3c3c3] leading-[1.2]"
                 maxWidth="calc(var(--music-pill-width, 205px) - 100px)"
-                delay={8000}
+                waitForSignal={true}
+                signalReady={artistMarqueeReady}
               >
                 {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
               </MarqueeText>
