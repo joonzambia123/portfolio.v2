@@ -3007,7 +3007,7 @@ function App() {
               <MarqueeText
                 className="text-[#c3c3c3] leading-[1.2]"
                 maxWidth="calc(var(--music-pill-width, 205px) - 100px)"
-                delay={3000}
+                delay={8000}
               >
                 {currentTrack?.artist || (musicLoading ? '...' : 'Connect Last.fm')}
               </MarqueeText>
