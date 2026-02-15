@@ -34,6 +34,12 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0, waitForS
   const [isScrolling, setIsScrolling] = useState(false);
   const animationRef = useRef(null);
   const hasCalledCompleteRef = useRef(false);
+  const onScrollCompleteRef = useRef(onScrollComplete);
+
+  // Keep ref updated without triggering effect
+  useEffect(() => {
+    onScrollCompleteRef.current = onScrollComplete;
+  }, [onScrollComplete]);
 
   const GAP = 50; // Gap between text instances
   const SCROLL_SPEED = 35; // Uniform scroll speed in pixels per second
@@ -66,9 +72,9 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0, waitForS
     if (!isOverflowing || !textWidth) {
       setScrollOffset(0);
       // If not overflowing, signal completion immediately so dependent marquees can start
-      if (onScrollComplete && !hasCalledCompleteRef.current) {
+      if (onScrollCompleteRef.current && !hasCalledCompleteRef.current) {
         hasCalledCompleteRef.current = true;
-        setTimeout(() => onScrollComplete(), 8000 + delay); // Still respect the initial wait
+        setTimeout(() => onScrollCompleteRef.current?.(), 8000 + delay); // Still respect the initial wait
       }
       return;
     }
@@ -116,9 +122,9 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0, waitForS
         // Completed loop - signal completion
         setScrollOffset(0);
         setIsScrolling(false);
-        if (onScrollComplete && !hasSignaledThisCycle) {
+        if (onScrollCompleteRef.current && !hasSignaledThisCycle) {
           hasSignaledThisCycle = true;
-          onScrollComplete();
+          onScrollCompleteRef.current();
         }
       }
 
@@ -132,7 +138,7 @@ const MarqueeText = ({ children, className, style, maxWidth, delay = 0, waitForS
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isOverflowing, textWidth, delay, waitForSignal, signalReady, onScrollComplete]);
+  }, [isOverflowing, textWidth, delay, waitForSignal, signalReady]);
 
   return (
     <div
