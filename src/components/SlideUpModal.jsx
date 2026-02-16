@@ -697,56 +697,58 @@ export const ContactModalContent = ({ darkMode = false }) => {
       <div className="contact-modal-inner w-[280px] py-[15px] flex flex-col items-center gap-[10px]">
         {contactItems.map((item, index) => (
           <div key={item.title} className="contents">
-            {/* Contact row */}
-            {item.onClick ? (
-              <button
-                onClick={item.onClick}
-                onMouseEnter={handleEmailMouseEnter}
-                onMouseLeave={handleEmailMouseLeave}
-                className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer text-left relative"
-              >
-                {/* Icon box */}
-                <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
-                  <item.Icon hovered={hoveredRow === item.id} />
-                </div>
-                {/* Text content */}
-                <div className="flex flex-col overflow-hidden">
-                  <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
-                    {item.title}
-                  </span>
-                  <span
-                    className="font-graphik text-[14px] leading-[20px] transition-all duration-200 ease-out"
-                    style={{ color: getEmailDescriptionColor() }}
-                  >
-                    {getEmailDescription()}
-                  </span>
-                </div>
-              </button>
-            ) : (
-              <a
-                href={item.href}
-                target={isMobileOrTablet ? "_self" : "_blank"}
-                rel="noopener noreferrer"
-                onClick={() => playClick()}
-                onMouseEnter={() => setHoveredRow(item.id)}
-                onMouseLeave={() => setHoveredRow(null)}
-                className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer"
-              >
-                {/* Icon box */}
-                <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
-                  <item.Icon hovered={hoveredRow === item.id} />
-                </div>
-                {/* Text content */}
-                <div className="flex flex-col">
-                  <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
-                    {item.title}
-                  </span>
-                  <span className="font-graphik text-[14px] leading-[20px] text-[#B7B7B9]">
-                    {item.description}
-                  </span>
-                </div>
-              </a>
-            )}
+            {/* Contact row - wrapped in hover-trigger to prevent flicker */}
+            <div className="hover-trigger w-full">
+              {item.onClick ? (
+                <button
+                  onClick={item.onClick}
+                  onMouseEnter={handleEmailMouseEnter}
+                  onMouseLeave={handleEmailMouseLeave}
+                  className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer text-left relative"
+                >
+                  {/* Icon box */}
+                  <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
+                    <item.Icon hovered={hoveredRow === item.id} />
+                  </div>
+                  {/* Text content */}
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
+                      {item.title}
+                    </span>
+                    <span
+                      className="font-graphik text-[14px] leading-[20px] transition-all duration-200 ease-out"
+                      style={{ color: getEmailDescriptionColor() }}
+                    >
+                      {getEmailDescription()}
+                    </span>
+                  </div>
+                </button>
+              ) : (
+                <a
+                  href={item.href}
+                  target={isMobileOrTablet ? "_self" : "_blank"}
+                  rel="noopener noreferrer"
+                  onClick={() => playClick()}
+                  onMouseEnter={() => setHoveredRow(item.id)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                  className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer"
+                >
+                  {/* Icon box */}
+                  <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
+                    <item.Icon hovered={hoveredRow === item.id} />
+                  </div>
+                  {/* Text content */}
+                  <div className="flex flex-col">
+                    <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
+                      {item.title}
+                    </span>
+                    <span className="font-graphik text-[14px] leading-[20px] text-[#B7B7B9]">
+                      {item.description}
+                    </span>
+                  </div>
+                </a>
+              )}
+            </div>
             {/* Divider (not after last item) */}
             {index < contactItems.length - 1 && (
               <div className="w-full border-t border-dashed border-[#EBEEF5]" />

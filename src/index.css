@@ -1942,7 +1942,8 @@ background-color: #E8F6FF;
   z-index: -1;
 }
 
-.contact-row:hover::after {
+/* Transform applied from static parent to prevent hover flicker */
+.hover-trigger:hover > .contact-row::after {
   background: linear-gradient(180deg, #fafafa 0%, #f7f7f8 100%);
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.05),
@@ -1952,9 +1953,7 @@ background-color: #E8F6FF;
   border: 1px solid rgba(220, 224, 235, 0.9);
 }
 
-/* contact-row has a ::before hitbox extending 8px beyond bounds,
-   so direct :hover transform doesn't flicker */
-.contact-row:hover {
+.hover-trigger:hover > .contact-row {
   transform: translateY(-1px);
 }
 
@@ -1971,7 +1970,7 @@ background-color: #E8F6FF;
 }
 
 /* Hover state for icon box */
-.contact-row:hover .contact-icon-box {
+.hover-trigger:hover > .contact-row .contact-icon-box {
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
