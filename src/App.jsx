@@ -2554,7 +2554,7 @@ function App() {
               <div className="hover-trigger w-fit">
               <div
                 ref={clockPillRef}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[10px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[12px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
                 }}
