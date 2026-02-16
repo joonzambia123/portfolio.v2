@@ -1914,13 +1914,18 @@ background-color: #E8F6FF;
   will-change: transform;
 }
 
-/* Extended hitbox moved to hover-trigger to prevent flicker */
-/* The hover-trigger uses padding + negative margin to extend hit area */
-/* while maintaining layout. This ensures hover state is stable. */
-.hover-trigger:has(.contact-row) {
-  margin: -8px -10px;
-  padding: 8px 10px;
+/* Extended hitbox on contact-row for clickable area */
+.contact-row::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -10px;
+  right: -10px;
+  bottom: -8px;
+  background: transparent;
   border-radius: 14px;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .contact-row::after {
