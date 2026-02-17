@@ -697,15 +697,15 @@ export const ContactModalContent = ({ darkMode = false }) => {
       <div className="contact-modal-inner w-[280px] py-[15px] flex flex-col items-center gap-[10px]">
         {contactItems.map((item, index) => (
           <div key={item.title} className="contents">
-            {/* Contact row - wrapped in hover-trigger to prevent flicker */}
-            <div className="hover-trigger w-full">
-              {item.onClick ? (
-                <button
-                  onClick={item.onClick}
-                  onMouseEnter={handleEmailMouseEnter}
-                  onMouseLeave={handleEmailMouseLeave}
-                  className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer text-left relative"
-                >
+            {/* Contact row - outer stays static with ::before hitbox, inner transforms on hover */}
+            {item.onClick ? (
+              <button
+                onClick={item.onClick}
+                onMouseEnter={handleEmailMouseEnter}
+                onMouseLeave={handleEmailMouseLeave}
+                className="contact-row w-full cursor-pointer text-left relative"
+              >
+                <div className="contact-row-inner w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px]">
                   {/* Icon box */}
                   <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
                     <item.Icon hovered={hoveredRow === item.id} />
@@ -722,17 +722,19 @@ export const ContactModalContent = ({ darkMode = false }) => {
                       {getEmailDescription()}
                     </span>
                   </div>
-                </button>
-              ) : (
-                <a
-                  href={item.href}
-                  target={isMobileOrTablet ? "_self" : "_blank"}
-                  rel="noopener noreferrer"
-                  onClick={() => playClick()}
-                  onMouseEnter={() => setHoveredRow(item.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  className="contact-row w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px] transition-all duration-150 cursor-pointer"
-                >
+                </div>
+              </button>
+            ) : (
+              <a
+                href={item.href}
+                target={isMobileOrTablet ? "_self" : "_blank"}
+                rel="noopener noreferrer"
+                onClick={() => playClick()}
+                onMouseEnter={() => setHoveredRow(item.id)}
+                onMouseLeave={() => setHoveredRow(null)}
+                className="contact-row w-full cursor-pointer relative"
+              >
+                <div className="contact-row-inner w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px]">
                   {/* Icon box */}
                   <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
                     <item.Icon hovered={hoveredRow === item.id} />
@@ -746,9 +748,9 @@ export const ContactModalContent = ({ darkMode = false }) => {
                       {item.description}
                     </span>
                   </div>
-                </a>
-              )}
-            </div>
+                </div>
+              </a>
+            )}
             {/* Divider (not after last item) */}
             {index < contactItems.length - 1 && (
               <div className="w-full border-t border-dashed border-[#EBEEF5]" />
