@@ -108,6 +108,50 @@ box-shadow: 0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02),
 - **Active**: `translateY(0)`, `scale(0.995)`, 50-80ms
 - **Three states required**: default, hover, active
 
+### Anti-Flicker Hover Pattern (Two-Layer Approach)
+
+When an interactive element has an extended hitbox (via `::before`) AND transforms on hover, use this pattern to prevent flicker at edges:
+
+**Problem**: If the element transforms on its own `:hover`, moving the element can cause the mouse to momentarily leave the element, triggering flicker.
+
+**Solution**: Two-layer structure where outer stays static, inner transforms.
+
+```jsx
+{/* Outer element: stays static, has ::before hitbox, is the hover target */}
+<button className="contact-row">
+  {/* Inner element: transforms on hover */}
+  <div className="contact-row-inner">
+    {/* Visual content here */}
+  </div>
+</button>
+```
+
+```css
+/* Outer: static, transparent, extended hitbox */
+.contact-row {
+  background: transparent;
+  position: relative;
+}
+.contact-row::before {
+  content: '';
+  position: absolute;
+  top: -8px; left: -10px; right: -10px; bottom: -8px;
+  pointer-events: auto;
+}
+
+/* Inner: transforms on parent hover */
+.contact-row-inner {
+  transition: transform 200ms cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.contact-row:hover .contact-row-inner {
+  transform: translateY(-1px);
+}
+```
+
+**Key**: `.parent:hover .child` — hover is detected on static parent, transform applied to child. Parent never moves, so hover state is never lost.
+
+**Used in**: Music pill (`music-player-button` + `music-button-inner`), contact rows (`contact-row` + `contact-row-inner`), can be applied to any similar component.
+
 ### Animation Durations
 | Speed | Duration | Usage |
 |-------|----------|-------|
