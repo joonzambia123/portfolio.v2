@@ -30,8 +30,8 @@ const BrushUnderline = ({ isVisible, hasBeenSeen }) => {
       <path
         d="M -1 5 C 6 3.8, 12 3.2, 18 3.5 C 24 2.8, 30 3, 36 3.4 C 42 3.4, 47 3.8, 51 4.2"
         fill="none"
-        stroke="#007AFF"
-        strokeWidth="2.2"
+        stroke="#4A4A4A"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeOpacity="0.75"
@@ -101,8 +101,8 @@ const KoreanNameOverlay = ({ isVisible, hasBeenSeen }) => {
           style={{
             fontFamily: "'Nanum Brush Script', cursive",
             fontSize: '28px',
-            color: '#007AFF',
-            WebkitTextStroke: '0.4px #007AFF',
+            color: '#4A4A4A',
+            WebkitTextStroke: '0.2px #4A4A4A',
             opacity: 0.85,
             clipPath: isRevealed ? 'polygon(0% 0%, 120% 0%, 120% 120%, 0% 120%)' : 'polygon(0% 0%, 0% 0%, 0% 0%, 0% 100%)',
             transition: hasBeenSeen ? 'none' : `clip-path 450ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}`,
@@ -226,7 +226,7 @@ const HandwrittenAnnotation = ({ isVisible, hasBeenSeen }) => {
         {/* Arrowhead — draws first */}
         <path
           d="M 0 0 Q 4 -1, 10 -3"
-          stroke="#007AFF"
+          stroke="#4A4A4A"
           strokeWidth="1.3"
           strokeLinecap="round"
           strokeOpacity="0.7"
@@ -239,7 +239,7 @@ const HandwrittenAnnotation = ({ isVisible, hasBeenSeen }) => {
         />
         <path
           d="M 0 0 Q 2 4, 6 9"
-          stroke="#007AFF"
+          stroke="#4A4A4A"
           strokeWidth="1.3"
           strokeLinecap="round"
           strokeOpacity="0.7"
@@ -253,7 +253,7 @@ const HandwrittenAnnotation = ({ isVisible, hasBeenSeen }) => {
         {/* Main curved line — draws after arrowhead */}
         <path
           d="M 0 0 C 32 8, 55 22, 72 42 C 90 62, 105 85, 125 108 C 138 128, 148 150, 155 175"
-          stroke="#007AFF"
+          stroke="#4A4A4A"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeOpacity="0.7"
@@ -270,7 +270,7 @@ const HandwrittenAnnotation = ({ isVisible, hasBeenSeen }) => {
         style={{
           fontFamily: "'Nanum Brush Script', cursive",
           fontSize: '22px',
-          color: '#007AFF',
+          color: '#4A4A4A',
           lineHeight: '26px',
           marginTop: '-12px',
           marginLeft: '110px',
@@ -291,7 +291,7 @@ const HandwrittenAnnotation = ({ isVisible, hasBeenSeen }) => {
             width="4"
             height="4"
             viewBox="0 0 4 4"
-            fill="#007AFF"
+            fill="#4A4A4A"
             style={{
               display: 'inline-block',
               verticalAlign: 'baseline',
