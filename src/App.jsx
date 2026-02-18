@@ -2386,7 +2386,7 @@ function App() {
               className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
               onClick={playClick}
             >
-              Projects
+              Work
             </button>
             <button
               className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
@@ -2489,7 +2489,7 @@ function App() {
                   className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
                   onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
                 >
-                  Projects
+                  Work
                 </button>
                 <button
                   className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
