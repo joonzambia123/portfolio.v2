@@ -2627,12 +2627,12 @@ function App() {
                     >
                       {/* Vertical divider */}
                       <div
-                        className="h-[17px] w-[1px] shrink-0 ml-[6px]"
+                        className="h-[17px] w-[1px] shrink-0"
                         style={{ backgroundColor: '#ebeef5' }}
                       />
                       {/* Temperature */}
                       <span
-                        className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[6px]"
+                        className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[8px]"
                         style={{
                           WebkitFontSmoothing: 'antialiased',
                         }}
