@@ -9,6 +9,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Agentation } from 'agentation'
 import About from './components/About/About'
+import SoundtrackingPage from './components/SoundtrackingPage'
 
 // Lazy load modal components to defer Framer Motion loading
 const SlideUpModal = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.default })))
@@ -2536,9 +2537,13 @@ function App() {
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#EAEAEA]"></div>
       </div>
 
-      {/* Main Content - Both pages always mounted, toggled via display */}
+      {/* Main Content - All pages always mounted, toggled via display */}
       <div style={{ display: location.pathname === '/about' ? 'block' : 'none' }}>
         <About isVisible={location.pathname === '/about'} />
+      </div>
+
+      <div style={{ display: location.pathname === '/soundtracking' ? 'block' : 'none' }}>
+        <SoundtrackingPage isVisible={location.pathname === '/soundtracking'} />
       </div>
 
       <main id="main-content" className="page-enter w-full min-h-screen items-center justify-center py-[120px] mt-[-10px]" style={{ display: location.pathname === '/' ? 'flex' : 'none' }}>
