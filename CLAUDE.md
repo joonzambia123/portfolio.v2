@@ -20,19 +20,17 @@
 
 ## Video Compression
 
-### Tiers
-| Tier | Suffix | CRF | Audio | Size |
-|------|--------|-----|-------|------|
-| Premium | `_Premium` | 26 | 128k AAC | 4-8MB |
-| Safari | `_Safari` | 28 | 64k AAC | 1-4MB |
+### Settings
+| Setting | Value |
+|---------|-------|
+| Suffix | `_Premium` |
+| CRF | 26 |
+| Audio | None (use `-an` flag) |
+| Size | 2-4MB |
 
-### Commands
+### Command
 ```bash
-# Premium
-ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 26 -preset medium -c:a aac -b:a 128k -movflags +faststart "output_Premium.mp4" -y
-
-# Safari
-ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 28 -preset medium -c:a aac -b:a 64k -movflags +faststart "output_Safari.mp4" -y
+ffmpeg -i "input.mov" -vf "scale=-2:1080" -c:v libx264 -crf 26 -preset medium -an -movflags +faststart "output_Premium.mp4" -y
 ```
 
 ### Bunny CDN Upload
@@ -52,7 +50,7 @@ curl -X POST "https://api.bunny.net/purge?url=https://joonseo-videos.b-cdn.net/p
 Account API Key (for cache purge): `b461e284-681a-465a-a587-8526584b80a62ad794b7-1140-4eec-87e5-93f51adea239`
 
 ### Update JSON
-Edit `cms-data/homepage-media.json` with `src` and `srcSafari` CDN URLs.
+Edit `cms-data/homepage-media.json` with `src` CDN URL.
 
 ---
 
