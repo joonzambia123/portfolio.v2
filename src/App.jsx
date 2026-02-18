@@ -2559,7 +2559,7 @@ function App() {
               <div className="hover-trigger w-fit">
               <div
                 ref={clockPillRef}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center justify-center pt-[10px] pr-[12px] pb-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center px-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
                 }}
@@ -2586,21 +2586,18 @@ function App() {
                 </div>
                 {/* Time and City - isolated compositing layer to prevent distortion during weather animation */}
                 <div
-                  className="clock-pill-text flex font-graphik gap-[8px] items-center justify-center leading-[0] text-[14px] whitespace-nowrap"
+                  className="clock-pill-text flex font-graphik gap-[8px] items-center text-[14px] whitespace-nowrap"
                   style={{
                     // Create compositing layer without transform (avoids Safari 1px offset)
                     willChange: 'opacity',
                     isolation: 'isolate',
                     WebkitFontSmoothing: 'antialiased',
                     MozOsxFontSmoothing: 'grayscale',
+                    lineHeight: '1',
                   }}
                 >
-                  <div className="flex flex-col justify-center text-[#5b5b5e]">
-                    <p className="leading-[normal]">{clockTimeString || '2:02 PM'}</p>
-                  </div>
-                  <div className="flex flex-col justify-center text-[#c3c3c3]">
-                    <p className="leading-[normal]">{getCopy('clock_location')}</p>
-                  </div>
+                  <span className="text-[#5b5b5e]">{clockTimeString || '2:02 PM'}</span>
+                  <span className="text-[#c3c3c3]">{getCopy('clock_location')}</span>
                 </div>
                 {/* Weather section - expands on hover with smooth animation */}
                 {ambientWeather && (
