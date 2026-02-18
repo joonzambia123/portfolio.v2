@@ -40,7 +40,7 @@
       "id": 7,
       "key": "clock_location",
       "label": "Clock Location",
-      "content": "Saigon"
+      "content": "Kagoshima"
     },
     {
       "id": 9,
@@ -52,13 +52,13 @@
       "id": 10,
       "key": "clock_nearest_station",
       "label": "Clock - Nearest Station",
-      "content": "Ben Thanh"
+      "content": "Kagoshima-Chuo"
     },
     {
       "id": 11,
       "key": "clock_location_description",
       "label": "Clock - Location Description",
-      "content": "A city of organized chaos—motorbikes weaving through narrow alleys, street vendors serving pho at dawn, and French colonial architecture mixing with modern high-rises. The former capital of South Vietnam, now officially Ho Chi Minh City."
+      "content": "A city at the southern tip of Kyushu, where the active volcano Sakurajima looms across the bay. Known for its black pork cuisine, sweet potato shochu, and samurai heritage—the birthplace of the Meiji Restoration."
     }
   ]
 }
