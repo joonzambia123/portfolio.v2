@@ -9,6 +9,8 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Agentation } from 'agentation'
 import About from './components/About/About'
+import About2 from './components/About2/About2'
+import About3 from './components/About3/About3'
 import SoundtrackingPage from './components/SoundtrackingPage'
 
 // Lazy load modal components to defer Framer Motion loading
@@ -2539,15 +2541,23 @@ function App() {
 
       {/* Main Content - All pages always mounted, toggled via display */}
       <div style={{ display: location.pathname === '/about' ? 'block' : 'none' }}>
-        <About isVisible={location.pathname === '/about'} />
+        <About3 isVisible={location.pathname === '/about'} />
+      </div>
+
+      <div style={{ display: location.pathname === '/about2' ? 'block' : 'none' }}>
+        <About isVisible={location.pathname === '/about2'} />
+      </div>
+
+      <div style={{ display: location.pathname === '/about3' ? 'block' : 'none' }}>
+        <About2 isVisible={location.pathname === '/about3'} />
       </div>
 
       <div style={{ display: location.pathname === '/soundtracking' ? 'block' : 'none' }}>
         <SoundtrackingPage isVisible={location.pathname === '/soundtracking'} />
       </div>
 
-      <main id="main-content" className="page-enter w-full min-h-screen items-center justify-center py-[120px] mt-[-10px]" style={{ display: location.pathname === '/' ? 'flex' : 'none' }}>
-        <div className="flex gap-[50px] items-start text-left main-content-wrapper">
+      <main id="main-content" className="page-enter w-full min-h-screen items-center justify-center py-[120px] mt-[-18px]" style={{ display: location.pathname === '/' ? 'flex' : 'none' }}>
+        <div className="flex gap-[50px] items-center text-left main-content-wrapper">
           {/* Left Column - Text Content (display:contents on mobile for reordering) */}
           <div className="flex flex-col w-[375px] home-left-column">
             {/* Time Component - Hover to show weather */}
@@ -2648,7 +2658,7 @@ function App() {
             <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
               {getCopy('hero_headline')}
             </h1>
-            <div className={`home-bio font-graphik leading-[25px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+            <div className={`home-bio font-graphik leading-[24px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
               <p className="mb-[10px]">
                 {renderCopy('bio_intro')}
               </p>
@@ -2670,7 +2680,7 @@ function App() {
           {/* Right Column - Video Card */}
             <div
               ref={videoFrameRef}
-              className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? `component-loaded ${isTabletOrBelow ? 'from-left' : 'from-right'}` : `component-hidden ${isTabletOrBelow ? 'from-left' : 'from-right'}`} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
+              className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[24px] ${loadedComponents.videoFrame ? `component-loaded ${isTabletOrBelow ? 'from-left' : 'from-right'}` : `component-hidden ${isTabletOrBelow ? 'from-left' : 'from-right'}`} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
               onMouseEnter={() => {
                 if (isMobileOrTablet) return; // No hover on mobile
                 // Set ref FIRST to prevent race condition with jiggle interval
@@ -2697,18 +2707,15 @@ function App() {
                 }
               }}
             >
-              {/* Loading indicator during video transitions */}
+              {/* Loading overlay during video transitions */}
               {videoLoading && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 rounded-[14px] pointer-events-none">
-                  <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
-                </div>
+                <div className="absolute inset-0 z-50 bg-black/10 rounded-[14px] pointer-events-none" />
               )}
             <div className="absolute inset-0 rounded-[14px] overflow-hidden z-0 bg-[#f5f5f5]">
-              {/* Video loading shimmer - shows while video is loading but loader has finished */}
-              {!currentVideoPlaying && !isLoading && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+              {/* Video loading shimmer - always visible when video isn't actively playing */}
+              {!currentVideoPlaying && (
+                <div className="absolute inset-0 z-30 pointer-events-none">
                   <div className="video-loading-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                  <div className="w-2 h-2 bg-[#999]/60 rounded-full animate-pulse" />
                 </div>
               )}
               {/* Poster background - shows while video loads */}
@@ -2751,6 +2758,7 @@ function App() {
                     onEnded={handleVideoEnded}
                     onError={(e) => handleVideoError(video.id, e.target)}
                     onPlaying={() => { if (isActive) setCurrentVideoPlaying(true); }}
+                    onWaiting={() => { if (isActive) setCurrentVideoPlaying(false); }}
                     onTimeUpdate={isActive ? handleVideoTimeUpdate : undefined}
                   >
                     <source src={encodeVideoSrc(getVideoSrc(video))} type="video/mp4" />
