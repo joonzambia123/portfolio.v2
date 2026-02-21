@@ -2556,8 +2556,8 @@ function App() {
         <SoundtrackingPage isVisible={location.pathname === '/soundtracking'} />
       </div>
 
-      <main id="main-content" className="page-enter w-full min-h-screen items-center justify-center py-[120px] mt-[-18px]" style={{ display: location.pathname === '/' ? 'flex' : 'none' }}>
-        <div className="flex gap-[50px] items-center text-left main-content-wrapper">
+      <main id="main-content" className="page-enter w-full min-h-screen items-center justify-center py-[120px] mt-[-10px]" style={{ display: location.pathname === '/' ? 'flex' : 'none' }}>
+        <div className="flex gap-[50px] items-start text-left main-content-wrapper">
           {/* Left Column - Text Content (display:contents on mobile for reordering) */}
           <div className="flex flex-col w-[375px] home-left-column">
             {/* Time Component - Hover to show weather */}
@@ -2658,7 +2658,7 @@ function App() {
             <h1 className={`home-heading font-calluna font-normal leading-[29px] text-[#333] text-[21px] w-[317px] whitespace-pre-wrap mb-[10px] ${loadedComponents.h1 ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
               {getCopy('hero_headline')}
             </h1>
-            <div className={`home-bio font-graphik leading-[24px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+            <div className={`home-bio font-graphik leading-[25px] text-[#5b5b5e] text-[14px] whitespace-pre-wrap ${loadedComponents.bodyParagraphs ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
               <p className="mb-[10px]">
                 {renderCopy('bio_intro')}
               </p>
@@ -2680,7 +2680,7 @@ function App() {
           {/* Right Column - Video Card */}
             <div
               ref={videoFrameRef}
-              className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[24px] ${loadedComponents.videoFrame ? `component-loaded ${isTabletOrBelow ? 'from-left' : 'from-right'}` : `component-hidden ${isTabletOrBelow ? 'from-left' : 'from-right'}`} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
+              className={`home-video-frame group video-frame-hover flex flex-col h-[470px] items-start justify-end rounded-[14px] w-[346px] relative overflow-visible outline outline-1 outline-black/5 cursor-default -mt-[35px] ${loadedComponents.videoFrame ? `component-loaded ${isTabletOrBelow ? 'from-left' : 'from-right'}` : `component-hidden ${isTabletOrBelow ? 'from-left' : 'from-right'}`} ${isMobileOrTablet && mobileMetadataExpanded ? 'mobile-expanded' : ''}`}
               onMouseEnter={() => {
                 if (isMobileOrTablet) return; // No hover on mobile
                 // Set ref FIRST to prevent race condition with jiggle interval
