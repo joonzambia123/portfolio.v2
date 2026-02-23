@@ -2420,12 +2420,13 @@ function App() {
                 Experience
               </Link>
             ) : (
-              <button
-                className={`nav-text-link font-graphik text-[14px] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px] ${isAboutPanelOpen ? 'text-[#5b5b5e]' : 'text-[#9f9fa3]'}`}
-                onClick={() => { playClick(); setIsAboutPanelOpen(true); }}
+              <Link
+                to="/about"
+                className={`nav-text-link font-graphik text-[14px] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px] ${location.pathname === '/about' ? 'text-[#5b5b5e]' : 'text-[#9f9fa3]'}`}
+                onClick={playClick}
               >
                 Experience
-              </button>
+              </Link>
             )}
             <button
               className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"

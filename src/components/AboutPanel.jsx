@@ -100,8 +100,14 @@ const AboutPanel = ({ isOpen, onClose }) => {
 
         {/* Divider + body content */}
         <div className="flex flex-col gap-[15px] items-center mt-[16px] w-full">
-          {/* Divider - full width */}
-          <div className={`${firstReveal ? 'about-reveal' : ''} w-full h-[1px] bg-[#eaeaea]`} style={firstReveal ? { '--reveal-i': 2 } : undefined} />
+          {/* Divider - full width, subtle skeuomorphic inset */}
+          <div
+            className={`${firstReveal ? 'about-reveal' : ''} w-full h-[2px]`}
+            style={{
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.04), rgba(255,255,255,0.8))',
+              ...(firstReveal ? { '--reveal-i': 2 } : {}),
+            }}
+          />
 
           {/* Text content - 337px wide centered in 385px */}
           <div className="flex flex-col gap-[5px] w-[337px] leading-[25px] text-[14px]">
