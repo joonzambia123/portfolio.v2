@@ -2587,7 +2587,7 @@ function App() {
               <div className="hover-trigger w-fit">
               <div
                 ref={clockPillRef}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center px-[10px] pl-[8px] rounded-[20px] w-fit cursor-pointer select-none"
+                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center pl-[8px] pr-[12px] rounded-[20px] w-fit cursor-pointer select-none"
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
                 }}
@@ -2643,7 +2643,7 @@ function App() {
                     }}
                   >
                     <div
-                      className="flex items-center whitespace-nowrap"
+                      className="flex items-center gap-[8px] whitespace-nowrap"
                       style={{
                         opacity: isClockHovered ? 1 : 0,
                         // visibility:hidden fully removes text from rendering when collapsed
@@ -2660,7 +2660,7 @@ function App() {
                       />
                       {/* Temperature */}
                       <span
-                        className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal] ml-[8px]"
+                        className="font-graphik text-[14px] text-[#5b5b5e] leading-[normal]"
                         style={{
                           WebkitFontSmoothing: 'antialiased',
                         }}
