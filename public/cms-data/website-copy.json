@@ -52,13 +52,13 @@
       "id": 10,
       "key": "clock_nearest_station",
       "label": "Clock - Nearest Station",
-      "content": "Nakamyo"
+      "content": "Kagoshima-Chuo"
     },
     {
       "id": 11,
       "key": "clock_location_description",
       "label": "Clock - Location Description",
-      "content": "It's a sleepy little town, many wandering cats, residents growing lemons, rusting abandoned cars. The Kagoshima prefecture is known for being home to Japan's most active volcano, Sakuraijima."
+      "content": "A city at the southern tip of Kyushu, where the active volcano Sakurajima looms across the bay. Known for its black pork cuisine, sweet potato shochu, and samurai heritage—the birthplace of the Meiji Restoration."
     }
   ]
 }

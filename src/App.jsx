@@ -12,6 +12,7 @@ import About from './components/About/About'
 import About2 from './components/About2/About2'
 import About3 from './components/About3/About3'
 import SoundtrackingPage from './components/SoundtrackingPage'
+import AboutPanel from './components/AboutPanel'
 
 // Lazy load modal components to defer Framer Motion loading
 const SlideUpModal = lazy(() => import('./components/SlideUpModal').then(mod => ({ default: mod.default })))
@@ -251,6 +252,9 @@ function App() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef(null);
+
+  // About panel state (desktop slide-in)
+  const [isAboutPanelOpen, setIsAboutPanelOpen] = useState(false);
 
   // Face emoticon animation state
   const [faceExpression, setFaceExpression] = useState('(=_=)');
@@ -968,13 +972,43 @@ function App() {
     console.warn(`Video ${videoId} failed to load:`, videoElement?.src);
   };
 
+  // Close about panel on route change
+  useEffect(() => {
+    setIsAboutPanelOpen(false);
+  }, [location.pathname]);
+
+  // Pause/resume video when about panel opens/closes
+  useEffect(() => {
+    const currentVideo = videoElementsRef.current[videoIndex];
+    if (!currentVideo) return;
+    if (isAboutPanelOpen) {
+      currentVideo.pause();
+    } else if (location.pathname === '/') {
+      currentVideo.play().catch(() => {});
+    }
+  }, [isAboutPanelOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Keyboard shortcuts: Cmd+K / Ctrl+K and Escape to close modal
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Escape to close about panel
+      if (e.code === 'Escape' && isAboutPanelOpen) {
+        e.preventDefault();
+        setIsAboutPanelOpen(false);
+        return;
+      }
+
       // Escape to close modal
       if (e.code === 'Escape' && activeModal) {
         e.preventDefault();
         setActiveModal(null);
+        return;
+      }
+
+      // Cmd+J / Ctrl+J to open about panel
+      if ((e.metaKey || e.ctrlKey) && e.code === 'KeyJ') {
+        e.preventDefault();
+        setIsAboutPanelOpen(prev => !prev);
         return;
       }
 
@@ -1006,7 +1040,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeModal]);
+  }, [activeModal, isAboutPanelOpen]);
 
   // Handle video ended event - auto-advance to next video
   const handleVideoEnded = (e) => {
@@ -2377,13 +2411,22 @@ function App() {
 
           {/* Center - Navigation Links */}
           <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[20px]" aria-label="Main navigation">
-            <Link
-              to="/about"
-              className={`nav-text-link font-graphik text-[14px] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px] ${location.pathname === '/about' ? 'text-[#5b5b5e]' : 'text-[#9f9fa3]'}`}
-              onClick={playClick}
-            >
-              About
-            </Link>
+            {isTabletOrBelow ? (
+              <Link
+                to="/about"
+                className={`nav-text-link font-graphik text-[14px] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px] ${location.pathname === '/about' ? 'text-[#5b5b5e]' : 'text-[#9f9fa3]'}`}
+                onClick={playClick}
+              >
+                Experience
+              </Link>
+            ) : (
+              <button
+                className={`nav-text-link font-graphik text-[14px] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px] ${isAboutPanelOpen ? 'text-[#5b5b5e]' : 'text-[#9f9fa3]'}`}
+                onClick={() => { playClick(); setIsAboutPanelOpen(true); }}
+              >
+                Experience
+              </button>
+            )}
             <button
               className="nav-text-link font-graphik text-[14px] text-[#9f9fa3] hover:text-[#5b5b5e] transition-colors cursor-pointer px-[8px] py-[12px] -mx-[8px]"
               onClick={playClick}
@@ -2410,47 +2453,22 @@ function App() {
             </button>
           </nav>
 
-          {/* Right - Search Input (hidden on mobile) */}
+          {/* Right - Ask me anything button (hidden on mobile) */}
           {!isTabletOrBelow && (
             <div className="hover-trigger">
-            <div
-              className={`nav-search-button relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between cursor-pointer group transition-all duration-[250ms] ease-[cubic-bezier(0.34,1.2,0.64,1)] ${searchFocused ? 'w-[280px] bg-white border-[#d8d8d8] shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_0.5px_0_rgba(255,255,255,0.6)]' : 'w-[197px] bg-[#f7f7f7] border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.5),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.03),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.02)]'}`}
+            <button
+              className="nav-search-button relative border h-[37px] pl-[10px] pr-[7px] py-[6px] rounded-[8px] flex items-center justify-between cursor-pointer group w-[197px] bg-[#f7f7f7] border-[#eaeaea] shadow-[0_0.5px_1px_rgba(0,0,0,0.03),0_1px_1px_rgba(0,0,0,0.02),inset_0_0.5px_0_rgba(255,255,255,0.5),inset_0_-0.5px_0_rgba(0,0,0,0.015)] hover:bg-[#fcfcfc] hover:border-[#e0e0e0] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.03),inset_0_0.5px_0_rgba(255,255,255,0.6),inset_0_-0.5px_0_rgba(0,0,0,0.02)] transition-all duration-[180ms]"
               onClick={() => {
-                if (!searchFocused) {
-                  playClick();
-                  setSearchFocused(true);
-                  setTimeout(() => searchInputRef.current?.focus(), 10);
-                }
+                playClick();
+                setIsAboutPanelOpen(true);
               }}
-              role="search"
-              aria-label="Search - Ask me anything"
+              aria-label="About - Ask me anything"
             >
-              {searchFocused ? (
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onBlur={() => {
-                    if (!searchQuery) setSearchFocused(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setSearchQuery('');
-                      setSearchFocused(false);
-                    }
-                  }}
-                  placeholder="Ask me anything..."
-                  className="flex-1 bg-transparent font-graphik text-[14px] text-[#333] placeholder-[#8f8f8f] outline-none"
-                  autoFocus
-                />
-              ) : (
-                <span className="font-graphik text-[14px] text-[#8f8f8f] group-hover:text-[#666] whitespace-nowrap transition-colors duration-[180ms]">Ask me anything...</span>
-              )}
-              <span className={`bg-[#eeeeee] border border-[#e0e0e0] shadow-[0_0.5px_1px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.4),inset_0_-0.5px_0_rgba(0,0,0,0.02)] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center transition-all duration-[180ms] flex-shrink-0 ${searchFocused ? '' : 'group-hover:bg-[#e9e9e9] group-hover:border-[#d8d8d8]'}`}>
-                <span className={`font-graphik text-[12px] text-[#888] transition-colors duration-[180ms] ${searchFocused ? '' : 'group-hover:text-[#666]'}`}>⌘J</span>
+              <span className="font-graphik text-[14px] text-[#8f8f8f] group-hover:text-[#666] whitespace-nowrap transition-colors duration-[180ms]">Ask me anything...</span>
+              <span className="bg-[#eeeeee] border border-[#e0e0e0] shadow-[0_0.5px_1px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.4),inset_0_-0.5px_0_rgba(0,0,0,0.02)] h-[25px] w-[29px] rounded-[5px] flex items-center justify-center transition-all duration-[180ms] flex-shrink-0 group-hover:bg-[#e9e9e9] group-hover:border-[#d8d8d8]">
+                <span className="font-graphik text-[12px] text-[#888] transition-colors duration-[180ms] group-hover:text-[#666]">⌘J</span>
               </span>
-            </div>
+            </button>
             </div>
           )}
 
@@ -2485,7 +2503,7 @@ function App() {
                   className={`mobile-nav-link font-graphik text-[15px] py-[12px] px-[12px] rounded-[8px] transition-colors ${location.pathname === '/about' ? 'text-[#333] bg-[#f3f3f3]' : 'text-[#5b5b5e]'}`}
                   onClick={() => { playClick(); setIsMobileMenuOpen(false); }}
                 >
-                  About
+                  Experience
                 </Link>
                 <button
                   className="mobile-nav-link font-graphik text-[15px] text-[#5b5b5e] py-[12px] px-[12px] rounded-[8px] text-left transition-colors"
@@ -3231,6 +3249,11 @@ function App() {
           </svg>
         </div>
       </div>
+    )}
+
+    {/* About Panel (desktop slide-in) */}
+    {!isTabletOrBelow && (
+      <AboutPanel isOpen={isAboutPanelOpen} onClose={() => setIsAboutPanelOpen(false)} />
     )}
 
     {import.meta.env.DEV && <Agentation />}

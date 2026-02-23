@@ -1,8 +1,5 @@
-// About3 - experimental about page based on original About design
-// Removed: handwritten annotation, Korean name pronunciation overlay
+// About3 - mobile about page matching the desktop AboutPanel content
 import { useEffect, useRef, useState } from 'react'
-import Timeline from '../About/Timeline'
-import { timelineData } from '../About/timelineData'
 
 // Brush stroke underline for "Joon"
 const BrushUnderline = ({ isVisible, hasBeenSeen }) => {
@@ -63,14 +60,14 @@ const About3 = ({ isVisible = false }) => {
   // Staggered section reveal
   const [loadedSections, setLoadedSections] = useState({
     header: false,
-    timeline: false,
-    closing: false,
+    body: false,
+    image: false,
   })
 
   useEffect(() => {
     if (!isVisible) {
       if (!hasBeenSeen) {
-        setLoadedSections({ header: false, timeline: false, closing: false })
+        setLoadedSections({ header: false, body: false, image: false })
       }
       return
     }
@@ -79,10 +76,10 @@ const About3 = ({ isVisible = false }) => {
         setLoadedSections(prev => ({ ...prev, header: true }))
       }, 150)
       const t2 = setTimeout(() => {
-        setLoadedSections(prev => ({ ...prev, timeline: true }))
+        setLoadedSections(prev => ({ ...prev, body: true }))
       }, 250)
       const t3 = setTimeout(() => {
-        setLoadedSections(prev => ({ ...prev, closing: true }))
+        setLoadedSections(prev => ({ ...prev, image: true }))
       }, 350)
       return () => {
         clearTimeout(t1)
@@ -94,10 +91,10 @@ const About3 = ({ isVisible = false }) => {
       setLoadedSections(prev => ({ ...prev, header: true }))
     }, 300)
     const t2 = setTimeout(() => {
-      setLoadedSections(prev => ({ ...prev, timeline: true }))
+      setLoadedSections(prev => ({ ...prev, body: true }))
     }, 420)
     const t3 = setTimeout(() => {
-      setLoadedSections(prev => ({ ...prev, closing: true }))
+      setLoadedSections(prev => ({ ...prev, image: true }))
     }, 540)
     return () => {
       clearTimeout(t1)
@@ -108,30 +105,52 @@ const About3 = ({ isVisible = false }) => {
 
   return (
     <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px] max-[813px]:pt-[120px] max-[813px]:pb-[120px]">
-      {/* Centered content container - 403px max, responsive */}
+      {/* Centered content container */}
       <div className="mx-auto flex flex-col items-center w-full max-w-[403px] px-6 desktop:px-0">
 
         {/* Greeting Header */}
-        <header className={`flex flex-col gap-[8px] mb-[20px] w-full max-w-[417px] ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+        <header className={`mb-[20px] w-full ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
-            Greetings tourist, I'm <span className="relative inline-block">Joon<BrushUnderline isVisible={isVisible} hasBeenSeen={hasBeenSeen} /></span>.
+            Greetings tourist, I'm <span className="relative inline-block">Joonseo<BrushUnderline isVisible={isVisible} hasBeenSeen={hasBeenSeen} /></span>.
           </h1>
-          <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
-            I make things for screens and occasionally the real world. When I'm not pushing pixels or arguing with TypeScript, I'm out somewhere with a camera. Most of my work sits at the intersection of design and engineering — the kind of craft where a misaligned pixel can ruin your whole afternoon.
+          <p className="font-calluna text-[21px] text-[#a1a1a1] leading-[29px]">
+            But feel free to call me Joon.
           </p>
         </header>
 
-        {/* Timeline Section - full 403px width, no annotation */}
-        <div className={`relative w-full max-w-[403px] ${loadedSections.timeline ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
-          <Timeline milestones={timelineData} isVisible={isVisible} />
+        {/* Divider */}
+        <div className={`w-full h-[1px] bg-[#eaeaea] mb-[20px] ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`} />
+
+        {/* Body content */}
+        <div className={`w-full ${loadedSections.body ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+          {/* Subheading */}
+          <p className="font-graphik text-[14px] font-medium text-black mb-[5px]">
+            I've had a bit of a nomadic upbringing.
+          </p>
+
+          {/* Body paragraphs */}
+          <div className="flex flex-col gap-[10px]">
+            <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
+              I was born in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.
+            </p>
+            <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
+              Spanish became my primary language, empanadas my religion, and I earned my first unpaid internship as an 8-year-old altar boy at the local church.
+            </p>
+            <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
+              But then, after a few years, I somehow popped over to a British school in Weihai, China, where I wore a blazer and tie every day and developed a dizzying international school accent that I am still not used to myself.
+            </p>
+          </div>
         </div>
 
-        {/* Closing text */}
-        <section className={`mt-[25px] w-full max-w-[417px] ${loadedSections.closing ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
-          <p className="font-graphik text-[14px] text-[#5B5B5E] leading-[25px]">
-            Outside of work, I collect hobbies the way some people collect stamps — earnestly, and with no clear endgame. Some are competitive, some are creative, and some are just an excuse to leave the house before noon.
-          </p>
-        </section>
+        {/* Bottom image */}
+        <div className={`w-full mt-[24px] h-[173px] rounded-[8px] overflow-hidden ${loadedSections.image ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+          <img
+            src="/images/about-panel.jpg"
+            alt="Personal photo"
+            className="w-full h-full object-cover"
+            onError={(e) => { e.target.parentElement.style.display = 'none' }}
+          />
+        </div>
 
       </div>
     </div>
