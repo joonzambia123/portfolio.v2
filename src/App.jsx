@@ -2582,7 +2582,7 @@ function App() {
             {/* Time Component - Hover to show weather */}
             <div
               ref={clockCardRef}
-              className={`home-time-component mb-[15px] ${loadedComponents.timeComponent ? 'component-loaded from-left' : 'component-hidden from-left'}`}
+              className={`home-time-component mb-[12px] ${loadedComponents.timeComponent ? 'component-loaded from-left' : 'component-hidden from-left'}`}
             >
               {/* Clock Pill with hover expansion */}
               <div className="hover-trigger w-fit">

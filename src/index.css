@@ -3093,7 +3093,7 @@ a {
   width: 385px;
   background: #ffffff;
   border-left: 1.5px solid rgba(235, 238, 245, 0.85);
-  border-radius: 14px 0 0 0;
+  border-radius: 0;
   box-shadow: -0.5px 0 2px rgba(0, 0, 0, 0.015), inset 0.5px 0 0 rgba(255, 255, 255, 0.5);
   z-index: 70;
   transform: translateX(100%);
