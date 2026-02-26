@@ -1,5 +1,6 @@
 // About3 - mobile about page matching the desktop AboutPanel content
 import { useEffect, useRef, useState } from 'react'
+import WatercolorFlowers from '../WatercolorFlowers'
 
 // Brush stroke underline for "Joon"
 const BrushUnderline = ({ isVisible, hasBeenSeen }) => {
@@ -47,6 +48,30 @@ const About3 = ({ isVisible = false }) => {
   const hasBeenSeenRef = useRef(false)
   const [hasBeenSeen, setHasBeenSeen] = useState(false)
   const visitedRef = useRef(false)
+  const [decimalAge, setDecimalAge] = useState('')
+
+  useEffect(() => {
+    const update = () => {
+      const birth = new Date('2000-04-21')
+      const years = (Date.now() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+      setDecimalAge(years.toFixed(6))
+    }
+    update()
+    const interval = setInterval(update, 100)
+    return () => clearInterval(interval)
+  }, [])
+
+  const facts = [
+    { label: 'Current city', value: 'Kagoshima' },
+    { label: 'Next city', value: 'Saigon' },
+    { label: 'Favorite song', value: 'Between The Bars' },
+    { label: 'Favorite author', value: 'Kazuo Ishiguro' },
+    { label: 'Fluent in', value: '4 languages' },
+    { label: 'Learning', value: 'Japanese' },
+    { label: 'Military assignment', value: '12th Infantry Division' },
+    { label: 'School', value: 'Yonsei University' },
+    { label: 'LoL rank', value: 'Platinum (KR)' },
+  ]
 
   useEffect(() => {
     if (isVisible) {
@@ -59,6 +84,7 @@ const About3 = ({ isVisible = false }) => {
 
   // Staggered section reveal
   const [loadedSections, setLoadedSections] = useState({
+    flowers: false,
     header: false,
     body: false,
     image: false,
@@ -67,11 +93,14 @@ const About3 = ({ isVisible = false }) => {
   useEffect(() => {
     if (!isVisible) {
       if (!hasBeenSeen) {
-        setLoadedSections({ header: false, body: false, image: false })
+        setLoadedSections({ flowers: false, header: false, body: false, image: false })
       }
       return
     }
     if (hasBeenSeen) {
+      const t0 = setTimeout(() => {
+        setLoadedSections(prev => ({ ...prev, flowers: true }))
+      }, 100)
       const t1 = setTimeout(() => {
         setLoadedSections(prev => ({ ...prev, header: true }))
       }, 150)
@@ -82,11 +111,15 @@ const About3 = ({ isVisible = false }) => {
         setLoadedSections(prev => ({ ...prev, image: true }))
       }, 350)
       return () => {
+        clearTimeout(t0)
         clearTimeout(t1)
         clearTimeout(t2)
         clearTimeout(t3)
       }
     }
+    const t0 = setTimeout(() => {
+      setLoadedSections(prev => ({ ...prev, flowers: true }))
+    }, 200)
     const t1 = setTimeout(() => {
       setLoadedSections(prev => ({ ...prev, header: true }))
     }, 300)
@@ -97,6 +130,7 @@ const About3 = ({ isVisible = false }) => {
       setLoadedSections(prev => ({ ...prev, image: true }))
     }, 540)
     return () => {
+      clearTimeout(t0)
       clearTimeout(t1)
       clearTimeout(t2)
       clearTimeout(t3)
@@ -104,12 +138,23 @@ const About3 = ({ isVisible = false }) => {
   }, [isVisible, hasBeenSeen])
 
   return (
-    <div className="w-full min-h-screen bg-[#FCFCFC] pt-[174px] pb-[200px] max-[813px]:pt-[120px] max-[813px]:pb-[120px]">
-      {/* Centered content container */}
+    <div className="w-full min-h-screen bg-[#FCFCFC] pt-[44px] pb-[200px] max-[813px]:pt-[20px] max-[813px]:pb-[120px]">
+      {/* Header section with flowers */}
       <div className="mx-auto flex flex-col items-center w-full max-w-[403px] px-6 desktop:px-0">
+        {/* Watercolor Flowers */}
+        <div className={`w-full ${loadedSections.flowers ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+          <WatercolorFlowers
+            isVisible={loadedSections.flowers}
+            hasBeenSeen={hasBeenSeen}
+            height={130}
+          />
+        </div>
+
+        {/* Top divider */}
+        <div className={`w-full h-[1px] bg-[#eaeaea] mb-[16px] ${loadedSections.flowers ? 'component-loaded from-left' : 'component-hidden from-left'}`} />
 
         {/* Greeting Header */}
-        <header className={`mb-[20px] w-full ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+        <header className={`w-full ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <h1 className="font-calluna text-[21px] text-[#333] leading-[29px]">
             Greetings tourist, I'm <span className="relative inline-block">Joonseo<BrushUnderline isVisible={isVisible} hasBeenSeen={hasBeenSeen} /></span>.
           </h1>
@@ -117,10 +162,31 @@ const About3 = ({ isVisible = false }) => {
             But feel free to call me Joon.
           </p>
         </header>
+      </div>
 
-        {/* Divider */}
-        <div className={`w-full h-[1px] bg-[#eaeaea] mb-[20px] ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`} />
+      {/* Facts carousel — full-width, right-edge fade */}
+      <div
+        className="w-full overflow-hidden mt-[18px]"
+        style={{
+          maskImage: 'linear-gradient(to right, black 0%, black 72%, rgba(0,0,0,0.4) 88%, rgba(0,0,0,0) 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, black 0%, black 72%, rgba(0,0,0,0.4) 88%, rgba(0,0,0,0) 100%)',
+        }}
+      >
+        <div className="fact-carousel-track gap-[25px] pl-[24px]" style={{ willChange: 'transform' }}>
+          {[...facts, ...facts].map((fact, i) => (
+            <div key={i} className="flex flex-col gap-[6px] shrink-0">
+              <span className="font-graphik text-[14px] leading-[15px] text-[#5b5b5e] whitespace-nowrap">{fact.label}</span>
+              <span className="font-graphik text-[14px] leading-[15px] text-[#c3c3c3] whitespace-nowrap">{fact.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
+      {/* Full-width divider */}
+      <div className={`w-full h-[1px] bg-[#eaeaea] mt-[18px] mb-[20px] ${loadedSections.header ? 'component-loaded from-left' : 'component-hidden from-left'}`} />
+
+      {/* Body + image section */}
+      <div className="mx-auto flex flex-col items-center w-full max-w-[403px] px-6 desktop:px-0">
         {/* Body content */}
         <div className={`w-full ${loadedSections.body ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           {/* Subheading */}
@@ -136,14 +202,11 @@ const About3 = ({ isVisible = false }) => {
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
               Spanish became my primary language, empanadas my religion, and I earned my first unpaid internship as an 8-year-old altar boy at the local church.
             </p>
-            <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
-              But then, after a few years, I somehow popped over to a British school in Weihai, China, where I wore a blazer and tie every day and developed a dizzying international school accent that I am still not used to myself.
-            </p>
           </div>
         </div>
 
         {/* Bottom image */}
-        <div className={`w-full mt-[24px] h-[173px] rounded-[8px] overflow-hidden ${loadedSections.image ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+        <div className={`w-full mt-[24px] h-[240px] rounded-[8px] overflow-hidden ${loadedSections.image ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <img
             src="/images/about-panel.jpg"
             alt="Personal photo"
@@ -152,6 +215,10 @@ const About3 = ({ isVisible = false }) => {
           />
         </div>
 
+        {/* Weihai paragraph — below image */}
+        <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px] mt-[16px]">
+          But then, after a few years, I somehow popped over to a British school in Weihai, China, where I wore a blazer and tie every day and developed a dizzying international school accent that I am still not used to myself.
+        </p>
       </div>
     </div>
   )

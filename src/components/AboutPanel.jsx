@@ -7,6 +7,30 @@ const AboutPanel = ({ isOpen, onClose }) => {
   const hasRevealedRef = useRef(false)
   const [showFlowers, setShowFlowers] = useState(false)
   const [firstReveal, setFirstReveal] = useState(true)
+  const [decimalAge, setDecimalAge] = useState('')
+
+  useEffect(() => {
+    const update = () => {
+      const birth = new Date('2000-04-21')
+      const years = (Date.now() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+      setDecimalAge(years.toFixed(6))
+    }
+    update()
+    const interval = setInterval(update, 100)
+    return () => clearInterval(interval)
+  }, [])
+
+  const facts = [
+    { label: 'Current city', value: 'Kagoshima' },
+    { label: 'Next city', value: 'Saigon' },
+    { label: 'Favorite song', value: 'Between The Bars' },
+    { label: 'Favorite author', value: 'Kazuo Ishiguro' },
+    { label: 'Fluent in', value: '4 languages' },
+    { label: 'Learning', value: 'Japanese' },
+    { label: 'Military assignment', value: '12th Infantry Division' },
+    { label: 'School', value: 'Yonsei University' },
+    { label: 'LoL rank', value: 'Platinum (KR)' },
+  ]
 
   // Track if we've animated before (skip on re-open within same session)
   useEffect(() => {
@@ -98,6 +122,24 @@ const AboutPanel = ({ isOpen, onClose }) => {
           </p>
         </header>
 
+        {/* Facts carousel — full-width, right-edge fade */}
+        <div
+          className="w-full overflow-hidden mt-[18px]"
+          style={{
+            maskImage: 'linear-gradient(to right, black 0%, black 72%, rgba(0,0,0,0.4) 88%, rgba(0,0,0,0) 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, black 0%, black 72%, rgba(0,0,0,0.4) 88%, rgba(0,0,0,0) 100%)',
+          }}
+        >
+          <div className="fact-carousel-track gap-[25px] pl-[24px]" style={{ willChange: 'transform' }}>
+            {[...facts, ...facts].map((fact, i) => (
+              <div key={i} className="flex flex-col gap-[6px] shrink-0">
+                <span className="font-graphik text-[14px] leading-[15px] text-[#5b5b5e] whitespace-nowrap">{fact.label}</span>
+                <span className="font-graphik text-[14px] leading-[15px] text-[#c3c3c3] whitespace-nowrap">{fact.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Divider + body content */}
         <div className="flex flex-col gap-[15px] items-center mt-[16px] w-full">
           {/* Divider - full width, subtle skeuomorphic inset */}
@@ -117,13 +159,12 @@ const AboutPanel = ({ isOpen, onClose }) => {
             <div className="flex flex-col gap-[10px] font-graphik text-[#5b5b5e]">
               <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 4 } : undefined}>I was born in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.</p>
               <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my primary language, empanadas my religion, and I earned my first unpaid internship as an 8-year-old altar boy at the local church.</p>
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 6 } : undefined}>But then, after a few years, I somehow popped over to a British school in Weihai, China, where I wore a blazer and tie every day and developed a dizzying international school accent that I am still not used to myself.</p>
             </div>
           </div>
         </div>
 
         {/* Bottom image */}
-        <div className={`${firstReveal ? 'about-reveal' : ''} w-full h-[173px] overflow-hidden mt-[25px]`} style={firstReveal ? { '--reveal-i': 7 } : undefined}>
+        <div className={`${firstReveal ? 'about-reveal' : ''} w-full h-[240px] overflow-hidden mt-[25px]`} style={firstReveal ? { '--reveal-i': 6 } : undefined}>
           <img
             src="/images/about-panel.jpg"
             alt="Personal photo"
@@ -131,6 +172,11 @@ const AboutPanel = ({ isOpen, onClose }) => {
             onError={(e) => { e.target.parentElement.style.display = 'none' }}
           />
         </div>
+
+        {/* Weihai paragraph — below image */}
+        <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px] px-[24px] mt-[16px]">
+          But then, after a few years, I somehow popped over to a British school in Weihai, China, where I wore a blazer and tie every day and developed a dizzying international school accent that I am still not used to myself.
+        </p>
       </div>
     </>
   )

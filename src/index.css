@@ -2505,6 +2505,14 @@ background-color: #E8F6FF;
   border: 1px solid #ebeef5 !important;
 }
 
+.clock-pill-pressed,
+.clock-pill-pressed:hover {
+  background: #f5f6f8 !important;
+  box-shadow: 0 0.5px 1px rgba(0,0,0,0.02), inset 0 0.5px 1px rgba(0,0,0,0.05) !important;
+  transform: scale(0.982) !important;
+  transition: transform 50ms, box-shadow 50ms, background 50ms !important;
+}
+
 /* Active/pressed state - pushed down, darker, inset - more subtle like bottom buttons */
 [class*="bg-white"][class*="border-[#ebeef5]"][class*="rounded-[20px]"]:active {
   background: linear-gradient(180deg, #f3f3f5 0%, #f7f7f8 100%) !important;
@@ -2639,6 +2647,16 @@ background-color: #E8F6FF;
   to {
     background-position-x: -12px;
   }
+}
+
+@keyframes factScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.fact-carousel-track {
+  display: inline-flex;
+  animation: factScroll 38s linear infinite;
 }
 
 /* Video loading shimmer - subtle sweep animation */

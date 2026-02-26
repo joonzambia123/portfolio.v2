@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
+import { toast, Toaster } from 'sonner'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLastFm } from './hooks/useLastFm'
 import { useGitHubStats } from './hooks/useGitHubStats'
@@ -193,6 +194,7 @@ function App() {
   const [clockTime, setClockTime] = useState({ hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
   // Clock hover state for weather expansion
   const [isClockHovered, setIsClockHovered] = useState(false);
+  const [isClockPressed, setIsClockPressed] = useState(false);
   const clockCardRef = useRef(null);
   const clockPillRef = useRef(null);
 
@@ -854,6 +856,8 @@ function App() {
             (copyJson.value.data || []).forEach(item => {
               copyObj[item.key] = item.content;
             });
+            if (copyJson.value.clock_facts) copyObj.clock_facts = copyJson.value.clock_facts;
+            if (copyJson.value.clock_arrival_date) copyObj.clock_arrival_date = copyJson.value.clock_arrival_date;
             setWebsiteCopy(copyObj);
           }
         }
@@ -1511,6 +1515,24 @@ function App() {
     const interval = setInterval(updateTime, 16);
     return () => clearInterval(interval);
   }, [websiteCopy]); // Re-run when CMS data changes
+
+  // Clock pill click — show random city fact as toast
+  const handleClockClick = useCallback(() => {
+    playClick();
+    const facts = websiteCopy?.clock_facts;
+    if (!facts?.length) return;
+
+    const arrivalDate = websiteCopy?.clock_arrival_date;
+    const daysAgo = arrivalDate
+      ? Math.floor((Date.now() - new Date(arrivalDate).getTime()) / 86400000)
+      : null;
+
+    const processed = facts.map(f =>
+      daysAgo !== null ? f.replace('{days_ago}', daysAgo) : f
+    );
+
+    toast(processed[Math.floor(Math.random() * processed.length)]);
+  }, [websiteCopy, playClick]);
 
   // Ambient data for expanded clock card
   const clockCity = getCopy('clock_location') || 'Saigon';
@@ -2588,12 +2610,15 @@ function App() {
               <div className="hover-trigger w-fit">
               <div
                 ref={clockPillRef}
-                className="clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center pl-[8px] pr-[12px] rounded-[20px] w-fit cursor-pointer select-none"
+                className={`clock-pill bg-white border border-[#ebeef5] flex gap-[6px] h-[35px] items-center pl-[8px] pr-[12px] rounded-[20px] w-fit cursor-pointer select-none${isClockPressed ? ' clock-pill-pressed' : ''}`}
                 style={{
                   boxShadow: '0 0.5px 1px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02), inset 0 0.5px 0 rgba(255,255,255,0.6), inset 0 -0.5px 0 rgba(0,0,0,0.015)',
                 }}
+                onClick={handleClockClick}
+                onMouseDown={() => setIsClockPressed(true)}
+                onMouseUp={() => setIsClockPressed(false)}
                 onMouseEnter={() => setIsClockHovered(true)}
-                onMouseLeave={() => setIsClockHovered(false)}
+                onMouseLeave={() => { setIsClockPressed(false); setIsClockHovered(false); }}
               >
                 {/* Clock icon */}
                 <div className="overflow-clip relative shrink-0 size-[20px]">
@@ -2637,10 +2662,10 @@ function App() {
                       width: isClockHovered ? '48px' : '3px',
                       // Constant -8px margin fully compensates for parent's gap, extra -3px hides the 3px collapsed width
                       marginLeft: isClockHovered ? '-8px' : '-11px',
-                      // Expand: 480ms with bounce, Collapse: 500ms with bounce
+                      // Expand: 480ms with bounce, Collapse: 560ms with bounce
                       transition: isClockHovered
                         ? 'width 480ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 480ms cubic-bezier(0.22, 1.4, 0.36, 1)'
-                        : 'width 500ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 500ms cubic-bezier(0.22, 1.4, 0.36, 1)',
+                        : 'width 560ms cubic-bezier(0.22, 1.4, 0.36, 1), margin-left 560ms cubic-bezier(0.22, 1.4, 0.36, 1)',
                     }}
                   >
                     <div
@@ -2651,7 +2676,7 @@ function App() {
                         visibility: isClockHovered ? 'visible' : 'hidden',
                         transition: isClockHovered
                           ? 'opacity 220ms ease 120ms, visibility 0ms ease 0ms'
-                          : 'opacity 100ms ease, visibility 0ms ease 100ms',
+                          : 'opacity 140ms ease, visibility 0ms ease 140ms',
                       }}
                     >
                       {/* Vertical divider */}
@@ -3257,6 +3282,24 @@ function App() {
       <AboutPanel isOpen={isAboutPanelOpen} onClose={() => setIsAboutPanelOpen(false)} />
     )}
 
+    <Toaster
+      position="bottom-right"
+      toastOptions={{
+        style: {
+          fontFamily: "'Graphik', -apple-system, sans-serif",
+          fontSize: '14px',
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(235,238,245,0.85)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.06), inset 0 0.5px 0 rgba(255,255,255,0.6)',
+          color: '#5b5b5e',
+          borderRadius: '12px',
+          padding: '10px 14px',
+        },
+        duration: 4000,
+      }}
+    />
     {import.meta.env.DEV && <Agentation />}
     </>
   )
