@@ -8,6 +8,7 @@ export function useSounds() {
   const audioContextRef = useRef(null)
   const isEnabledRef = useRef(true)
   const isInitializedRef = useRef(false)
+  const lastPlayRef = useRef(0)
 
   // Initialize audio context on first user interaction
   const initAudio = useCallback(() => {
@@ -53,12 +54,16 @@ export function useSounds() {
   }, [initAudio])
 
   // Get or create audio context
+  // Returns null if the context was just resumed from suspension —
+  // callers should skip the sound to avoid the loud crackling burst
+  // that happens when oscillators are scheduled on a stale currentTime.
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
     }
     if (audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume()
+      return null
     }
     return audioContextRef.current
   }, [])
@@ -79,6 +84,9 @@ export function useSounds() {
    */
   const playClick = useCallback(() => {
     if (!isEnabledRef.current) return
+    const now = performance.now()
+    if (now - lastPlayRef.current < 80) return
+    lastPlayRef.current = now
 
     try {
       const ctx = getAudioContext()
@@ -124,6 +132,9 @@ export function useSounds() {
    */
   const playArrow = useCallback(() => {
     if (!isEnabledRef.current) return
+    const now = performance.now()
+    if (now - lastPlayRef.current < 80) return
+    lastPlayRef.current = now
 
     try {
       const ctx = getAudioContext()
