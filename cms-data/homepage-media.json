@@ -190,6 +190,21 @@
       "fileSize": ""
     },
     {
+      "id": 22,
+      "type": "video",
+      "src": "https://joonseo-videos.b-cdn.net/premium/Lotte_World_Premium.mp4",
+      "location": "Lotte World, Korea",
+      "coordinates": "37.5110°N, 127.0982°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=37.5110,127.0982",
+      "camera": "Miscellaneous Photo Booth",
+      "aperture": "",
+      "shutter": "",
+      "iso": "",
+      "alt": "Lotte World, Korea",
+      "fileSize": "",
+      "noExposureBoost": true
+    },
+    {
       "id": 2,
       "type": "video",
       "src": "https://joonseo-videos.b-cdn.net/premium/Corrour_Premium.mp4",
