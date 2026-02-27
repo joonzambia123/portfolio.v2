@@ -2772,9 +2772,17 @@ function App() {
                   }}
                 />
               )}
-              {/* All videos rendered - active video on top, others hidden */}
+              {/* Only mount active + adjacent videos to prevent Safari layout issues */}
               {safeVideoData.map((video, idx) => {
                 const isActive = idx === videoIndex;
+                const total = safeVideoData.length;
+                const prevIdx = (videoIndex - 1 + total) % total;
+                const nextIdx = (videoIndex + 1) % total;
+                const isNearby = idx === prevIdx || idx === nextIdx;
+                // Only mount active and adjacent videos
+                if (!isActive && !isNearby) {
+                  return null;
+                }
                 return (
                   <video
                     key={video.id || idx}
