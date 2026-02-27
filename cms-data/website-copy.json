@@ -60,5 +60,16 @@
       "label": "Clock - Location Description",
       "content": "A city at the southern tip of Kyushu, where the active volcano Sakurajima looms across the bay. Known for its black pork cuisine, sweet potato shochu, and samurai heritage—the birthplace of the Meiji Restoration."
     }
+  ],
+  "clock_arrival_date": "2026-02-15",
+  "clock_facts": [
+    "I arrived here {days_ago} days ago.",
+    "Kagoshima's population is around 593,000.",
+    "Sakurajima erupts on average 500 times a year.",
+    "Nicknamed the 'Naples of the Eastern World'.",
+    "Birthplace of Japan's Meiji Restoration.",
+    "Locals swear by kurobuta — black Berkshire pork.",
+    "Sweet potato shochu has been distilled here for 500+ years.",
+    "The nearest bullet train station is Kagoshima-Chuo."
   ]
 }
