@@ -627,8 +627,6 @@ background-color: #E8F6FF;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.01) 0%, rgba(0, 0, 0, 0.01) 100%);
   transition: box-shadow 320ms ease-in-out, border-color 320ms ease-in-out;
   position: relative;
-  /* Performance: contain layout to prevent reflows affecting other content */
-  contain: layout style paint;
 }
 
 .video-frame-hover::before {
@@ -2902,8 +2900,7 @@ body {
 }
 
 /* Optimize image rendering */
-img,
-video {
+img {
   image-rendering: -webkit-optimize-contrast;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
