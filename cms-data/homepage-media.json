@@ -234,6 +234,21 @@
       "noExposureBoost": true
     },
     {
+      "id": 23,
+      "type": "video",
+      "src": "https://joonseo-videos.b-cdn.net/premium/Figma_Office_Singapore_Premium.mp4",
+      "location": "Figma Office, Singapore",
+      "coordinates": "1.2836°N, 103.8607°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=1.2836,103.8607",
+      "camera": "Leica Q2",
+      "aperture": "ƒ1.7",
+      "shutter": "1/60s",
+      "iso": "800",
+      "alt": "Figma Office, Singapore",
+      "fileSize": "",
+      "noExposureBoost": false
+    },
+    {
       "id": 13,
       "type": "video",
       "src": "https://joonseo-videos.b-cdn.net/premium/Kumamoto_Premium.mp4",
