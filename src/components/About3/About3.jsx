@@ -227,13 +227,13 @@ const About3 = ({ isVisible = false }) => {
           {/* Body paragraphs */}
           <div className="flex flex-col gap-[10px]">
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
-              I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.
+              I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence, I suddenly found myself on another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.
             </p>
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
-              Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until I boarded yet another plane, this time bound for the province of Shandong, China.
+              Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until a few years later when I boarded yet another plane, this time bound for Weihai, China.
             </p>
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
-              My childhood came under threat once more in another migratory event, this time taking place in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie everyday while munching on latiao.
+              I settled in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie every day while munching on latiao.
             </p>
           </div>
         </div>
@@ -256,10 +256,6 @@ const About3 = ({ isVisible = false }) => {
           />
         </div>
 
-        {/* Placeholder — below image */}
-        <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px] mt-[16px]">
-          My childhood came under threat once more in another migratory event, this time taking place in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie everyday while munching on latiao.
-        </p>
       </div>
     </div>
   )
