@@ -102,6 +102,22 @@
       "noExposureBoost": true
     },
     {
+      "id": 23,
+      "type": "video",
+      "src": "https://joonseo-videos.b-cdn.net/premium/Figma_Office_Singapore_Premium.mp4",
+      "location": "Figma Singapore",
+      "coordinates": "1.2836°N, 103.8607°E",
+      "coordinatesUrl": "https://www.google.com/maps?q=1.2836,103.8607",
+      "camera": "Leica Q2",
+      "aperture": "ƒ1.7",
+      "shutter": "1/60s",
+      "iso": "800",
+      "alt": "Figma Singapore",
+      "fileSize": "",
+      "noExposureBoost": false,
+      "objectPosition": "0% 50%"
+    },
+    {
       "id": 20,
       "type": "video",
       "src": "https://joonseo-videos.b-cdn.net/premium/Guangzhou_Premium.mp4",
@@ -232,22 +248,6 @@
       "alt": "Gangwon, Korea",
       "fileSize": "",
       "noExposureBoost": true
-    },
-    {
-      "id": 23,
-      "type": "video",
-      "src": "https://joonseo-videos.b-cdn.net/premium/Figma_Office_Singapore_Premium.mp4",
-      "location": "Figma Singapore",
-      "coordinates": "1.2836°N, 103.8607°E",
-      "coordinatesUrl": "https://www.google.com/maps?q=1.2836,103.8607",
-      "camera": "Leica Q2",
-      "aperture": "ƒ1.7",
-      "shutter": "1/60s",
-      "iso": "800",
-      "alt": "Figma Singapore",
-      "fileSize": "",
-      "noExposureBoost": false,
-      "objectPosition": "0% 50%"
     },
     {
       "id": 13,
