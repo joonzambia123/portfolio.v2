@@ -188,8 +188,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
             </p>
             <div className="flex flex-col gap-[10px] font-graphik text-[#5b5b5e]">
               <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 4 } : undefined}>I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence, I suddenly found myself on another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.</p>
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until a few years later when I boarded yet another plane, this time bound for Weihai, China.</p>
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 6 } : undefined}>I settled in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie every day while munching on latiao.</p>
+              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until a few years later when I boarded yet another plane, this time bound for Weihai, China, where I settled in the the culturally oxymoronic setting of a British-Korean school, where I wore a blazer and tie every day while munching on latiao.</p>
             </div>
           </div>
         </div>
@@ -198,7 +197,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
         <div
           ref={imageRef}
           className={`${firstReveal ? 'about-reveal' : ''} w-full h-[240px] overflow-hidden mt-[25px]`}
-          style={firstReveal ? { '--reveal-i': 7 } : undefined}
+          style={firstReveal ? { '--reveal-i': 6 } : undefined}
         >
           <img
             src="/images/about-panel.jpg"
@@ -212,6 +211,11 @@ const AboutPanel = ({ isOpen, onClose }) => {
             onError={(e) => { e.target.parentElement.style.display = 'none' }}
           />
         </div>
+
+        {/* Placeholder — below image */}
+        <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px] px-[24px] mt-[16px]">
+          More stories to come. This section is a work in progress.
+        </p>
 
       </div>
     </>
