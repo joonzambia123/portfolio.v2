@@ -48,6 +48,8 @@ const About3 = ({ isVisible = false }) => {
   const hasBeenSeenRef = useRef(false)
   const [hasBeenSeen, setHasBeenSeen] = useState(false)
   const visitedRef = useRef(false)
+  const imageRef = useRef(null)
+  const [imageColorized, setImageColorized] = useState(false)
   const [decimalAge, setDecimalAge] = useState('')
 
   useEffect(() => {
@@ -137,6 +139,33 @@ const About3 = ({ isVisible = false }) => {
     }
   }, [isVisible, hasBeenSeen])
 
+  // Reset colorize when page leaves view
+  useEffect(() => {
+    if (!isVisible) setImageColorized(false)
+  }, [isVisible])
+
+  // Colorize image when fully scrolled into viewport, revert when out
+  useEffect(() => {
+    if (!imageRef.current) return
+    let timer
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        clearTimeout(timer)
+        if (entry.isIntersecting) {
+          timer = setTimeout(() => setImageColorized(true), 250)
+        } else {
+          setImageColorized(false)
+        }
+      },
+      { threshold: 0.85 }
+    )
+    observer.observe(imageRef.current)
+    return () => {
+      observer.disconnect()
+      clearTimeout(timer)
+    }
+  }, [loadedSections.image])
+
   return (
     <div className="w-full min-h-screen bg-[#FCFCFC] pt-[44px] pb-[200px] max-[813px]:pt-[20px] max-[813px]:pb-[120px]">
       {/* Header section with flowers */}
@@ -191,33 +220,44 @@ const About3 = ({ isVisible = false }) => {
         <div className={`w-full ${loadedSections.body ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           {/* Subheading */}
           <p className="font-graphik text-[14px] font-medium text-black mb-[5px]">
-            I've had a bit of a nomadic upbringing.
+            I've had a nomadic upbringing.
           </p>
 
           {/* Body paragraphs */}
           <div className="flex flex-col gap-[10px]">
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
-              I was born in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.
+              I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.
             </p>
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
-              Spanish became my primary language, empanadas my religion, and I earned my first unpaid internship as an 8-year-old altar boy at the local church.
+              Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church.
+            </p>
+            <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
+              My childhood came under threat once more in another migratory event, this time taking place in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie everyday while munching on latiao.
             </p>
           </div>
         </div>
 
         {/* Bottom image */}
-        <div className={`w-full mt-[24px] h-[240px] rounded-[8px] overflow-hidden ${loadedSections.image ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
+        <div
+          ref={imageRef}
+          className={`w-full mt-[12px] h-[240px] rounded-[8px] overflow-hidden ${loadedSections.image ? 'component-loaded from-left' : 'component-hidden from-left'}`}
+        >
           <img
             src="/images/about-panel.jpg"
             alt="Personal photo"
             className="w-full h-full object-cover"
+            style={{
+              filter: imageColorized ? 'grayscale(0%) brightness(1) contrast(1)' : 'grayscale(100%) brightness(0.75) contrast(1.05)',
+              transform: imageColorized ? 'scale(1)' : 'scale(1.03)',
+              transition: 'filter 950ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 1100ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            }}
             onError={(e) => { e.target.parentElement.style.display = 'none' }}
           />
         </div>
 
-        {/* Weihai paragraph — below image */}
+        {/* Placeholder — below image */}
         <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px] mt-[16px]">
-          But then, after a few years, I somehow popped over to a British school in Weihai, China, where I wore a blazer and tie every day and developed a dizzying international school accent that I am still not used to myself.
+          My childhood came under threat once more in another migratory event, this time taking place in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie everyday while munching on latiao.
         </p>
       </div>
     </div>

@@ -5,8 +5,10 @@ const AboutPanel = ({ isOpen, onClose }) => {
   const panelRef = useRef(null)
   const hasAnimatedRef = useRef(false)
   const hasRevealedRef = useRef(false)
+  const imageRef = useRef(null)
   const [showFlowers, setShowFlowers] = useState(false)
   const [firstReveal, setFirstReveal] = useState(true)
+  const [imageColorized, setImageColorized] = useState(false)
   const [decimalAge, setDecimalAge] = useState('')
 
   useEffect(() => {
@@ -61,6 +63,33 @@ const AboutPanel = ({ isOpen, onClose }) => {
       return () => clearTimeout(timer)
     } else {
       setShowFlowers(false)
+    }
+  }, [isOpen])
+
+  // Reset image color state when panel closes
+  useEffect(() => {
+    if (!isOpen) setImageColorized(false)
+  }, [isOpen])
+
+  // Colorize image when fully scrolled into view within the panel, revert when out
+  useEffect(() => {
+    if (!imageRef.current || !panelRef.current) return
+    let timer
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        clearTimeout(timer)
+        if (entry.isIntersecting) {
+          timer = setTimeout(() => setImageColorized(true), 250)
+        } else {
+          setImageColorized(false)
+        }
+      },
+      { root: panelRef.current, threshold: 0.85 }
+    )
+    observer.observe(imageRef.current)
+    return () => {
+      observer.disconnect()
+      clearTimeout(timer)
     }
   }, [isOpen])
 
@@ -154,28 +183,37 @@ const AboutPanel = ({ isOpen, onClose }) => {
           {/* Text content - 337px wide centered in 385px */}
           <div className="flex flex-col gap-[5px] w-[337px] leading-[25px] text-[14px]">
             <p className={`${firstReveal ? 'about-reveal' : ''} font-graphik font-medium text-black`} style={firstReveal ? { '--reveal-i': 3 } : undefined}>
-              I've had a bit of a nomadic upbringing.
+              I've had a nomadic upbringing.
             </p>
             <div className="flex flex-col gap-[10px] font-graphik text-[#5b5b5e]">
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 4 } : undefined}>I was born in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.</p>
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my primary language, empanadas my religion, and I earned my first unpaid internship as an 8-year-old altar boy at the local church.</p>
+              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 4 } : undefined}>I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.</p>
+              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church.</p>
             </div>
           </div>
         </div>
 
         {/* Bottom image */}
-        <div className={`${firstReveal ? 'about-reveal' : ''} w-full h-[240px] overflow-hidden mt-[25px]`} style={firstReveal ? { '--reveal-i': 6 } : undefined}>
+        <div
+          ref={imageRef}
+          className={`${firstReveal ? 'about-reveal' : ''} w-full h-[240px] overflow-hidden mt-[25px]`}
+          style={firstReveal ? { '--reveal-i': 6 } : undefined}
+        >
           <img
             src="/images/about-panel.jpg"
             alt="Personal photo"
             className="w-full h-full object-cover"
+            style={{
+              filter: imageColorized ? 'grayscale(0%) brightness(1) contrast(1)' : 'grayscale(100%) brightness(0.75) contrast(1.05)',
+              transform: imageColorized ? 'scale(1)' : 'scale(1.03)',
+              transition: 'filter 950ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 1100ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            }}
             onError={(e) => { e.target.parentElement.style.display = 'none' }}
           />
         </div>
 
-        {/* Weihai paragraph — below image */}
+        {/* Placeholder — below image */}
         <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px] px-[24px] mt-[16px]">
-          But then, after a few years, I somehow popped over to a British school in Weihai, China, where I wore a blazer and tie every day and developed a dizzying international school accent that I am still not used to myself.
+          My childhood came under threat once more in another migratory event, this time taking place in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie everyday while munching on latiao.
         </p>
       </div>
     </>
