@@ -9,6 +9,7 @@ export function useSounds() {
   const isEnabledRef = useRef(true)
   const isInitializedRef = useRef(false)
   const lastPlayRef = useRef(0)
+  const resumeTimestampRef = useRef(0)
 
   // Initialize audio context on first user interaction
   const initAudio = useCallback(() => {
@@ -20,6 +21,7 @@ export function useSounds() {
       }
       if (audioContextRef.current.state === 'suspended') {
         audioContextRef.current.resume()
+        resumeTimestampRef.current = performance.now()
       }
       isInitializedRef.current = true
     } catch (e) {
@@ -53,16 +55,33 @@ export function useSounds() {
     }
   }, [initAudio])
 
+  // Proactively suspend AudioContext when tab goes hidden to ensure
+  // a clean state on return; avoids stale-clock crackling on wake
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && audioContextRef.current) {
+        audioContextRef.current.suspend()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
   // Get or create audio context
-  // Returns null if the context was just resumed from suspension —
-  // callers should skip the sound to avoid the loud crackling burst
-  // that happens when oscillators are scheduled on a stale currentTime.
+  // Returns null if the context was just resumed — callers skip the sound
+  // to avoid the loud crackling burst from scheduling on a stale clock.
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
     }
     if (audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume()
+      resumeTimestampRef.current = performance.now()
+      return null
+    }
+    // Even if state is 'running', skip during the cooldown after a resume —
+    // the internal clock may not have stabilized yet
+    if (performance.now() - resumeTimestampRef.current < 200) {
       return null
     }
     return audioContextRef.current
