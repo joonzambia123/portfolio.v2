@@ -2800,6 +2800,7 @@ function App() {
                       visibility: isActive ? 'visible' : 'hidden',
                       transition: 'filter 250ms ease-in-out',
                       objectFit: 'cover',
+                      ...(video.objectPosition ? { objectPosition: video.objectPosition } : {}),
                       willChange: isActive ? 'auto' : 'opacity',
                       ...(isMobileOrTablet && mobileMetadataExpanded && { filter: video.noExposureBoost ? 'brightness(1.03)' : 'brightness(1.20)' })
                     }}
