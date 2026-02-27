@@ -213,9 +213,10 @@ const AboutPanel = ({ isOpen, onClose }) => {
         </div>
 
         {/* Placeholder — below image */}
-        <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px] px-[24px] mt-[16px]">
-          More stories to come. This section is a work in progress.
-        </p>
+        <div className="flex flex-col gap-[10px] font-graphik text-[14px] text-[#5b5b5e] leading-[25px] px-[24px] mt-[16px]">
+          <p>After Weihai, I moved back to South Korea for university at Yonsei, where I studied and served my mandatory military assignment with the 12th Infantry Division. Between drills and lectures, I picked up a camera and started documenting the places and people around me.</p>
+          <p>These days I'm based in Kagoshima, Japan, slowly learning the language, shooting on a Leica Q2, and building things for the web. Next stop is Saigon.</p>
+        </div>
 
       </div>
     </>
