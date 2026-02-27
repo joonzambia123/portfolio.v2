@@ -130,7 +130,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
         aria-modal="true"
         aria-label="About"
       >
-        {/* Watercolor Flowers — overlaid on the top whitespace, clipped to not overflow into text */}
+        {/* Watercolor Flowers — archived, not rendered (restore by uncommenting)
         <div
           className={`about-flowers-wrap ${showFlowers ? 'visible' : ''}`}
           style={{ height: 'calc(38vh - 40px)' }}
@@ -140,6 +140,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
             hasBeenSeen={hasAnimatedRef.current}
           />
         </div>
+        */}
 
         {/* Header */}
         <header className="flex flex-col gap-[7px] px-[24px] pt-[calc(38vh-40px)]">
@@ -187,7 +188,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
             </p>
             <div className="flex flex-col gap-[10px] font-graphik text-[#5b5b5e]">
               <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 4 } : undefined}>I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.</p>
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church.</p>
+              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until I boarded yet another plane, this time bound for the province of Shandong, China.</p>
             </div>
           </div>
         </div>

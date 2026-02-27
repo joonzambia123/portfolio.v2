@@ -413,10 +413,9 @@ const WatercolorFlowers = ({ isVisible = false, hasBeenSeen = false }) => {
       }
     }
 
-    // Stagger initial flowers individually so they never feel grouped
+    // Start with just 2 flowers, well staggered
     slotsRef.current = [makeSlot(now + initialDelay)]
-    slotsRef.current.push(makeSlot(now + initialDelay + 1500 + Math.random() * 2000))
-    slotsRef.current.push(makeSlot(now + initialDelay + 4000 + Math.random() * 2500))
+    slotsRef.current.push(makeSlot(now + initialDelay + 3000 + Math.random() * 3000))
 
     const animate = (timestamp) => {
 
@@ -469,10 +468,10 @@ const WatercolorFlowers = ({ isVisible = false, hasBeenSeen = false }) => {
         } else {
           slotsRef.current.splice(i, 1)
 
-          // Always spawn one replacement — varied delay keeps it organic
+          // Spawn one replacement, but only keep max 2 active — longer pause feels calmer
           const totalCount = slotsRef.current.filter(s => s).length
-          if (totalCount < 4) {
-            const pause = 800 + Math.random() * 2000
+          if (totalCount < 2) {
+            const pause = 2500 + Math.random() * 3500
             slotsRef.current.push(makeSlot(timestamp + pause))
           }
           continue

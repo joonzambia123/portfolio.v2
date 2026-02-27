@@ -170,7 +170,7 @@ const About3 = ({ isVisible = false }) => {
     <div className="w-full min-h-screen bg-[#FCFCFC] pt-[44px] pb-[200px] max-[813px]:pt-[20px] max-[813px]:pb-[120px]">
       {/* Header section with flowers */}
       <div className="mx-auto flex flex-col items-center w-full max-w-[403px] px-6 desktop:px-0">
-        {/* Watercolor Flowers */}
+        {/* Watercolor Flowers — archived, not rendered (restore by uncommenting)
         <div className={`w-full ${loadedSections.flowers ? 'component-loaded from-left' : 'component-hidden from-left'}`}>
           <WatercolorFlowers
             isVisible={loadedSections.flowers}
@@ -178,6 +178,7 @@ const About3 = ({ isVisible = false }) => {
             height={130}
           />
         </div>
+        */}
 
         {/* Top divider */}
         <div className={`w-full h-[1px] bg-[#eaeaea] mb-[16px] ${loadedSections.flowers ? 'component-loaded from-left' : 'component-hidden from-left'}`} />
@@ -229,7 +230,7 @@ const About3 = ({ isVisible = false }) => {
               I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence and a fondness for Potbelly sandwiches, I suddenly found myself in another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.
             </p>
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
-              Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church.
+              Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until I boarded yet another plane, this time bound for the province of Shandong, China.
             </p>
             <p className="font-graphik text-[14px] text-[#5b5b5e] leading-[25px]">
               My childhood came under threat once more in another migratory event, this time taking place in the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie everyday while munching on latiao.
