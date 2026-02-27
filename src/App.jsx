@@ -2794,6 +2794,7 @@ function App() {
                       ...(isMobileOrTablet && mobileMetadataExpanded && { filter: video.noExposureBoost ? 'brightness(1.03)' : 'brightness(1.20)' })
                     }}
 
+                    src={encodeVideoSrc(getVideoSrc(video))}
                     muted
                     playsInline
                     preload="auto"
@@ -2804,9 +2805,7 @@ function App() {
                     onPlaying={() => { if (isActive) setCurrentVideoPlaying(true); }}
                     onWaiting={() => { if (isActive) setCurrentVideoPlaying(false); }}
                     onTimeUpdate={isActive ? handleVideoTimeUpdate : undefined}
-                  >
-                    <source src={encodeVideoSrc(getVideoSrc(video))} type="video/mp4" />
-                  </video>
+                  />
                 );
               })}
             </div>
