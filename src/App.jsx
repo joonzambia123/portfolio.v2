@@ -2576,8 +2576,8 @@ function App() {
           </div>
         )}
 
-        {/* Bottom border line */}
-        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#EAEAEA]"></div>
+        {/* Bottom border line — skeuomorphic inset */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.04), rgba(255,255,255,0.8))' }}></div>
       </div>
 
       {/* Main Content - All pages always mounted, toggled via display */}
