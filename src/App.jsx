@@ -2777,8 +2777,10 @@ function App() {
                 const isActive = idx === videoIndex;
                 const total = safeVideoData.length;
                 const prevIdx = (videoIndex - 1 + total) % total;
+                const prevIdx2 = (videoIndex - 2 + total) % total;
                 const nextIdx = (videoIndex + 1) % total;
-                const isNearby = idx === prevIdx || idx === nextIdx;
+                const nextIdx2 = (videoIndex + 2) % total;
+                const isNearby = idx === prevIdx || idx === nextIdx || idx === prevIdx2 || idx === nextIdx2;
                 // Only mount active and adjacent videos
                 if (!isActive && !isNearby) {
                   return null;
