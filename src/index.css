@@ -2649,14 +2649,11 @@ background-color: #E8F6FF;
   }
 }
 
-@keyframes factScroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
 .fact-carousel-track {
   display: inline-flex;
-  animation: factScroll 38s linear infinite;
+  will-change: transform;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Video loading shimmer - subtle sweep animation */
@@ -3113,7 +3110,7 @@ a {
   border-left: 1.5px solid rgba(235, 238, 245, 0.85);
   border-radius: 0;
   box-shadow: -0.5px 0 2px rgba(0, 0, 0, 0.015), inset 0.5px 0 0 rgba(255, 255, 255, 0.5);
-  z-index: 70;
+  z-index: 300;
   transform: translateX(100%);
   transition: transform 350ms cubic-bezier(0.4, 0, 0.6, 1);
   overflow-y: auto;
@@ -3124,21 +3121,25 @@ a {
   transition: transform 680ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Slide-out pill — outer stays static for hover detection (anti-flicker) */
+/* Slide-out pill — slides with the panel via shared transform */
 .about-panel-pill-outer {
   position: fixed;
-  /* Panel left border is at right: 385px. Center the outer on it. */
-  right: calc(385px - 22px);
   top: 100px;
+  /* Place it just left of the panel's left edge */
+  right: calc(385px - 22px);
   width: 44px;
   height: 65px;
   z-index: 10001;
   pointer-events: none;
   opacity: 0;
-  transform: translateX(100%);
-  transition: opacity 350ms ease,
+  /* Same off-screen transform as the panel (385px panel width) */
+  transform: translateX(385px);
+  transition: opacity 200ms ease,
               transform 350ms cubic-bezier(0.4, 0, 0.6, 1);
   cursor: e-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .about-panel-pill-outer.open {
@@ -3151,8 +3152,8 @@ a {
 
 /* Inner pill — transforms on parent hover, never moves position */
 .about-panel-pill {
-  width: 21px;
-  height: 45px;
+  width: 18px;
+  height: 36px;
   background: white;
   border: 1.5px solid rgba(235, 238, 245, 0.85);
   border-radius: 12px;
@@ -3161,44 +3162,33 @@ a {
   justify-content: center;
   padding: 0;
   cursor: e-resize;
-  position: absolute;
-  /* Center pill exactly on parent center (= panel border) */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              box-shadow 200ms ease,
-              border-color 200ms ease;
+  flex-shrink: 0;
+  transition: transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: -0.5px 0 2px rgba(0, 0, 0, 0.015),
               inset 0.5px 0 0 rgba(255, 255, 255, 0.5);
 }
 
 .about-panel-pill-outer:hover .about-panel-pill {
-  width: 27px;
-  border-color: rgba(210, 213, 220, 0.85);
-  box-shadow: -0.5px 0 4px rgba(0, 0, 0, 0.04),
-              inset 0.5px 0 0 rgba(255, 255, 255, 0.5);
+  transform: scaleX(1.15);
 }
 
 .about-panel-pill-outer:active .about-panel-pill {
-  width: 24px;
-  transition: width 80ms ease;
+  transform: scaleX(1.05);
+  transition: transform 80ms ease;
 }
 
 /* Inner line — exactly 1.5px to match the panel border width */
 .about-panel-pill-line {
   display: block;
   width: 1.5px;
-  height: 18px;
+  height: 14px;
   background: #c3c3c3;
   border-radius: 1px;
-  transition: background 200ms ease,
-              height 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: background 250ms ease;
 }
 
 .about-panel-pill-outer:hover .about-panel-pill-line {
   background: #333;
-  height: 20px;
 }
 
 /* Hide scrollbar but keep scrollable */
@@ -3247,7 +3237,7 @@ a {
 .about-panel-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 290;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   background: rgba(252, 252, 252, 0.4);

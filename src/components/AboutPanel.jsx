@@ -9,29 +9,65 @@ const AboutPanel = ({ isOpen, onClose }) => {
   const [showFlowers, setShowFlowers] = useState(false)
   const [firstReveal, setFirstReveal] = useState(true)
   const [imageColorized, setImageColorized] = useState(false)
+  const carouselRef = useRef(null)
+  const carouselWrapRef = useRef(null)
+  const carouselState = useRef({
+    position: 0,
+    targetSpeed: 0.3,   // cruising speed: ~18px/s
+    dragging: false,
+    dragStartX: 0,
+    dragStartPos: 0,
+    velocity: 0,
+    lastX: 0,
+    lastTime: 0,
+    frame: null,
+    running: false,
+    halfWidth: 0,
+    loopStartTime: 0,
+    hasRamped: false,
+  })
   const [decimalAge, setDecimalAge] = useState('')
 
   useEffect(() => {
-    const update = () => {
-      const birth = new Date('2000-04-21')
-      const years = (Date.now() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-      setDecimalAge(years.toFixed(6))
-    }
-    update()
-    const interval = setInterval(update, 100)
+    const birth = new Date('2000-04-21')
+    const getAge = () => (Date.now() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+    // Show enough decimals so one digit visibly ticks every ~1.3s
+    // 1 year ≈ 31,557,600s → 8th decimal changes every ~0.32s, 7th every ~3.2s
+    // We want ~1.3s per tick → show to 8 decimals (last digit ticks ~0.3s,
+    // but the visible "slow roll" effect comes from the leading decimals being stable)
+    // Actually: to tick every ~1.3s, we need fewer decimals.
+    // 6th decimal changes every ~31.6s — too slow
+    // 7th decimal changes every ~3.16s — close
+    // Let's use a custom approach: update every 1300ms
+    setDecimalAge(getAge().toFixed(9))
+    const interval = setInterval(() => setDecimalAge(getAge().toFixed(9)), 1300)
     return () => clearInterval(interval)
   }, [])
 
   const facts = [
-    { label: 'Current city', value: 'Kagoshima' },
-    { label: 'Next city', value: 'Saigon' },
-    { label: 'Favorite song', value: 'Between The Bars' },
-    { label: 'Favorite author', value: 'Kazuo Ishiguro' },
-    { label: 'Fluent in', value: '4 languages' },
-    { label: 'Learning', value: 'Japanese' },
-    { label: 'Military assignment', value: '12th Infantry Division' },
+    { label: 'Current age', value: decimalAge },
     { label: 'School', value: 'Yonsei University' },
+    { label: 'Favorite song', value: 'Between the Bars' },
+    { label: 'Can speak', value: '4 languages' },
+    { label: 'Favorite author', value: 'Kazuo Ishiguro' },
+    { label: 'Favorite movie', value: 'Cinema Paradiso' },
+    { label: 'Favorite album', value: 'An Awesome Wave' },
+    { label: 'Favorite camera', value: 'Leica Q2' },
+    { label: 'Favorite anime', value: 'Cowboy Bebop' },
+    { label: 'Favorite director', value: 'Hirokazu Koreeda' },
+    { label: 'Sports I watch', value: 'ATP, WTA, LCK, PL' },
+    { label: 'K-Drama pick', value: 'Reply 1988' },
+    { label: 'K-Music pick', value: '\uC2A4\uBB3C\uB2E4\uC12F, \uC2A4\uBB3C\uD558\uB098' },
+    { label: 'Motivational anthem', value: "Fuckin' in the Bushes" },
+    { label: 'Learning', value: 'Japanese' },
+    { label: 'Military unit', value: '12th Infantry Division' },
+    { label: 'Favorite show', value: 'Mad Men' },
     { label: 'LoL rank', value: 'Platinum (KR)' },
+    { label: 'Favorite artist', value: 'The Strokes' },
+    { label: 'Favorite dish to make', value: 'Doenjang-jjigae' },
+    { label: 'Favorite sports', value: 'Taekwondo, Table tennis' },
+    { label: 'Favorite book', value: 'The Fellowship of the Ring' },
+    { label: 'Currently watching', value: 'AKOTSK' },
   ]
 
   // Track if we've animated before (skip on re-open within same session)
@@ -63,6 +99,120 @@ const AboutPanel = ({ isOpen, onClose }) => {
       return () => clearTimeout(timer)
     } else {
       setShowFlowers(false)
+    }
+  }, [isOpen])
+
+  // JS-driven carousel: auto-scroll + drag + flick momentum
+  useEffect(() => {
+    const wrap = carouselWrapRef.current
+    const track = carouselRef.current
+    if (!wrap || !track) return
+    const cs = carouselState.current
+
+    const onMouseDown = (e) => {
+      e.preventDefault()
+      cs.dragging = true
+      cs.dragStartX = e.clientX
+      cs.dragStartPos = cs.position
+      cs.velocity = 0
+      cs.lastX = e.clientX
+      cs.lastTime = performance.now()
+      wrap.style.cursor = 'grabbing'
+    }
+
+    const onMouseMove = (e) => {
+      if (!cs.dragging) return
+      const now = performance.now()
+      const dt = now - cs.lastTime
+      const dx = e.clientX - cs.lastX
+      if (dt > 0) {
+        // Weighted average for smoother velocity tracking
+        const instantVel = dx / dt * 10
+        cs.velocity = cs.velocity * 0.4 + instantVel * 0.6
+      }
+      cs.lastX = e.clientX
+      cs.lastTime = now
+      cs.position = cs.dragStartPos + (e.clientX - cs.dragStartX)
+    }
+
+    const onMouseUp = () => {
+      if (!cs.dragging) return
+      cs.dragging = false
+      wrap.style.cursor = ''
+    }
+
+    wrap.addEventListener('mousedown', onMouseDown)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+
+    return () => {
+      wrap.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  // Animation loop — runs when panel is open
+  useEffect(() => {
+    const track = carouselRef.current
+    if (!track) return
+    const cs = carouselState.current
+
+    if (!isOpen) {
+      cs.running = false
+      cancelAnimationFrame(cs.frame)
+      return
+    }
+
+    // Measure half-width for seamless wrapping
+    cs.halfWidth = track.scrollWidth / 2
+    cs.running = true
+    if (!cs.hasRamped) cs.loopStartTime = performance.now()
+
+    const rampDuration = 5000 // ms to reach full speed on first open
+
+    const tick = (now) => {
+      if (!cs.running) return
+      const h = cs.halfWidth
+
+      // Calculate current auto-scroll speed with ramp
+      let speed = cs.targetSpeed
+      if (!cs.hasRamped) {
+        const elapsed = now - cs.loopStartTime
+        if (elapsed < rampDuration) {
+          // Start at 15% speed, linearly blend to 100% — no inflection, no stutter
+          const t = elapsed / rampDuration
+          speed = cs.targetSpeed * (0.15 + 0.85 * t)
+        } else {
+          cs.hasRamped = true
+        }
+      }
+
+      if (!cs.dragging) {
+        if (Math.abs(cs.velocity) > 0.3) {
+          // Momentum coast from flick
+          cs.velocity *= 0.975
+          cs.position += cs.velocity
+        } else {
+          cs.velocity = 0
+          cs.position -= speed
+        }
+      }
+
+      // Wrap for seamless loop
+      if (h > 0) {
+        cs.position = cs.position % h
+        if (cs.position > 0) cs.position -= h
+      }
+
+      track.style.transform = `translate3d(${cs.position}px, 0, 0)`
+      cs.frame = requestAnimationFrame(tick)
+    }
+
+    cs.frame = requestAnimationFrame(tick)
+    return () => {
+      cs.running = false
+      cancelAnimationFrame(cs.frame)
     }
   }, [isOpen])
 
@@ -123,7 +273,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
       />
 
       {/* Slide-out pill — two-layer anti-flicker pattern */}
-      <div className={`about-panel-pill-outer ${isOpen ? 'open' : ''}`}>
+      <div className={`about-panel-pill-outer ${isOpen ? 'open' : ''}`} onClick={onClose}>
         <button
           className="about-panel-pill"
           onClick={onClose}
@@ -165,19 +315,27 @@ const AboutPanel = ({ isOpen, onClose }) => {
 
         {/* Facts carousel — full-width, right-edge fade */}
         <div
-          className="w-full overflow-hidden mt-[18px]"
+          ref={carouselWrapRef}
+          className={`${firstReveal ? 'about-reveal' : ''} w-full overflow-hidden mt-[18px] cursor-grab`}
           style={{
             maskImage: 'linear-gradient(to right, black 0%, black 72%, rgba(0,0,0,0.4) 88%, rgba(0,0,0,0) 100%)',
             WebkitMaskImage: 'linear-gradient(to right, black 0%, black 72%, rgba(0,0,0,0.4) 88%, rgba(0,0,0,0) 100%)',
+            ...(firstReveal ? { '--reveal-i': 2 } : {}),
           }}
         >
-          <div className="fact-carousel-track gap-[25px] pl-[24px]" style={{ willChange: 'transform' }}>
-            {[...facts, ...facts].map((fact, i) => (
-              <div key={i} className="flex flex-col gap-[6px] shrink-0">
-                <span className="font-graphik text-[14px] leading-[15px] text-[#5b5b5e] whitespace-nowrap">{fact.label}</span>
-                <span className="font-graphik text-[14px] leading-[15px] text-[#c3c3c3] whitespace-nowrap">{fact.value}</span>
-              </div>
-            ))}
+          <div ref={carouselRef} className="fact-carousel-track gap-[25px] pl-[24px]">
+            {[...facts, ...facts].map((fact, i) => {
+              const isAge = fact.label === 'Current age'
+              return (
+                <div key={i} className="flex flex-col gap-[6px] shrink-0">
+                  <span className="font-graphik text-[14px] leading-[15px] text-[#5b5b5e] whitespace-nowrap">{fact.label}</span>
+                  <span
+                    className="font-graphik text-[14px] leading-[15px] text-[#c3c3c3] whitespace-nowrap"
+                    style={isAge ? { fontVariantNumeric: 'tabular-nums' } : undefined}
+                  >{fact.value}</span>
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -188,18 +346,18 @@ const AboutPanel = ({ isOpen, onClose }) => {
             className={`${firstReveal ? 'about-reveal' : ''} w-full h-[2px]`}
             style={{
               background: 'linear-gradient(to bottom, rgba(0,0,0,0.04), rgba(255,255,255,0.8))',
-              ...(firstReveal ? { '--reveal-i': 2 } : {}),
+              ...(firstReveal ? { '--reveal-i': 3 } : {}),
             }}
           />
 
           {/* Text content - 337px wide centered in 385px */}
           <div className="flex flex-col gap-[5px] w-[337px] leading-[25px] text-[14px]">
-            <p className={`${firstReveal ? 'about-reveal' : ''} font-graphik font-medium text-black`} style={firstReveal ? { '--reveal-i': 3 } : undefined}>
+            <p className={`${firstReveal ? 'about-reveal' : ''} font-graphik font-medium text-black`} style={firstReveal ? { '--reveal-i': 4 } : undefined}>
               I've had a nomadic upbringing.
             </p>
             <div className="flex flex-col gap-[10px] font-graphik text-[#5b5b5e]">
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 4 } : undefined}>I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence, I suddenly found myself on another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.</p>
-              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until I boarded yet another plane, this time bound for the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie every day while munching on latiao.</p>
+              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 5 } : undefined}>I popped into existence in Bundang, South Korea, but then moved to John Hughes' suburbia of Northbrook, Chicago as an infant. Having barely attained object permanence, I suddenly found myself on another plane to Bogota, Colombia, the birthplace of magical realism and Shakira.</p>
+              <p className={firstReveal ? 'about-reveal' : ''} style={firstReveal ? { '--reveal-i': 6 } : undefined}>Spanish became my first language, empanadas my religion, and I earned my first unpaid internship as a 6-year-old altar boy at the local church. Up until I boarded yet another plane, this time bound for the culturally oxymoronic setting of a British-Korean school in Weihai, China, where I wore a blazer and tie every day while munching on latiao.</p>
             </div>
           </div>
         </div>
@@ -208,7 +366,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
         <div
           ref={imageRef}
           className={`${firstReveal ? 'about-reveal' : ''} w-full h-[240px] overflow-hidden mt-[25px]`}
-          style={firstReveal ? { '--reveal-i': 6 } : undefined}
+          style={firstReveal ? { '--reveal-i': 7 } : undefined}
         >
           <img
             src="/images/about-panel.jpg"

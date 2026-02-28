@@ -10,19 +10,19 @@
       "id": 2,
       "key": "bio_intro",
       "label": "Bio - Intro",
-      "content": "Translating complex, architecturally vast systems into joyful experiences calls for second breakfasts."
+      "content": "Often found with a camera in hand, scavenging for projects to tinker with and great second breakfasts."
     },
     {
       "id": 4,
       "key": "bio_current",
       "label": "Bio - Current Work",
-      "content": "Currently building {Student Machines|https://studentmachines.com}, a little troupe crafting delightful interfaces around local LLMs."
+      "content": "Currently building {Student Machines|https://studentmachines.com}, a group crafting delightful interfaces around private, local LLMs."
     },
     {
       "id": 3,
       "key": "bio_mobbin",
       "label": "Bio - Mobbin",
-      "content": "Ran fun projects at {Mobbin|https://mobbin.com} as a growth engineer, previously led a national campaign for {Perplexity}."
+      "content": "Ran special projects at {Mobbin|https://mobbin.com} as a growth engineer, previously led a national campaign for {Perplexity}."
     },
     {
       "id": 5,
