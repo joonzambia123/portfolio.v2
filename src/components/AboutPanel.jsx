@@ -122,14 +122,16 @@ const AboutPanel = ({ isOpen, onClose }) => {
         aria-hidden="true"
       />
 
-      {/* Slide-out pill — outside panel to avoid overflow clip */}
-      <button
-        className={`about-panel-pill ${isOpen ? 'open' : ''}`}
-        onClick={onClose}
-        aria-label="Close about panel"
-      >
-        <span className="about-panel-pill-line" />
-      </button>
+      {/* Slide-out pill — two-layer anti-flicker pattern */}
+      <div className={`about-panel-pill-outer ${isOpen ? 'open' : ''}`}>
+        <button
+          className="about-panel-pill"
+          onClick={onClose}
+          aria-label="Close about panel"
+        >
+          <span className="about-panel-pill-line" />
+        </button>
+      </div>
 
       {/* Panel */}
       <div
