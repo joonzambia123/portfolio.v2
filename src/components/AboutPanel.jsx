@@ -130,6 +130,14 @@ const AboutPanel = ({ isOpen, onClose }) => {
         aria-modal="true"
         aria-label="About"
       >
+        {/* Slide-out pill */}
+        <button
+          className="about-panel-pill"
+          onClick={onClose}
+          aria-label="Close about panel"
+        >
+          <span className="about-panel-pill-line" />
+        </button>
         {/* Watercolor Flowers — archived, not rendered (restore by uncommenting)
         <div
           className={`about-flowers-wrap ${showFlowers ? 'visible' : ''}`}
