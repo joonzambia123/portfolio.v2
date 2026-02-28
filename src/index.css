@@ -3127,11 +3127,11 @@ a {
 /* Slide-out pill — outer stays static for hover detection (anti-flicker) */
 .about-panel-pill-outer {
   position: fixed;
-  /* Centered on the panel's left border (panel = 385px, border = 1.5px) */
-  right: calc(385px - 12px);
+  /* Panel left border is at right: 385px. Center the outer on it. */
+  right: calc(385px - 22px);
   top: 100px;
-  width: 25px;
-  height: 55px;
+  width: 44px;
+  height: 65px;
   z-index: 10001;
   pointer-events: none;
   opacity: 0;
@@ -3149,7 +3149,7 @@ a {
               transform 680ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Inner pill — transforms on parent hover */
+/* Inner pill — transforms on parent hover, never moves position */
 .about-panel-pill {
   width: 21px;
   height: 45px;
@@ -3162,6 +3162,7 @@ a {
   padding: 0;
   cursor: e-resize;
   position: absolute;
+  /* Center pill exactly on parent center (= panel border) */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -3184,6 +3185,7 @@ a {
   transition: width 80ms ease;
 }
 
+/* Inner line — exactly 1.5px to match the panel border width */
 .about-panel-pill-line {
   display: block;
   width: 1.5px;
