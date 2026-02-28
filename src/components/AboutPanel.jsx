@@ -47,7 +47,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
   const facts = [
     { label: 'Current age', value: decimalAge },
     { label: 'School', value: 'Yonsei University' },
-    { label: 'Favorite song', value: 'Between the Bars' },
+    { label: 'Favorite song', value: 'Dream Lover - Faye Wong' },
     { label: 'Can speak', value: '4 languages' },
     { label: 'Favorite author', value: 'Kazuo Ishiguro' },
     { label: 'Favorite movie', value: 'Cinema Paradiso' },
@@ -57,7 +57,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
     { label: 'Favorite director', value: 'Hirokazu Koreeda' },
     { label: 'Sports I watch', value: 'ATP, WTA, LCK, PL' },
     { label: 'K-Drama pick', value: 'Reply 1988' },
-    { label: 'K-Music pick', value: '\uC2A4\uBB3C\uB2E4\uC12F, \uC2A4\uBB3C\uD558\uB098' },
+    { label: 'K-Music pick', value: 'A Call from My Dream' },
     { label: 'Motivational anthem', value: "Fuckin' in the Bushes" },
     { label: 'Learning', value: 'Japanese' },
     { label: 'Military unit', value: '12th Infantry Division' },
