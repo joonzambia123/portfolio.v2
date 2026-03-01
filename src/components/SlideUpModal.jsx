@@ -618,6 +618,8 @@ export const ContactModalContent = ({ darkMode = false }) => {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [emailHover, setEmailHover] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
+  const [showMore, setShowMore] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { playClick } = useSounds();
 
   // Check if device is mobile/tablet
@@ -691,79 +693,133 @@ export const ContactModalContent = ({ darkMode = false }) => {
     },
   ];
 
+  const extraItems = [
+    {
+      id: 'github',
+      title: 'GitHub',
+      description: '@joonseochang',
+      href: 'https://github.com/joonseochang',
+    },
+    {
+      id: 'readcv',
+      title: 'Read.cv',
+      description: '/joonseochang',
+      href: 'https://read.cv/joonseochang',
+    },
+  ];
+
+  const handleCopyAll = async () => {
+    playClick();
+    const text = [
+      'changjoonseo126@gmail.com',
+      'instagram.com/joonseochang',
+      'linkedin.com/in/joonseo-chang',
+      'twitter.com/joonseochang',
+    ].join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+
+  // Render a contact row (shared between main + extra items)
+  const renderContactRow = (item, showDividerAfter) => (
+    <div key={item.title} className="contents">
+      {item.onClick ? (
+        <button
+          onClick={item.onClick}
+          onMouseEnter={handleEmailMouseEnter}
+          onMouseLeave={handleEmailMouseLeave}
+          className="contact-row w-full cursor-pointer text-left relative"
+        >
+          <div className="contact-row-inner w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px]">
+            <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
+              <item.Icon hovered={hoveredRow === item.id} />
+            </div>
+            <div className="flex flex-col overflow-hidden">
+              <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
+                {item.title}
+              </span>
+              <span
+                className="font-graphik text-[14px] leading-[20px] transition-all duration-200 ease-out"
+                style={{ color: getEmailDescriptionColor() }}
+              >
+                {getEmailDescription()}
+              </span>
+            </div>
+          </div>
+        </button>
+      ) : (
+        <a
+          href={item.href}
+          target={isMobileOrTablet ? "_self" : "_blank"}
+          rel="noopener noreferrer"
+          onClick={() => playClick()}
+          onMouseEnter={() => setHoveredRow(item.id)}
+          onMouseLeave={() => setHoveredRow(null)}
+          className="contact-row w-full cursor-pointer relative"
+        >
+          <div className="contact-row-inner w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px]">
+            {item.Icon ? (
+              <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
+                <item.Icon hovered={hoveredRow === item.id} />
+              </div>
+            ) : (
+              <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
+                <span className="font-graphik text-[11px] text-[#a3a3a3] uppercase tracking-wide">{item.title.slice(0, 2)}</span>
+              </div>
+            )}
+            <div className="flex flex-col">
+              <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
+                {item.title}
+              </span>
+              <span className="font-graphik text-[14px] leading-[20px] text-[#B7B7B9]">
+                {item.description}
+              </span>
+            </div>
+          </div>
+        </a>
+      )}
+      {showDividerAfter && (
+        <div className="w-full border-t border-dashed border-[#EBEEF5]" />
+      )}
+    </div>
+  );
+
   return (
     <div className="flex flex-col items-center">
       {/* Inner card with contact rows - skeuomorphic white card */}
       <div className="contact-modal-inner w-[280px] py-[15px] flex flex-col items-center gap-[10px]">
-        {contactItems.map((item, index) => (
-          <div key={item.title} className="contents">
-            {/* Contact row - outer stays static with ::before hitbox, inner transforms on hover */}
-            {item.onClick ? (
-              <button
-                onClick={item.onClick}
-                onMouseEnter={handleEmailMouseEnter}
-                onMouseLeave={handleEmailMouseLeave}
-                className="contact-row w-full cursor-pointer text-left relative"
-              >
-                <div className="contact-row-inner w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px]">
-                  {/* Icon box */}
-                  <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
-                    <item.Icon hovered={hoveredRow === item.id} />
-                  </div>
-                  {/* Text content */}
-                  <div className="flex flex-col overflow-hidden">
-                    <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
-                      {item.title}
-                    </span>
-                    <span
-                      className="font-graphik text-[14px] leading-[20px] transition-all duration-200 ease-out"
-                      style={{ color: getEmailDescriptionColor() }}
-                    >
-                      {getEmailDescription()}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ) : (
-              <a
-                href={item.href}
-                target={isMobileOrTablet ? "_self" : "_blank"}
-                rel="noopener noreferrer"
-                onClick={() => playClick()}
-                onMouseEnter={() => setHoveredRow(item.id)}
-                onMouseLeave={() => setHoveredRow(null)}
-                className="contact-row w-full cursor-pointer relative"
-              >
-                <div className="contact-row-inner w-full flex items-center gap-[10px] px-[10px] py-[4px] rounded-[10px]">
-                  {/* Icon box */}
-                  <div className={`contact-icon-box contact-icon-${item.id} w-[37px] h-[35px] flex items-center justify-center rounded-[8px] shrink-0`}>
-                    <item.Icon hovered={hoveredRow === item.id} />
-                  </div>
-                  {/* Text content */}
-                  <div className="flex flex-col">
-                    <span className="font-graphik text-[14px] leading-[18px] text-[#333333]">
-                      {item.title}
-                    </span>
-                    <span className="font-graphik text-[14px] leading-[20px] text-[#B7B7B9]">
-                      {item.description}
-                    </span>
-                  </div>
-                </div>
-              </a>
-            )}
-            {/* Divider (not after last item) */}
-            {index < contactItems.length - 1 && (
-              <div className="w-full border-t border-dashed border-[#EBEEF5]" />
-            )}
-          </div>
-        ))}
+        {contactItems.map((item, index) =>
+          renderContactRow(item, index < contactItems.length - 1 || showMore)
+        )}
+
+        {/* Extra links — expand/collapse */}
+        {showMore && extraItems.map((item, index) =>
+          renderContactRow(item, index < extraItems.length - 1)
+        )}
       </div>
 
-      {/* Footer text - sits on grey background */}
-      <div className="flex items-center justify-center pt-[6px] pb-[10px]">
-        <span className="font-graphik text-[14px] text-[#B3B3B3]">
-          or leave a message here
-        </span>
+      {/* TE-inspired control strip */}
+      <div className="te-strip flex items-center justify-center gap-[6px] py-[7px] px-[10px] w-full">
+        <button
+          className={`te-btn${showMore ? ' on' : ''}`}
+          onClick={() => { playClick(); setShowMore(!showMore); }}
+        >
+          <span className="te-led" />
+          <span className="te-btn-label">ext</span>
+        </button>
+        <button
+          className={`te-btn${copied ? ' on' : ''}`}
+          onClick={handleCopyAll}
+        >
+          <span className="te-led" />
+          <span className="te-btn-label">{copied ? 'ok!' : 'cpy'}</span>
+        </button>
+        <div className="te-badge">
+          <span className="te-badge-label">te-04</span>
+        </div>
       </div>
     </div>
   );
