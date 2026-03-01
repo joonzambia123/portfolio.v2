@@ -67,7 +67,7 @@ const AboutPanel = ({ isOpen, onClose }) => {
     { label: 'Favorite dish to make', value: 'Doenjang-jjigae' },
     { label: 'Favorite sports', value: 'Taekwondo, Table tennis' },
     { label: 'Favorite book', value: 'The Fellowship of the Ring' },
-    { label: 'Currently watching', value: 'AKOTSK' },
+    { label: 'Currently watching', value: 'AKOTSK, Frieren, The Pitt' },
   ]
 
   // Track if we've animated before (skip on re-open within same session)
