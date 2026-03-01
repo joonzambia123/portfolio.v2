@@ -167,7 +167,11 @@ const AboutPanel = ({ isOpen, onClose }) => {
     // Measure half-width for seamless wrapping
     cs.halfWidth = track.scrollWidth / 2
     cs.running = true
-    if (!cs.hasRamped) cs.loopStartTime = performance.now()
+    if (!cs.hasRamped) {
+      cs.loopStartTime = performance.now()
+      // Start 110px to the right so "Current age" opens more centered
+      cs.position = -(cs.halfWidth - 110)
+    }
 
     const rampDuration = 5000 // ms to reach full speed on first open
 
@@ -247,7 +251,10 @@ const AboutPanel = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        document.activeElement?.blur()
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
